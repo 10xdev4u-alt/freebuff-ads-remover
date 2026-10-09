@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freebuff Ads Remover — Clean Desktop, Zero Ads</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#0a0a0f;--fg:#e8e8f0;--accent:#6c5ce7;--accent2:#a29bfe;--card:#12121a;--border:#1e1e2e}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;overflow-x:hidden}
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;position:relative}
+  .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(108,92,231,.15) 0%,transparent 70%);pointer-events:none}
+  .hero h1{font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;background:linear-gradient(135deg,var(--fg) 0%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:1rem}
+  .hero p{font-size:1.25rem;color:#8888a0;max-width:600px;margin-bottom:2rem}
+  .cta{display:inline-block;background:var(--accent);color:#fff;padding:.8rem 2rem;border-radius:50px;text-decoration:none;font-weight:600;transition:transform .2s,box-shadow .2s}
+  .cta:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(108,92,231,.4)}
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;padding:4rem 2rem;max-width:1000px;margin:0 auto}
+  .feature{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;transition:transform .2s}
+  .feature:hover{transform:translateY(-4px)}
+  .feature h3{margin-bottom:.5rem;color:var(--accent2)}
+  .feature p{color:#8888a0;font-size:.95rem}
+  .arch{padding:4rem 2rem;max-width:800px;margin:0 auto;text-align:center}
+  .arch h2{font-size:2rem;margin-bottom:2rem;color:var(--accent2)}
+  .flow{display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;margin:2rem 0}
+  .flow-step{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;text-align:center}
+  .flow-arrow{color:var(--accent);font-size:1.5rem}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;padding:2rem 2rem 4rem;max-width:800px;margin:0 auto;text-align:center}
+  .stat-value{font-size:2.5rem;font-weight:800;color:var(--accent2)}
+  .stat-label{color:#8888a0;font-size:.85rem;margin-top:.25rem}
+  footer{text-align:center;padding:2rem;color:#55556a;font-size:.85rem;border-top:1px solid var(--border)}
+  @media(max-width:600px){.features{grid-template-columns:1rem}.hero h1{font-size:2rem}}
+</style>
+</head>
+<body>
+<section class="hero">
+  <h1>Freebuff Ads Remover</h1>
+  <p>Pluggable extension that removes every ad from Freebuff Desktop. No bundle patching. No app modification. Just one command.</p>
+  <a href="https://github.com/10xdev4u-alt/freebuff-ads-remover" class="cta">Get Started</a>
+</section>
+
+<section class="features">
+  <div class="feature">
+    <h3>SponsorBreak</h3>
+    <p>Full-screen break ads blocked at the network level. Never see another sponsor break.</p>
+  </div>
+  <div class="feature">
+    <h3>Billboard</h3>
+    <p>Sidebar and panel billboards removed. Your workspace stays clean and focused.</p>
+  </div>
+  <div class="feature">
+    <h3>Intermission</h3>
+    <p>No more ads between turns. Flow straight from one task to the next.</p>
+  </div>
+  <div class="feature">
+    <h3>Tracking</h3>
+    <p>All impression, click, and engagement tracking blocked. Your usage stays private.</p>
+  </div>
+</section>
+
+<section class="arch">
+  <h2>How It Works</h2>
+  <div class="flow">
+    <div class="flow-step"><strong>Your App</strong><br>Freebuff Desktop</div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step"><strong>Interceptor</strong><br>Blocks ad requests</div>
+    <span class="flow-arrow">&#8594;</span>
+    <div class="flow-step"><strong>Clean UI</strong><br>Zero ads</div>
+  </div>
+</section>
+
+<section class="stats">
+  <div><div class="stat-value">18</div><div class="stat-label">Ad Endpoints Blocked</div></div>
+  <div><div class="stat-value">9</div><div class="stat-label">Ad Surfaces Covered</div></div>
+  <div><div class="stat-value">&lt;1ms</div><div class="stat-label">Request Overhead</div></div>
+  <div><div class="stat-value">65</div><div class="stat-label">Tests Passing</div></div>
+</section>
+
+<footer>
+  <p>Built by 10xdev4u-alt + the-ai-developer &middot; MIT License &middot; 2026</p>
+</footer>
+</body>
+</html>
