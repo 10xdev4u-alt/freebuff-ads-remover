@@ -1,0 +1,55 @@
+{
+  "name": "freebuff-ads-remover",
+  "version": "1.0.0",
+  "description": "Pluggable extension to remove ads from Freebuff Desktop",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "config",
+    "scripts"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/ tests/",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "freebuff",
+    "electron",
+    "extension",
+    "ad-blocker",
+    "ads"
+  ],
+  "author": "10xdev4u-alt <10xdev4u@gmail.com>",
+  "contributors": [
+    "the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/10xdev4u-alt/freebuff-ads-remover.git"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "electron": "^44.7.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  }
+}
