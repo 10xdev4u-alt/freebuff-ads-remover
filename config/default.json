@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "blockTracking": true,
+  "cssFallback": true,
+  "surfaces": {
+    "sponsorBreak": true,
+    "billboard": true,
+    "intermission": true,
+    "spotlight": true,
+    "showcase": true,
+    "sponsoredTask": true,
+    "sponsoredRun": true,
+    "partner": true,
+    "invitation": true
+  },
+  "logLevel": "info",
+  "logToFile": true
+}
