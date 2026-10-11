@@ -1,4 +1,4 @@
-import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
+import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } from './types.js';
 
 /**
  * Classic-script contract: this file may contain ONLY type imports and no
@@ -49,7 +49,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   right: 18px;
   bottom: 18px;
   z-index: 2147483646;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .far-root { all: initial; display: block; color: #e8ebf1; }
@@ -141,6 +141,13 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   color: #e8ebf1;
 }
 .header-title { display: flex; align-items: center; gap: 7px; }
+.version {
+  font-size: 10px;
+  font-weight: 600;
+  color: #6d7488;
+  font-variant-numeric: tabular-nums;
+}
+.version:empty { display: none; }
 .live {
   display: flex;
   align-items: center;
@@ -162,30 +169,44 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 @keyframes far-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
 .hero {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
+.hero-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .header-total {
-  font-size: 30px;
+  font-size: 32px;
   line-height: 1;
   font-weight: 750;
   color: #3ddc84;
   font-variant-numeric: tabular-nums;
 }
-.hero-label { font-size: 11px; color: #8b93a7; }
+.hero-label { font-size: 11px; color: #8b93a7; white-space: nowrap; }
+.spark { width: 76px; height: auto; display: block; overflow: visible; }
+.spark-line {
+  fill: none;
+  stroke: #3ddc84;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.spark-area { fill: url(#far-spark-fill); stroke: none; }
 
-.pipeline { display: flex; align-items: stretch; gap: 3px; margin-top: 2px; }
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 2px;
+}
 .stage {
-  flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 7px 1px 6px;
+  gap: 6px;
+  padding: 7px 8px;
   border-radius: 10px;
   background: #101318;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -210,6 +231,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   text-overflow: ellipsis;
 }
 .stage-count {
+  margin-left: auto;
   font-size: 12px;
   font-weight: 700;
   color: #e8ebf1;
@@ -220,13 +242,6 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   0% { box-shadow: 0 0 0 1px var(--stage-color); background: rgba(255, 255, 255, 0.09); }
   100% { box-shadow: 0 0 0 1px transparent; background: #101318; }
 }
-.arrow {
-  align-self: center;
-  flex: 0 0 auto;
-  color: #434a59;
-  font-size: 12px;
-}
-
 .section-label {
   font-size: 10px;
   text-transform: uppercase;
@@ -290,7 +305,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 
 .event {
   display: grid;
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto auto auto 1fr;
   gap: 7px;
   align-items: center;
   font-size: 11px;
@@ -304,7 +319,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 .event .t {
   color: #6d7488;
   font-variant-numeric: tabular-nums;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 10px;
 }
 .event-dot {
@@ -313,8 +328,22 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   border-radius: 50%;
   background: #9aa3b5;
 }
-.event-text {
-  color: #aab1c2;
+.event-tag {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b93a7;
+  white-space: nowrap;
+}
+.event-pill {
+  justify-self: start;
+  max-width: 100%;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: #22262f;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #c6cbd6;
+  font-size: 10.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -346,6 +375,9 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
     badgeCount: HTMLElement;
     panel: HTMLElement;
     headerTotal: HTMLElement;
+    version: HTMLElement;
+    sparkLine: Element | null;
+    sparkArea: Element | null;
     stageCounts: Partial<Record<AdStage, HTMLElement>>;
     surfaces: HTMLElement;
     events: HTMLElement;
@@ -357,6 +389,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
     host: HTMLElement;
     bound: Bound;
     selectors: string;
+    version: string;
     observer: MutationObserver | null;
     counted: WeakSet<Element>;
     domHidden: number;
@@ -391,9 +424,8 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   }
 
   function buildPipelineMarkup(): string {
-    return STAGE_META.map((meta, index) => {
-      const arrow = index === 0 ? '' : '<span class="arrow" aria-hidden="true">&rsaquo;</span>';
-      return `${arrow}<div class="stage" data-stage="${meta.id}" role="listitem" title="${STAGE_TITLES[meta.id]}" style="--stage-color: ${meta.color}">
+    return STAGE_META.map((meta) => {
+      return `<div class="stage" data-stage="${meta.id}" role="listitem" title="${STAGE_TITLES[meta.id]}" style="--stage-color: ${meta.color}">
         <span class="stage-dot"></span>
         <span class="stage-label">${meta.label}</span>
         <span class="stage-count" data-stage-count="${meta.id}">0</span>
@@ -409,12 +441,22 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
       </button>
       <section class="panel" data-f="panel" hidden aria-label="Ad blocking dashboard">
         <header class="header">
-          <div class="header-title"><span class="mark mark-sm" aria-hidden="true">${SHIELD_SVG}</span> Freebuff Shield</div>
+          <div class="header-title"><span class="mark mark-sm" aria-hidden="true">${SHIELD_SVG}</span> Freebuff Shield <span class="version" data-f="version"></span></div>
           <div class="live"><span class="live-dot"></span> live</div>
         </header>
         <div class="hero">
-          <span class="header-total" data-f="headerTotal">0</span>
-          <span class="hero-label">ads stopped this session</span>
+          <div class="hero-main">
+            <span class="header-total" data-f="headerTotal">0</span>
+            <span class="hero-label">ads stopped this session</span>
+          </div>
+          <svg class="spark" data-f="spark" viewBox="0 0 72 30" aria-hidden="true">
+            <defs><linearGradient id="far-spark-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3ddc84" stop-opacity="0.28"/>
+              <stop offset="1" stop-color="#3ddc84" stop-opacity="0"/>
+            </linearGradient></defs>
+            <path class="spark-area" data-f="sparkArea" d=""/>
+            <polyline class="spark-line" data-f="sparkLine" points=""/>
+          </svg>
         </div>
         <div class="pipeline" role="list" aria-label="Ad funnel stages">${buildPipelineMarkup()}</div>
         <div class="section-label">Top surfaces</div>
@@ -445,6 +487,9 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
       badgeCount: byData('badgeCount'),
       panel: byData('panel'),
       headerTotal: byData('headerTotal'),
+      version: byData('version'),
+      sparkLine: root.querySelector('[data-f="sparkLine"]'),
+      sparkArea: root.querySelector('[data-f="sparkArea"]'),
       stageCounts,
       surfaces: byData('surfaces'),
       events: byData('events'),
@@ -469,13 +514,14 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
     return { host, bound };
   }
 
-  function freshState(doc: Document, selectors: string): ShieldState {
+  function freshState(doc: Document, options: ShieldInstallOptions): ShieldState {
     state?.observer?.disconnect();
     const { host, bound } = createHost(doc);
     const nextState: ShieldState = {
       host,
       bound,
-      selectors,
+      selectors: options.hideSelectors,
+      version: options.version ?? '',
       observer: null,
       counted: new WeakSet<Element>(),
       domHidden: 0,
@@ -536,8 +582,39 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
     return changed;
   }
 
+  function renderVersion(s: ShieldState): void {
+    s.bound.version.textContent = s.version ? `v${s.version}` : '';
+  }
+
   function renderDomCount(s: ShieldState): void {
     s.bound.domHidden.textContent = `${String(s.domHidden)} hidden in page`;
+  }
+
+  function renderSpark(s: ShieldState, snapshot: StatsSnapshot): void {
+    const line = s.bound.sparkLine;
+    const area = s.bound.sparkArea;
+    if (!line || !area) return;
+    const buckets = snapshot.perMinute.slice(-30);
+    if (buckets.length === 0) {
+      line.setAttribute('points', '');
+      area.setAttribute('d', '');
+      return;
+    }
+    const width = 72;
+    const height = 30;
+    const pad = 3;
+    const vals = buckets.map((bucket) => bucket.count);
+    const max = Math.max(1, ...vals);
+    const step = buckets.length > 1 ? (width - pad * 2) / (buckets.length - 1) : 0;
+    const pts = vals.map(
+      (v, i) => `${(pad + i * step).toFixed(1)},${(height - pad - (v / max) * (height - pad * 2)).toFixed(1)}`,
+    );
+    line.setAttribute('points', pts.join(' '));
+    const base = height - pad;
+    area.setAttribute(
+      'd',
+      `M${String(pad)},${String(base)} L${pts.join(' L')} L${(width - pad).toFixed(1)},${String(base)} Z`,
+    );
   }
 
   function restartClass(element: Element | null | undefined, className: string): void {
@@ -611,11 +688,15 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
         dot.setAttribute('data-stage', event.stage);
         dot.style.background = stageColor(event.stage);
 
-        const text = doc.createElement('span');
-        text.className = 'event-text';
-        text.textContent = `${event.stage} · ${endpointLabel(event.endpoint)}`;
+        const tag = doc.createElement('span');
+        tag.className = 'event-tag';
+        tag.textContent = `[${event.stage}]`;
 
-        item.append(time, dot, text);
+        const pill = doc.createElement('span');
+        pill.className = 'event-pill';
+        pill.textContent = endpointLabel(event.endpoint);
+
+        item.append(time, dot, tag, pill);
         list.appendChild(item);
       });
       s.lastEventAt = recent[0]?.at ?? s.lastEventAt;
@@ -625,14 +706,16 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
     s.bound.events = list;
   }
 
-  function install(options: { hideSelectors: string }): void {
+  function install(options: ShieldInstallOptions): void {
     const doc = document;
     const existing = doc.getElementById(HOST_ID);
     if (existing?.shadowRoot) {
       const shared = readRegistry(existing);
       if (shared) {
         shared.selectors = options.hideSelectors;
+        shared.version = options.version ?? shared.version;
         state = shared;
+        renderVersion(shared);
         ensureObserver(doc, shared);
         return;
       }
@@ -641,6 +724,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
         host: existing,
         bound,
         selectors: options.hideSelectors,
+        version: options.version ?? '',
         observer: null,
         counted: new WeakSet<Element>(),
         domHidden: 0,
@@ -651,18 +735,20 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
       (existing as HostWithRegistry).__farShield = adopted;
       wireBadge(adopted);
       state = adopted;
+      renderVersion(adopted);
       ensureObserver(doc, adopted);
       return;
     }
-    const next = freshState(doc, options.hideSelectors);
+    const next = freshState(doc, options);
     state = next;
+    renderVersion(next);
     ensureObserver(doc, next);
   }
 
   function update(snapshot: StatsSnapshot): void {
     if (!state) return;
     if (!state.host.isConnected) {
-      install({ hideSelectors: state.selectors });
+      install({ hideSelectors: state.selectors, version: state.version });
     }
     const s = state;
 
@@ -688,6 +774,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 
     renderSurfaces(s, snapshot);
     renderEvents(s, snapshot);
+    renderSpark(s, snapshot);
     renderDomCount(s);
     s.bound.since.textContent = `since ${fmtTime(snapshot.startedAt)}`;
   }

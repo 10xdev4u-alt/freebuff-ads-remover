@@ -9,6 +9,22 @@ import { AD_CSS_SELECTORS } from './types.js';
 export const HIDE_SELECTORS = Object.values(AD_CSS_SELECTORS).flat().join(',');
 
 /**
+ * Extension version for the dashboard header. Reads the repo package.json
+ * (one level above dist/); empty when unreadable so the client hides it.
+ */
+export function loadPackageVersion(): string {
+  try {
+    if (typeof __dirname !== 'string') return '';
+    const candidate = join(__dirname, '..', 'package.json');
+    if (!existsSync(candidate)) return '';
+    const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as { version?: unknown };
+    return typeof pkg.version === 'string' ? pkg.version : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
  * The compiled client lives next to this module in dist/. The typeof guard
  * keeps unit tests (ESM, no __dirname) on a safe empty path instead of
  * throwing.
@@ -98,7 +114,7 @@ export class Dashboard {
     if (this.active || !this.app) return;
     const source = this.clientSource ?? loadClientSource();
     if (source) {
-      const install = JSON.stringify({ hideSelectors: HIDE_SELECTORS });
+      const install = JSON.stringify({ hideSelectors: HIDE_SELECTORS, version: loadPackageVersion() });
       this.target = new WebContentsScriptTarget(this.app, this.getAllWebContents, this.logger);
       this.target.injectScript(
         `${source}\n;globalThis.farBuffShield && globalThis.farBuffShield.install(${install});`,
