@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-11
+
+### Added
+
+- Shield dashboard: a live in-app panel (shadow-DOM badge + expandable
+  card) showing blocks per ad-funnel stage
+  (`Inventory → Bid → Policy → Media → Delivery`, plus `Promo`), top
+  surfaces, latest stops and a DOM-hide counter. Stats are collected in a
+  `StatsStore`, pushed to the page once per second over `executeJavaScript`,
+  and toggled with the `dashboard` config flag.
+- `sponsoredCard` surface: hides in-chat sponsor cards
+  (`a.sponsored-ad.ad-card` and friends) — server-rendered creatives that
+  carry no legacy surface keywords in their markup.
+- Update survival: the launcher now adopts a newer live updater payload
+  (see below) instead of only trusting the AppImage file on disk.
+- `scripts/payload-version.mjs`: prints `<name> <version>` for a payload
+  resources dir (unpacked `app/` or `app.asar`).
+- `scripts/screenshot-dashboard.mjs`: opens the shield panel over CDP and
+  captures a screenshot for visual verification.
+
+### Changed
+
+- Launcher: on start it scans FUSE-mounted payloads behind running
+  Freebuff processes and, when one is newer than the extract, copies it
+  over (`scripts/adopt` flow, stamped `.adopted-version`). An adopted
+  payload is reused while the AppImage on disk is older, so in-app
+  updater restarts (which bypass the launcher and run from a temp
+  download) no longer orphan the extension — the next icon launch
+  self-heals onto the new version, already patched.
+- Dashboard pipeline labels are now compact (`Inv/Bid/Pol/Med/Dlv/Prm`,
+  full names as tooltips) so they fit their stage boxes.
+
 ## [1.1.0] - 2026-10-11
 
 ### Added
