@@ -1,19 +1,22 @@
 import type { InterceptResult, AdSurface, AdPattern } from './types.js';
-import { AD_ENDPOINTS, PLACEMENT_IDS } from './types.js';
+import { AD_ENDPOINTS, PLACEMENT_IDS, stageForEndpoint } from './types.js';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
+import type { StatsStore } from './stats-store.js';
 
 export class AdInterceptor {
   private config: Config;
   private logger: Logger;
   private patterns: AdPattern[];
+  private stats: StatsStore | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore) {
     this.config = config;
     this.logger = logger;
+    this.stats = stats ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -29,6 +32,7 @@ export class AdInterceptor {
         patterns.push({
           pattern: endpoint,
           surface,
+          stage: stageForEndpoint(endpoint),
           priority: this.getPriority(surface),
         });
       }
@@ -58,6 +62,7 @@ export class AdInterceptor {
   private getPriority(surface: AdSurface): number {
     const priorities: Record<AdSurface, number> = {
       sponsorBreak: 100,
+      sponsoredCard: 95,
       billboard: 90,
       intermission: 80,
       spotlight: 70,
@@ -86,15 +91,22 @@ export class AdInterceptor {
     for (const pattern of this.patterns) {
       if (this.matches(url, pattern.pattern)) {
         this.blockCount++;
+        this.stats?.record({
+          stage: pattern.stage,
+          surface: pattern.surface,
+          endpoint: pattern.pattern,
+        });
         this.logger.debug(`Blocked ad request: ${url}`, {
           surface: pattern.surface,
           endpoint: pattern.pattern,
+          stage: pattern.stage,
         });
         return {
           blocked: true,
           reason: `Ad surface: ${pattern.surface}`,
           surface: pattern.surface,
           endpoint: pattern.pattern,
+          stage: pattern.stage,
         };
       }
     }

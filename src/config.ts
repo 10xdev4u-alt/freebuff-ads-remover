@@ -8,6 +8,7 @@ const configSchema = z.object({
   enabled: z.boolean().default(true),
   blockTracking: z.boolean().default(true),
   cssFallback: z.boolean().default(true),
+  dashboard: z.boolean().default(true),
   surfaces: z
     .object({
       sponsorBreak: z.boolean().default(true),
@@ -19,6 +20,7 @@ const configSchema = z.object({
       sponsoredRun: z.boolean().default(true),
       partner: z.boolean().default(true),
       invitation: z.boolean().default(true),
+      sponsoredCard: z.boolean().default(true),
     })
     .default(() => ({ ...DEFAULT_CONFIG.surfaces })),
   logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),

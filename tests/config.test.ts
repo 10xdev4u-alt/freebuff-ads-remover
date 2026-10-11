@@ -41,6 +41,7 @@ describe('loadConfig', () => {
       expect(config.enabled).toBe(true);
       expect(config.blockTracking).toBe(true);
       expect(config.cssFallback).toBe(true);
+      expect(config.dashboard).toBe(true);
       expect(config.logLevel).toBe('info');
     } finally {
       restore();
@@ -77,13 +78,28 @@ describe('loadConfig', () => {
 
   it('merges partial config with defaults', () => {
     const dir = testDirs[0]!;
-    writeConfig(dir, { surfaces: { billboard: false } });
+    writeConfig(dir, { surfaces: { billboard: false }, dashboard: false });
     const restore = useTestHome(dir);
     try {
       const config = loadConfig();
       expect(config.surfaces.billboard).toBe(false);
       expect(config.surfaces.sponsorBreak).toBe(true);
+      expect(config.surfaces.sponsoredCard).toBe(true);
       expect(config.blockTracking).toBe(true);
+      expect(config.dashboard).toBe(false);
+    } finally {
+      restore();
+    }
+  });
+
+  it('defaults dashboard to true for configs saved before it existed', () => {
+    const dir = testDirs[0]!;
+    writeConfig(dir, { enabled: false });
+    const restore = useTestHome(dir);
+    try {
+      const config = loadConfig();
+      expect(config.enabled).toBe(false);
+      expect(config.dashboard).toBe(true);
     } finally {
       restore();
     }

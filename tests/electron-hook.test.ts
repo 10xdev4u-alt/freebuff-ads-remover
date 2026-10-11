@@ -139,4 +139,52 @@ describe('ElectronHook', () => {
     expect(mockApp.removeListener).toHaveBeenCalledWith('web-contents-created', expect.any(Function));
     expect(mockSession.defaultSession.webRequest.onBeforeRequest).toHaveBeenCalledWith(null, null);
   });
+
+  it('activates and deactivates the dashboard with the app API', () => {
+    const mockSession = {
+      defaultSession: {
+        webRequest: {
+          onBeforeRequest: vi.fn(),
+        },
+      },
+    };
+    const mockApp = {
+      whenReady: () => Promise.resolve(),
+      on: vi.fn(),
+      removeListener: vi.fn(),
+    };
+    const dashboard = { activate: vi.fn(), deactivate: vi.fn() };
+    const hooked = new ElectronHook(
+      interceptor,
+      cssInjector,
+      logger,
+      dashboard as unknown as ConstructorParameters<typeof ElectronHook>[3],
+    );
+
+    hooked.activate(mockSession, { app: mockApp, webContents: { getAllWebContents: () => [] } });
+    expect(dashboard.activate).toHaveBeenCalledWith(mockApp, expect.any(Function));
+
+    hooked.deactivate();
+    expect(dashboard.deactivate).toHaveBeenCalled();
+  });
+
+  it('leaves the dashboard untouched without the app API', () => {
+    const dashboard = { activate: vi.fn(), deactivate: vi.fn() };
+    const hooked = new ElectronHook(
+      interceptor,
+      cssInjector,
+      logger,
+      dashboard as unknown as ConstructorParameters<typeof ElectronHook>[3],
+    );
+    const mockSession = {
+      defaultSession: {
+        webRequest: {
+          onBeforeRequest: vi.fn(),
+        },
+      },
+    };
+
+    hooked.activate(mockSession);
+    expect(dashboard.activate).not.toHaveBeenCalled();
+  });
 });

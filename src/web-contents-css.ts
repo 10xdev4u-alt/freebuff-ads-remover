@@ -19,7 +19,7 @@ interface WcState {
 // Only the app's own UI (the locally served orchestrator) — never injected
 // into previewed third-party sites, whose class names could collide with
 // our ad-surface selectors.
-const APP_URL_PATTERN = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?([/?#]|$)/;
+export const APP_URL_PATTERN = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?([/?#]|$)/;
 
 /**
  * CssInjectionTarget backed by webContents.insertCSS — `session` has no

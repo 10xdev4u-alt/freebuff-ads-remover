@@ -108,4 +108,14 @@ describe('AD_CSS_SELECTORS', () => {
       expect(selectors.length).toBeGreaterThan(0);
     }
   });
+
+  it('hides in-chat sponsored cards by their real markup', () => {
+    const selectors = AD_CSS_SELECTORS.sponsoredCard;
+    expect(selectors).toContain('a.sponsored-ad');
+    expect(selectors).toContain('a.ad-card');
+    expect(selectors).toContain('[class*="sponsored-ad"]');
+    for (const selector of selectors) {
+      expect(HIDE_ALL_ADS_CSS).toContain(selector);
+    }
+  });
 });
