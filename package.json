@@ -1,6 +1,6 @@
 {
   "name": "freebuff-ads-remover",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Pluggable extension to remove ads from Freebuff Desktop",
   "type": "module",
   "main": "dist/index.js",
@@ -11,12 +11,13 @@
     "scripts"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/finalize-dist.mjs",
+    "patch-app": "node scripts/patch-freebuff-app.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ tests/",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json",
     "prepare": "husky"
   },
   "keywords": [
@@ -39,6 +40,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@electron/asar": "^4.3.1",
     "zod": "^4.2.1"
   },
   "devDependencies": {
@@ -46,10 +48,10 @@
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/coverage-v8": "^3.0.0",
-    "electron": "^44.7.0",
     "eslint": "^9.0.0",
     "husky": "^9.0.0",
     "typescript": "^5.6.0",
+    "typescript-eslint": "^8.71.1",
     "vitest": "^3.0.0"
   }
 }
