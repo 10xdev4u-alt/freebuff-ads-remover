@@ -6,7 +6,13 @@ Freebuff Ads Remover is a **pluggable Electron extension** that removes all ads 
 
 ## Design Principles
 
-1. **Pluggable** — No app bundle modification. Loaded via `--require` flag.
+1. **Pluggable** — Loaded through a tiny injected loader in the app's main
+   process entry. Electron provides no preload flag for packaged apps
+   (`--require`, `NODE_OPTIONS` and `--app` are all ignored), so the launcher
+   patches `resources/app.asar` into a `resources/app/` directory and prepends
+   an idempotent `require()` block to `electron/main.cjs`. The original
+   archive is kept as `app.asar.orig`, so the install can be restored at any
+   time by moving it back.
 2. **Non-destructive** — App functionality is never affected. Only ad requests are blocked.
 3. **Configurable** — Every ad surface can be toggled individually.
 4. **Safe** — Errors are caught and logged. The app never crashes due to the extension.
@@ -46,13 +52,17 @@ Freebuff Ads Remover is a **pluggable Electron extension** that removes all ads 
 ## Data Flow
 
 ```
-1. Extension loads via --require flag
-2. Extension reads config from ~/.config/freebuff-ads-remover/config.json
-3. Extension hooks into Electron session.webRequest.onBeforeRequest
-4. For each request, extension checks URL against ad patterns
-5. If ad request → cancel request (return empty)
-6. If non-ad request → allow (pass through)
-7. CSS fallback hides any ad containers that render before network block
+1. Launcher extracts the AppImage and patches resources/app.asar:
+   extracts it to resources/app/, prepends the loader to electron/main.cjs,
+   and moves the original archive aside as app.asar.orig
+2. Electron boots resources/app/ and the loader requires the extension
+3. Extension reads config from ~/.config/freebuff-ads-remover/config.json
+4. Extension hooks into Electron session.webRequest.onBeforeRequest
+5. For each request, extension checks URL against ad patterns
+6. If ad request → cancel request (return empty)
+7. If non-ad request → allow (pass through)
+8. CSS fallback (webContents.insertCSS) hides any ad containers
+   that render before the network block
 ```
 
 ## Extension API
