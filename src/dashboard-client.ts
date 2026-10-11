@@ -36,6 +36,12 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
     promo: 'Promo',
   };
 
+  const SHIELD_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">'
+    + '<path d="M12 2.6 19.8 5.5v5.9c0 4.9-3.3 8.2-7.8 9.9-4.5-1.7-7.8-5-7.8-9.9V5.5L12 2.6z"'
+    + ' stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>'
+    + '<path d="M8.9 12.1l2.2 2.2 4-4.4" stroke="currentColor" stroke-width="1.8"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
   const CSS = `
 :host {
   all: initial;
@@ -44,8 +50,9 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   bottom: 18px;
   z-index: 2147483646;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
-.far-root { all: initial; display: block; color: #e7eaf2; }
+.far-root { all: initial; display: block; color: #e8ebf1; }
 
 .badge {
   position: relative;
@@ -55,20 +62,26 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: linear-gradient(150deg, #23262f, #14161c);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(150deg, #262a33 0%, #171a20 70%);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   cursor: pointer;
   padding: 0;
-  transition: transform 0.18s ease, border-color 0.18s ease;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
-.badge:hover { transform: translateY(-1px); border-color: rgba(61, 220, 132, 0.55); }
+.badge:hover {
+  transform: translateY(-1px);
+  border-color: rgba(61, 220, 132, 0.5);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(61, 220, 132, 0.15);
+}
 .badge:focus-visible { outline: 2px solid #3ddc84; outline-offset: 2px; }
-.shield { font-size: 18px; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+.mark { display: inline-flex; width: 22px; height: 22px; color: #c9d1de; }
+.mark svg { width: 100%; height: 100%; display: block; }
+.mark-sm { width: 15px; height: 15px; }
 .badge-count {
   position: absolute;
-  right: -4px;
-  top: -4px;
+  right: -5px;
+  top: -5px;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -80,6 +93,8 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  font-variant-numeric: tabular-nums;
 }
 .badge.pulse { animation: far-pulse 0.55s ease; }
 @keyframes far-pulse {
@@ -95,19 +110,22 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   width: 340px;
   max-height: 72vh;
   overflow: auto;
-  background: linear-gradient(165deg, rgba(24, 26, 33, 0.97), rgba(13, 14, 19, 0.985));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(18px);
-  color: #e7eaf2;
+  background: linear-gradient(180deg, #1b1e25 0%, #14161b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: #e8ebf1;
   padding: 14px 14px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   animation: far-in 0.18s ease;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3f4b transparent;
 }
 .panel[hidden] { display: none; }
+.panel::-webkit-scrollbar { width: 6px; }
+.panel::-webkit-scrollbar-thumb { background: #3a3f4b; border-radius: 3px; }
 @keyframes far-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
@@ -120,9 +138,9 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   font-size: 13px;
   font-weight: 650;
   letter-spacing: 0.01em;
+  color: #e8ebf1;
 }
-.header-title { display: flex; align-items: center; gap: 6px; }
-.shield-sm { font-size: 14px; }
+.header-title { display: flex; align-items: center; gap: 7px; }
 .live {
   display: flex;
   align-items: center;
@@ -143,16 +161,23 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 }
 @keyframes far-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 
-.hero { display: flex; align-items: baseline; gap: 7px; }
+.hero {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
 .header-total {
   font-size: 30px;
+  line-height: 1;
   font-weight: 750;
   color: #3ddc84;
   font-variant-numeric: tabular-nums;
 }
 .hero-label { font-size: 11px; color: #8b93a7; }
 
-.pipeline { display: flex; align-items: stretch; gap: 4px; margin-top: 2px; }
+.pipeline { display: flex; align-items: stretch; gap: 3px; margin-top: 2px; }
 .stage {
   flex: 1;
   min-width: 0;
@@ -160,11 +185,12 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 7px 2px 6px;
+  padding: 7px 1px 6px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid transparent;
+  background: #101318;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
+.stage.lit { border-color: rgba(255, 255, 255, 0.12); background: #141821; }
 .stage-dot {
   width: 8px;
   height: 8px;
@@ -172,10 +198,11 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   background: var(--stage-color, #9aa3b5);
   box-shadow: 0 0 7px var(--stage-color, transparent);
 }
+.stage.lit .stage-dot { box-shadow: 0 0 9px var(--stage-color); }
 .stage-label {
   font-size: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: #8b93a7;
   white-space: nowrap;
   max-width: 100%;
@@ -185,18 +212,18 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 .stage-count {
   font-size: 12px;
   font-weight: 700;
-  color: #e7eaf2;
+  color: #e8ebf1;
   font-variant-numeric: tabular-nums;
 }
-.stage.hit { animation: far-hit 0.7s ease; border-color: var(--stage-color); }
+.stage.hit { animation: far-hit 0.7s ease; }
 @keyframes far-hit {
   0% { box-shadow: 0 0 0 1px var(--stage-color); background: rgba(255, 255, 255, 0.09); }
-  100% { box-shadow: 0 0 0 1px transparent; background: rgba(255, 255, 255, 0.04); }
+  100% { box-shadow: 0 0 0 1px transparent; background: #101318; }
 }
 .arrow {
   align-self: center;
   flex: 0 0 auto;
-  color: #4b5162;
+  color: #434a59;
   font-size: 12px;
 }
 
@@ -204,7 +231,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #6d7488;
+  color: #7d8598;
   font-weight: 650;
   margin-top: 2px;
 }
@@ -218,13 +245,22 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   gap: 5px;
   max-height: 118px;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3f4b transparent;
 }
+.surfaces::-webkit-scrollbar,
+.events::-webkit-scrollbar { width: 6px; }
+.surfaces::-webkit-scrollbar-thumb,
+.events::-webkit-scrollbar-thumb { background: #3a3f4b; border-radius: 3px; }
 .surface-row {
   display: grid;
-  grid-template-columns: 84px 1fr 26px;
+  grid-template-columns: 84px 1fr 28px;
   gap: 7px;
   align-items: center;
   font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.025);
 }
 .surface-name {
   color: #aab1c2;
@@ -235,7 +271,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 .surface-bar {
   height: 6px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.07);
+  background: #22262f;
   overflow: hidden;
 }
 .surface-fill {
@@ -247,7 +283,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
 }
 .surface-count {
   text-align: right;
-  color: #e7eaf2;
+  color: #e8ebf1;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
@@ -258,6 +294,7 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   gap: 7px;
   align-items: center;
   font-size: 11px;
+  padding: 2px 0;
 }
 .event.enter { animation: far-slide 0.3s ease; }
 @keyframes far-slide {
@@ -367,12 +404,12 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
   function buildMarkup(): string {
     return `
       <button class="badge" type="button" data-f="badge" aria-label="Freebuff Shield dashboard">
-        <span class="shield" aria-hidden="true">&#x1F6E1;</span>
+        <span class="mark" aria-hidden="true">${SHIELD_SVG}</span>
         <span class="badge-count" data-f="badgeCount">0</span>
       </button>
       <section class="panel" data-f="panel" hidden aria-label="Ad blocking dashboard">
         <header class="header">
-          <div class="header-title"><span class="shield-sm" aria-hidden="true">&#x1F6E1;</span> Freebuff Shield</div>
+          <div class="header-title"><span class="mark mark-sm" aria-hidden="true">${SHIELD_SVG}</span> Freebuff Shield</div>
           <div class="live"><span class="live-dot"></span> live</div>
         </header>
         <div class="hero">
@@ -640,9 +677,11 @@ import type { AdStage, FarBuffShieldApi, StatsSnapshot } from './types.js';
       const node = s.bound.stageCounts[meta.id];
       if (node) {
         node.textContent = String(count);
+        const stageEl = node.closest('.stage');
         if (count > (s.prevStages[meta.id] ?? 0)) {
-          restartClass(node.closest('.stage'), 'hit');
+          restartClass(stageEl, 'hit');
         }
+        stageEl?.classList.toggle('lit', count > 0);
       }
       s.prevStages[meta.id] = count;
     }

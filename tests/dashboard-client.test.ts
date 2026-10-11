@@ -266,4 +266,28 @@ describe('dashboard client', () => {
     const titles = [...nodes].map((n) => n.getAttribute('title'));
     expect(titles).toEqual(['Inventory', 'Bid', 'Policy', 'Media', 'Delivery', 'Promo']);
   });
+
+  it('renders a vector shield mark and zero emoji glyphs', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS });
+    const host = document.querySelector('#far-shield-host');
+    expect(host?.shadowRoot?.querySelectorAll('.mark svg')).toHaveLength(2);
+    const html = host?.shadowRoot?.innerHTML ?? '';
+    expect(html).not.toMatch(/🛡|&#x1F6E1;/);
+    expect(html).toContain('<svg');
+  });
+
+  it('lights pipeline stages that have stops', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS });
+    const snap = emptySnapshot();
+    snap.total = 2;
+    snap.byStage.delivery = 2;
+    api().update(snap);
+    expect(shadowEl('[data-stage="delivery"]').classList.contains('lit')).toBe(true);
+    expect(shadowEl('[data-stage="bid"]').classList.contains('lit')).toBe(false);
+
+    snap.total = 0;
+    snap.byStage.delivery = 0;
+    api().update(snap);
+    expect(shadowEl('[data-stage="delivery"]').classList.contains('lit')).toBe(false);
+  });
 });
