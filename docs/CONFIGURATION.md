@@ -11,6 +11,7 @@ Location: `~/.config/freebuff-ads-remover/config.json`
   "enabled": true,
   "blockTracking": true,
   "cssFallback": true,
+  "dashboard": true,
   "surfaces": {
     "sponsorBreak": true,
     "billboard": true,
@@ -20,7 +21,8 @@ Location: `~/.config/freebuff-ads-remover/config.json`
     "sponsoredTask": true,
     "sponsoredRun": true,
     "partner": true,
-    "invitation": true
+    "invitation": true,
+    "sponsoredCard": true
   },
   "logLevel": "info",
   "logToFile": true
@@ -41,6 +43,10 @@ When `true`, blocks all tracking endpoints (impression, click, engagement). Set 
 
 When `true`, injects CSS to hide ad containers as a safety net alongside network blocking.
 
+### `dashboard` (default: `true`)
+
+When `true`, mounts the in-app shield dashboard (badge + expandable panel with per-stage stats). Set to `false` to remove it — blocking keeps working.
+
 ### `surfaces`
 
 Toggle individual ad surfaces:
@@ -56,6 +62,7 @@ Toggle individual ad surfaces:
 | `sponsoredRun` | Sponsored run cards | `true` |
 | `partner` | Partner ads | `true` |
 | `invitation` | Ad invitations | `true` |
+| `sponsoredCard` | In-chat sponsored cards (`sponsored-ad` creatives) | `true` |
 
 ### `logLevel` (default: `info`)
 

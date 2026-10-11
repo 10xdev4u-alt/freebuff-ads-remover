@@ -2,6 +2,10 @@
   "name": "freebuff-ads-remover",
   "version": "1.2.0",
   "description": "Pluggable extension to remove ads from Freebuff Desktop",
+  "homepage": "https://10xdev4u-alt.github.io/freebuff-ads-remover/",
+  "bugs": {
+    "url": "https://github.com/10xdev4u-alt/freebuff-ads-remover/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,6 +29,8 @@
     "electron",
     "extension",
     "ad-blocker",
+    "adblock",
+    "privacy",
     "ads"
   ],
   "author": "10xdev4u-alt <10xdev4u@gmail.com>",

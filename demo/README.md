@@ -50,9 +50,13 @@
 - Spotlight format ads
 - Showcase ads
 - Sponsored task/run cards
+- In-chat sponsored cards (`sponsored-ad` creatives)
 - Partner ads
 - Ad invitations
 - All impression/click/engagement tracking
+
+Every stop is counted live in the in-app shield dashboard (per funnel
+stage, top surfaces, latest stops).
 
 ## Network View
 
