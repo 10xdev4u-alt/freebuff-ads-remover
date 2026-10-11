@@ -17,7 +17,7 @@ export { Logger } from './logger.js';
 export { AdInterceptor } from './interceptor.js';
 export { CssInjector } from './css-injector.js';
 export type { CssInjectionTarget } from './css-injector.js';
-export { Dashboard, HIDE_SELECTORS, loadClientSource } from './dashboard.js';
+export { Dashboard, HIDE_SELECTORS, loadClientSource, loadPackageVersion } from './dashboard.js';
 export { StatsStore } from './stats-store.js';
 export { ElectronHook } from './electron-hook.js';
 export type { ElectronApi } from './electron-hook.js';

@@ -126,8 +126,13 @@ export interface StatsSnapshot {
 }
 
 /** API the dashboard client exposes on globalThis inside the app page. */
+export interface ShieldInstallOptions {
+  hideSelectors: string;
+  version?: string;
+}
+
 export interface FarBuffShieldApi {
-  install(options: { hideSelectors: string }): void;
+  install(options: ShieldInstallOptions): void;
   update(snapshot: StatsSnapshot): void;
   unmount(): void;
   isOpen(): boolean;

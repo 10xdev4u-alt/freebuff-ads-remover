@@ -176,10 +176,41 @@ describe('dashboard client', () => {
 
     const items = shadowEl('.events').querySelectorAll('.event');
     expect(items).toHaveLength(2);
-    expect(items[0]?.textContent).toContain('impression');
-    expect(items[1]?.textContent).toContain('policy');
+    expect(items[0]?.querySelector('.event-pill')?.textContent).toBe('impression');
+    expect(items[0]?.querySelector('.event-tag')?.textContent).toBe('[delivery]');
+    expect(items[1]?.querySelector('.event-pill')?.textContent).toBe('policy');
     expect(items[0]?.classList.contains('enter')).toBe(true);
     expect(items[0]?.querySelector('.event-dot')?.getAttribute('data-stage')).toBe('delivery');
+  });
+
+  it('shows the extension version in the header when provided', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS, version: '1.2.0' });
+    expect(shadowEl('.version').textContent).toBe('v1.2.0');
+  });
+
+  it('hides the version slot when none is provided', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS });
+    expect(shadowEl('.version').textContent).toBe('');
+  });
+
+  it('draws a blocks-per-minute sparkline from per-minute buckets', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS });
+    const snap = emptySnapshot();
+    snap.total = 3;
+    snap.perMinute = [
+      { minute: 40, count: 1 },
+      { minute: 41, count: 2 },
+    ];
+    api().update(snap);
+    const points = shadowEl('.spark-line').getAttribute('points') ?? '';
+    expect(points.split(' ')).toHaveLength(2);
+    expect(shadowEl('.spark-area').getAttribute('d')).toContain('L');
+  });
+
+  it('leaves the sparkline empty without buckets', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS });
+    api().update(emptySnapshot());
+    expect(shadowEl('.spark-line').getAttribute('points')).toBe('');
   });
 
   it('ignores updates before install', () => {

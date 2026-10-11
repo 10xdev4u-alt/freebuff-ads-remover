@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Dashboard } from '../src/dashboard.js';
+import { Dashboard, loadPackageVersion } from '../src/dashboard.js';
 import { StatsStore } from '../src/stats-store.js';
 import { Logger } from '../src/logger.js';
 import type { ElectronAppLike } from '../src/electron-bridge.js';
@@ -88,7 +88,12 @@ describe('Dashboard', () => {
     expect(code).toContain(CLIENT_SOURCE);
     expect(code).toContain('farBuffShield.install');
     expect(code).toContain('billboard');
+    expect(code).toContain('version');
     dashboard.deactivate();
+  });
+
+  it('loads the package version as a string', () => {
+    expect(typeof loadPackageVersion()).toBe('string');
   });
 
   it('pushes snapshot updates every second', () => {
