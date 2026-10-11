@@ -51,3 +51,29 @@ See [.github/pull_request_template.md](.github/pull_request_template.md).
 - Small functions (<50 lines)
 - Small files (<800 lines)
 - Self-documenting code (no comments unless necessary)
+
+## Landing Page (`index.html`)
+
+The GitHub Pages site embeds a **snapshot** of the built dashboard
+client (`dist/dashboard-client.js`) between the
+`FAR-CLIENT-START` / `FAR-CLIENT-END` banners for the live on-page
+demo. After any `src/dashboard-client.ts` change, rebuild and
+re-inline it:
+
+```bash
+npm run build
+node -e '
+const {readFileSync, writeFileSync} = require("node:fs");
+const client = readFileSync("dist/dashboard-client.js", "utf8").trim();
+if (/<\/script/i.test(client)) throw new Error("client contains </script>");
+let html = readFileSync("index.html", "utf8");
+const s = html.indexOf("// ===== FAR-CLIENT-START");
+const e = html.indexOf("// ===== FAR-CLIENT-END");
+if (s < 0 || e < 0 || e < s) throw new Error("banners missing");
+const headEnd = html.indexOf("\n", s) + 1;
+html = html.slice(0, headEnd) + client + "\n" + html.slice(e);
+writeFileSync("index.html", html);
+'
+```
+
+(Keep the snapshot in sync — the demo must always run the shipped bundle.)
