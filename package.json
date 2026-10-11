@@ -1,6 +1,6 @@
 {
   "name": "freebuff-ads-remover",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Pluggable extension to remove ads from Freebuff Desktop",
   "type": "module",
   "main": "dist/index.js",
