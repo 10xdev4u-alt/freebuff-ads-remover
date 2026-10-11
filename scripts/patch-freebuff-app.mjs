@@ -55,14 +55,28 @@ async function main() {
     fail(`resources dir not found: ${resourcesDir}`);
   }
 
-  if (existsSync(mainPath) && readFileSync(mainPath, 'utf8').includes(MARKER)) {
-    if (existsSync(asarPath)) {
-      rmSync(backupPath, { force: true });
-      renameSync(asarPath, backupPath);
-      console.log('[patch-freebuff-app] moved aside leftover app.asar (Electron would prefer it)');
+  if (existsSync(mainPath)) {
+    const current = readFileSync(mainPath, 'utf8');
+    if (current.includes(MARKER)) {
+      if (existsSync(asarPath)) {
+        rmSync(backupPath, { force: true });
+        renameSync(asarPath, backupPath);
+        console.log('[patch-freebuff-app] moved aside leftover app.asar (Electron would prefer it)');
+      }
+      const expectedRequire = `require(${JSON.stringify(entry)});`;
+      if (current.includes(expectedRequire)) {
+        console.log('[patch-freebuff-app] already patched');
+        return;
+      }
+      // Extension moved (e.g. /tmp wiped, repo relocated): re-bake the entry.
+      const stripped = current.replace(
+        /\/\/ freebuff-ads-remover:begin[\s\S]*?\/\/ freebuff-ads-remover:end\n/,
+        '',
+      );
+      writeFileSync(mainPath, loaderBlock() + stripped, 'utf8');
+      console.log(`[patch-freebuff-app] updated loader entry to ${entry}`);
+      return;
     }
-    console.log('[patch-freebuff-app] already patched');
-    return;
   }
 
   if (!existsSync(asarPath) && existsSync(stagedMainPath)) {
