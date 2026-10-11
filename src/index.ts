@@ -79,7 +79,10 @@ export function isElectronAvailable(): boolean {
 }
 
 if (isElectronAvailable()) {
-  import('electron').then(({ session }: { session: unknown }) => {
-    activate(session);
-  });
+  try {
+    const electron = require('electron') as { session: unknown };
+    activate(electron.session);
+  } catch (err) {
+    console.error('[freebuff-ads-remover] Failed to load electron:', err);
+  }
 }
