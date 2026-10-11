@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AdInterceptor } from '../src/interceptor.js';
+import { StatsStore } from '../src/stats-store.js';
 import { Logger } from '../src/logger.js';
 import { DEFAULT_CONFIG } from '../src/types.js';
 
@@ -138,5 +139,61 @@ describe('AdInterceptor', () => {
   it('blocks policy endpoint', () => {
     const result = interceptor.intercept('http://127.0.0.1:5174/api/ad/policy', 'POST');
     expect(result.blocked).toBe(true);
+  });
+
+  it('reports the stage a blocked request died at', () => {
+    expect(
+      interceptor.intercept('http://127.0.0.1:5174/api/ad/policy', 'POST').stage,
+    ).toBe('policy');
+    expect(
+      interceptor.intercept('http://127.0.0.1:5174/api/ad/impression', 'POST').stage,
+    ).toBe('delivery');
+    expect(
+      interceptor.intercept('http://127.0.0.1:5174/api/ad/slot', 'POST').stage,
+    ).toBe('inventory');
+    expect(
+      interceptor.intercept('http://127.0.0.1:5174/api/unknown', 'GET').blocked,
+    ).toBe(false);
+  });
+
+  it('records blocked requests into the stats store', () => {
+    const store = new StatsStore(() => 1_000);
+    const withStats = new AdInterceptor(DEFAULT_CONFIG, logger, store);
+    withStats.intercept('http://127.0.0.1:5174/api/ad/impression', 'POST');
+    withStats.intercept('http://127.0.0.1:5174/api/ad/impression', 'POST');
+    withStats.intercept('http://127.0.0.1:5174/api/chat', 'POST');
+
+    const snap = store.snapshot();
+    expect(snap.total).toBe(2);
+    expect(snap.byStage.delivery).toBe(2);
+    expect(snap.bySurface.sponsorBreak).toBe(2);
+    expect(snap.byEndpoint['/api/ad/impression']).toBe(2);
+    expect(snap.recent[0]).toEqual({
+      stage: 'delivery',
+      surface: 'sponsorBreak',
+      endpoint: '/api/ad/impression',
+      at: 1_000,
+    });
+  });
+
+  it('does not record when blocking is disabled', () => {
+    const store = new StatsStore(() => 1_000);
+    const disabled = new AdInterceptor({ ...DEFAULT_CONFIG, enabled: false }, logger, store);
+    disabled.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
+    expect(store.snapshot().total).toBe(0);
+  });
+
+  it('works without a stats store', () => {
+    const result = interceptor.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
+    expect(result.blocked).toBe(true);
+  });
+
+  it('precomputes stage on each active pattern', () => {
+    const patterns = interceptor
+      .getStats()
+      .patterns;
+    expect(patterns).toBeGreaterThan(0);
+    const anyResult = interceptor.intercept('http://127.0.0.1:5174/api/ad/proposal', 'POST');
+    expect(anyResult.stage).toBe('bid');
   });
 });

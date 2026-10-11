@@ -45,8 +45,27 @@ Freebuff Ads Remover is a **pluggable Electron extension** that removes all ads 
 │  │  │  CSS Injector (fallback)            │    │   │
 │  │  │  Hides: all ad containers           │    │   │
 │  │  └─────────────────────────────────────┘    │   │
+│  │  ┌─────────────────────────────────────┐    │   │
+│  │  │  Shield Dashboard (page script)     │    │   │
+│  │  │  StatsStore → 1s push → badge/panel │    │   │
+│  │  └─────────────────────────────────────┘    │   │
 │  └─────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────┘
+```
+
+### Updater survival
+
+Freebuff's in-app updater restarts the app from a temp download, bypassing
+the launcher (and the patch). The launcher self-heals on the next start:
+
+```
+1. Scan /tmp/.mount_* FUSE payloads behind running processes
+2. Read each payload's name+version (scripts/payload-version.mjs)
+3. If a Freebuff payload is newer than the extract → copy it over,
+   stamp .adopted-version, drop .appimage-sha
+4. While the AppImage on disk is older than the adopted stamp, launch
+   from the adopted payload (re-patched); a newer AppImage file
+   re-arms the normal extract flow
 ```
 
 ## Data Flow

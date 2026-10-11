@@ -1,5 +1,6 @@
 import type { AdInterceptor } from './interceptor.js';
 import type { CssInjector } from './css-injector.js';
+import type { Dashboard } from './dashboard.js';
 import type { Logger } from './logger.js';
 import type {
   ElectronAppLike,
@@ -17,6 +18,7 @@ export interface ElectronApi {
 export class ElectronHook {
   private interceptor: AdInterceptor;
   private cssInjector: CssInjector;
+  private dashboard: Dashboard | null;
   private logger: Logger;
   private webRequest: ElectronWebRequestLike | null;
   private cssTarget: WebContentsCssTarget | null;
@@ -26,10 +28,12 @@ export class ElectronHook {
     interceptor: AdInterceptor,
     cssInjector: CssInjector,
     logger: Logger,
+    dashboard?: Dashboard,
   ) {
     this.interceptor = interceptor;
     this.cssInjector = cssInjector;
     this.logger = logger;
+    this.dashboard = dashboard ?? null;
     this.webRequest = null;
     this.cssTarget = null;
     this.hookActive = false;
@@ -65,6 +69,7 @@ export class ElectronHook {
         this.logger,
       );
       void this.cssInjector.activate(this.cssTarget);
+      this.dashboard?.activate(electronApi.app, getAllWebContents);
     } else {
       this.logger.info('CSS fallback skipped: Electron app API not available');
     }
@@ -83,6 +88,7 @@ export class ElectronHook {
       void this.cssInjector.deactivate(this.cssTarget);
       this.cssTarget.dispose();
     }
+    this.dashboard?.deactivate();
     this.interceptor.deactivate();
     this.hookActive = false;
     this.webRequest = null;

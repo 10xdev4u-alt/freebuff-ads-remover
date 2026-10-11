@@ -23,6 +23,13 @@ packaged apps), and starts the app with the extension loaded.
 Re-running the launcher is safe: the patch is idempotent, and the AppImage is
 re-extracted automatically when Freebuff updates.
 
+Surviving auto-updates: Freebuff's in-app updater restarts the app straight
+from its temp download, bypassing the launcher (no patch, no dashboard).
+On the next launcher start it detects the newer live payload behind the
+running processes, adopts it into the extract dir (stamped
+`.adopted-version`), patches it, and launches it — just restart the app
+from your icon after an update and the shield comes back by itself.
+
 ### Extra flags
 
 Everything after the script name is passed to Freebuff, e.g. the runtime

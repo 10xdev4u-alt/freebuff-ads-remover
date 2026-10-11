@@ -56,6 +56,7 @@ describe('E2E: Full Ad Removal Flow', () => {
       sponsoredRun: '[class*="sponsoredRun"]',
       partner: '[class*="partnerAd"]',
       invitation: '[class*="invitation"]',
+      sponsoredCard: 'a.sponsored-ad',
     };
     for (const surface of AD_SURFACES) {
       expect(css).toContain(surfaceClassPatterns[surface]);

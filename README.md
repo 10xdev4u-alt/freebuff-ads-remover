@@ -14,9 +14,12 @@ Freebuff Desktop shows text ads to support free access to AI models. This extens
 - Spotlight ads
 - Showcase ads
 - Sponsored task/run cards
+- In-chat sponsored cards (`sponsored-ad` creatives)
 - Partner ads
 - Ad invitations
 - All ad tracking/impression/click endpoints
+- Plus a live **shield dashboard** in the app: blocks per funnel stage,
+  top surfaces and latest stops (toggle with `"dashboard": false`)
 
 ## How It Works
 
@@ -43,6 +46,11 @@ npm run build
 The launcher patches Freebuff's app payload (Electron ignores `--require` for
 packaged apps), starts it with the extension loaded, and is safe to re-run.
 
+It also survives Freebuff's in-app auto-updates: the updater restarts the
+app from a temp download, bypassing the launcher — on the next start the
+launcher adopts the newer live payload and re-patches it automatically, so
+point your desktop icon at the launcher and forget about it.
+
 ### Verify it works
 
 ```bash
@@ -59,6 +67,7 @@ Config file: `~/.config/freebuff-ads-remover/config.json`
   "enabled": true,
   "blockTracking": true,
   "cssFallback": true,
+  "dashboard": true,
   "surfaces": {
     "sponsorBreak": true,
     "billboard": true,
@@ -68,7 +77,8 @@ Config file: `~/.config/freebuff-ads-remover/config.json`
     "sponsoredTask": true,
     "sponsoredRun": true,
     "partner": true,
-    "invitation": true
+    "invitation": true,
+    "sponsoredCard": true
   },
   "logLevel": "info",
   "logToFile": true
