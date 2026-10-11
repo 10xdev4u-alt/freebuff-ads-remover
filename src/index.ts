@@ -80,8 +80,15 @@ export function isElectronAvailable(): boolean {
 
 if (isElectronAvailable()) {
   try {
-    const electron = require('electron') as { session: unknown };
-    activate(electron.session);
+    const electron = require('electron') as {
+      app: { whenReady: () => Promise<void>; on: (event: string, cb: () => void) => void };
+      session: unknown;
+    };
+    electron.app.whenReady().then(() => {
+      activate(electron.session);
+    }).catch((err: unknown) => {
+      console.error('[freebuff-ads-remover] App ready failed:', err);
+    });
   } catch (err) {
     console.error('[freebuff-ads-remover] Failed to load electron:', err);
   }
