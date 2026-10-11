@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AdInterceptor } from '../src/interceptor.js';
-import { loadConfig } from '../src/config.js';
 import { Logger } from '../src/logger.js';
 import { DEFAULT_CONFIG } from '../src/types.js';
 

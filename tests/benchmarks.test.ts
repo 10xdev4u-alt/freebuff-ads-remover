@@ -44,11 +44,6 @@ describe('Performance Benchmarks', () => {
     const { CssInjector } = await import('../src/css-injector.js');
     const injector = new CssInjector(DEFAULT_CONFIG, logger);
 
-    const mockTarget = {
-      insertCSS: async () => 'key',
-      removeCSS: async () => undefined,
-    };
-
     const start = performance.now();
     for (let i = 0; i < 100; i++) {
       injector.updateConfig(DEFAULT_CONFIG);

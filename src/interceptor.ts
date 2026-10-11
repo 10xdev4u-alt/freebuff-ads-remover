@@ -67,7 +67,7 @@ export class AdInterceptor {
       partner: 30,
       invitation: 20,
     };
-    return priorities[surface] ?? 0;
+    return priorities[surface];
   }
 
   updateConfig(config: Config): void {

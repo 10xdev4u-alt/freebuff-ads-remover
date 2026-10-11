@@ -94,7 +94,7 @@ export class CssInjector {
 
   private buildSurfaceCss(surface: AdSurface): string {
     const selectors = AD_CSS_SELECTORS[surface];
-    if (!selectors || selectors.length === 0) return '';
+    if (selectors.length === 0) return '';
 
     return `${selectors.join(',\n')} {\n  display: none !important;\n  visibility: hidden !important;\n  opacity: 0 !important;\n  pointer-events: none !important;\n  position: absolute !important;\n  z-index: -9999 !important;\n}\n`;
   }
