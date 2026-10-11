@@ -3,18 +3,23 @@
 
   # Freebuff Ads Remover
 
-  **Pluggable extension to remove all ads from Freebuff Desktop — with a live shield dashboard.**
+  **Every ad in Freebuff Desktop — gone. Network kills, CSS burial, and a live shield dashboard counting every stop.**
 
   [![CI](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions/workflows/ci.yml/badge.svg)](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions)
   [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
   [![Platform: Linux](https://img.shields.io/badge/platform-linux-lightgrey)](docs/INSTALLATION.md)
+  [![Version: 1.2.0](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
 </div>
 
-![Freebuff Shield dashboard](assets/shield-panel.png)
+---
 
-## What It Does
+![Freebuff Shield dashboard — funnel stages, top surfaces, latest stops](assets/shield-panel.png)
 
-Freebuff Desktop shows ads to support free access to AI models. This extension removes them — network requests die at the Electron session layer, leftovers are hidden by CSS, and a **shield dashboard** in the app shows every stop per funnel stage:
+Freebuff Desktop shows ads to fund free access to AI models. This extension sits between the app and its ad server: requests die at the Electron session layer, anything server-rendered gets hidden by CSS, and the shield badge counts it all live.
+
+- [Quickstart](#quickstart) · [How it works](#how-it-works) · [Configuration](#configuration) · [FAQ](#faq) · [Docs](#docs)
+
+## What gets removed
 
 | Surface | What disappears |
 |---|---|
@@ -27,25 +32,11 @@ Freebuff Desktop shows ads to support free access to AI models. This extension r
 | Partner / Invitations | Partner ads, ad invites |
 | Tracking | All impression / click / engagement endpoints |
 
-## How It Works
-
-```
-Your App → Extension intercepts → Ad requests blocked → Clean UI
-                    ↓
-              Non-ad requests pass through normally
-```
-
-The extension hooks `session.webRequest.onBeforeRequest`, matches URLs against ad patterns, and cancels hits. A CSS fallback hides ad containers that render anyway. Block counts stream into the in-app dashboard once per second.
-
-It also **survives Freebuff's in-app auto-updates**: the updater restarts the app from a temp download, bypassing the launcher — on the next start the launcher adopts the newer live payload and re-patches it automatically. Point your desktop icon at the launcher and forget about it.
-
-## Requirements
-
-- Linux with a Freebuff Desktop **AppImage** install
-- Node.js ≥ 20 (only needed to run the patch step)
-- 80%+ test coverage enforced in CI — see [Contributing](CONTRIBUTING.md)
+Plus the **shield dashboard** in the app: blocks per funnel stage (`Inventory → Bid → Policy → Media → Delivery`, plus `Promo`), top surfaces, latest stops with timestamps, blocks-per-minute sparkline, and a DOM-hide counter.
 
 ## Quickstart
+
+Requirements: Linux, a Freebuff Desktop **AppImage** install, Node.js ≥ 20 (patch step only).
 
 ```bash
 git clone https://github.com/10xdev4u-alt/freebuff-ads-remover.git
@@ -54,6 +45,8 @@ npm install
 npm run build
 ./scripts/launch-freebuff.sh
 ```
+
+Point your desktop icon at `scripts/launch-freebuff.sh` and forget about it — the launcher adopts newer updater payloads and re-patches automatically.
 
 ### Verify it works
 
@@ -64,9 +57,22 @@ node scripts/verify-remover.mjs   # -> PASS — ad requests are blocked
 
 Then click the shield badge (bottom-right of the app) to open the dashboard.
 
+## How it works
+
+```
+Your App → Extension intercepts → Ad requests blocked → Clean UI
+                    ↓
+              Non-ad requests pass through normally
+```
+
+Electron ignores `--require`, `NODE_OPTIONS` and `--app` for packaged apps, so the launcher extracts the AppImage, unpacks `app.asar` to `app/`, and prepends a loader to `electron/main.cjs` — the original archive is preserved as `app.asar.orig`. The extension then hooks `session.webRequest.onBeforeRequest` before the app boots. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Configuration
 
-Config file: `~/.config/freebuff-ads-remover/config.json` (hot-reloads)
+File: `~/.config/freebuff-ads-remover/config.json` — hot-reloads, every key optional.
+
+<details>
+<summary>Full reference (click to expand)</summary>
 
 ```jsonc
 {
@@ -91,30 +97,60 @@ Config file: `~/.config/freebuff-ads-remover/config.json` (hot-reloads)
 }
 ```
 
-Full option reference: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+</details>
+
+Every key: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
 ## FAQ
 
-**Do I need to do anything when Freebuff updates?**
-No. Restart the app from your icon — the launcher adopts the new payload and re-patches it by itself.
+<details>
+<summary>Do I need to do anything when Freebuff updates?</summary>
 
-**The dashboard disappeared after an update — is it broken?**
+No. Restart the app from your icon — the launcher adopts the newer payload and re-patches it by itself.
+
+</details>
+
+<details>
+<summary>The dashboard disappeared after an update — is it broken?</summary>
+
 Same cause, same fix: the updater relaunched Freebuff without the patch. One icon restart brings the shield back.
 
-**How do I prove blocking is active?**
+</details>
+
+<details>
+<summary>How do I prove blocking is active?</summary>
+
 Run the verifier above (expects `PASS`), or set `"logLevel": "debug"` and watch `Blocked ad request:` lines in `~/.config/freebuff-ads-remover/extension.log`.
 
-**How do I turn off just the dashboard?**
+</details>
+
+<details>
+<summary>How do I turn off just the dashboard?</summary>
+
 Set `"dashboard": false`. Blocking keeps working; the badge unmounts.
 
-**Does it modify my Freebuff install?**
+</details>
+
+<details>
+<summary>Does it modify my Freebuff install?</summary>
+
 No. The AppImage file is never touched — the patch applies to an extracted copy under `/tmp`, with the original archive preserved as `app.asar.orig`. See [Uninstall](docs/INSTALLATION.md#uninstall).
 
-**Does the extension phone home?**
-No. It makes zero network calls of its own — local filtering, CSS hiding, file logging. See [SECURITY.md](SECURITY.md).
+</details>
 
-**Which Freebuff versions work?**
+<details>
+<summary>Does the extension phone home?</summary>
+
+No. Zero network calls of its own — local filtering, CSS hiding, file logging. See [SECURITY.md](SECURITY.md).
+
+</details>
+
+<details>
+<summary>Which Freebuff versions work?</summary>
+
 AppImage builds. Verified live on `0.0.169` and `0.0.170`; the launcher re-patches each new payload automatically.
+
+</details>
 
 ## Docs
 
@@ -126,6 +162,7 @@ AppImage builds. Verified live on `0.0.169` and `0.0.170`; the launcher re-patch
 | [Research](docs/RESEARCH.md) | Reverse-engineering notes |
 | [Changelog](CHANGELOG.md) | Release history (current: `1.2.0`) |
 | [Security](SECURITY.md) | Supported versions, private reporting |
+| [Live site](https://10xdev4u-alt.github.io/freebuff-ads-remover/) | Landing page with interactive shield demo |
 
 ## Development
 
@@ -138,7 +175,7 @@ npm run typecheck
 npm run test:coverage  # 80% threshold enforced
 ```
 
-Work follows the agentic loop in [CONTRIBUTING.md](CONTRIBUTING.md): research → issues → validate → implement → test → commit → PR → review → merge → cleanup.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, and the [landing page](index.html) regen notes after dashboard changes.
 
 ## License
 
@@ -146,6 +183,8 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-**Team:** 10xdev4u-alt (owner) + the-ai-developer (co-author/reviewer)
+<div align="center">
 
-**Repo:** https://github.com/10xdev4u-alt/freebuff-ads-remover &nbsp;·&nbsp; **Site:** https://10xdev4u-alt.github.io/freebuff-ads-remover/
+**[Repo](https://github.com/10xdev4u-alt/freebuff-ads-remover)** &nbsp;·&nbsp; **[Site](https://10xdev4u-alt.github.io/freebuff-ads-remover/)** &nbsp;·&nbsp; **[Issues](https://github.com/10xdev4u-alt/freebuff-ads-remover/issues)**
+
+</div>
