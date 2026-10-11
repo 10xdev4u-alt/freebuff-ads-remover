@@ -2,6 +2,7 @@
   "enabled": true,
   "blockTracking": true,
   "cssFallback": true,
+  "dashboard": true,
   "surfaces": {
     "sponsorBreak": true,
     "billboard": true,
@@ -11,7 +12,8 @@
     "sponsoredTask": true,
     "sponsoredRun": true,
     "partner": true,
-    "invitation": true
+    "invitation": true,
+    "sponsoredCard": true
   },
   "logLevel": "info",
   "logToFile": true
