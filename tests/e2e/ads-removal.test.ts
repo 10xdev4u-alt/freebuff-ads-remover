@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { AdInterceptor } from '../../src/interceptor.js';
 import { CssInjector } from '../../src/css-injector.js';
 import { DEFAULT_CONFIG, HIDE_ALL_ADS_CSS, AD_ENDPOINTS, AD_SURFACES } from '../../src/types.js';

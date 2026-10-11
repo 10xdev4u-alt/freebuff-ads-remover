@@ -3,6 +3,7 @@ set -euo pipefail
 
 EXTENSION_DIR="${FREEBUFF_ADS_REMOVER_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 FREEBUFF_CMD="${FREEBUFF_CMD:-freebuff}"
+EXTRACT_ROOT="${FREEBUFF_EXTRACT_DIR:-/tmp/freebuff-ads-remover-extract}"
 
 is_appimage() {
   local file="$1"
@@ -27,9 +28,9 @@ find_appimage() {
     fi
   done
 
-  if command -v freebuff &>/dev/null; then
+  if command -v "$FREEBUFF_CMD" &>/dev/null; then
     local resolved
-    resolved=$(readlink -f "$(command -v freebuff)" 2>/dev/null || command -v freebuff)
+    resolved=$(readlink -f "$(command -v "$FREEBUFF_CMD")" 2>/dev/null || command -v "$FREEBUFF_CMD")
     if is_appimage "$resolved"; then
       echo "$resolved"
       return 0
@@ -41,12 +42,19 @@ find_appimage() {
   return 1
 }
 
+# Extracts the AppImage (re-extracting when it changed, so app updates get a
+# fresh app.asar for the patch step to inject into).
 extract_appimage() {
   local appimage="$1"
   local extract_dir="$2"
+  local squashfs_root="$extract_dir/squashfs-root"
+  local stamp="$extract_dir/.appimage-sha"
 
-  if [[ -f "$extract_dir/AppRun" ]]; then
-    echo "$extract_dir"
+  local sum
+  sum=$(sha256sum "$appimage" | awk '{print $1}')
+
+  if [[ -f "$squashfs_root/AppRun" && -f "$stamp" && "$(cat "$stamp")" == "$sum" ]]; then
+    echo "$squashfs_root"
     return 0
   fi
 
@@ -59,13 +67,12 @@ extract_appimage() {
   "$appimage" --appimage-extract >/dev/null 2>&1 || true
   cd "$prev_dir"
 
-  local squashfs_root="$extract_dir/squashfs-root"
-  if [[ -f "$squashfs_root/AppRun" ]]; then
-    echo "$squashfs_root"
-    return 0
+  if [[ ! -f "$squashfs_root/AppRun" ]]; then
+    return 1
   fi
 
-  return 1
+  echo "$sum" >"$stamp"
+  echo "$squashfs_root"
 }
 
 find_electron_binary() {
@@ -82,6 +89,22 @@ find_electron_binary() {
   return 1
 }
 
+patch_resources() {
+  local resources_dir="$1"
+
+  if [[ ! -f "$resources_dir/app.asar" && ! -f "$resources_dir/app/electron/main.cjs" ]]; then
+    echo "No app.asar found in $resources_dir — cannot install the ads remover into this build." >&2
+    exit 1
+  fi
+
+  echo "Patching:  $resources_dir"
+  if ! FREEBUFF_ADS_REMOVER_ENTRY="$EXTENSION_ENTRY" \
+    node "$EXTENSION_DIR/scripts/patch-freebuff-app.mjs" "$resources_dir"; then
+    echo "Patching failed. If the install directory is not writable, install the AppImage build instead." >&2
+    exit 1
+  fi
+}
+
 main() {
   local app_path
   if ! app_path=$(find_appimage); then
@@ -89,21 +112,31 @@ main() {
     exit 1
   fi
 
-  local extension_entry="$EXTENSION_DIR/dist/index.js"
-  if [[ ! -f "$extension_entry" ]]; then
+  EXTENSION_ENTRY="$EXTENSION_DIR/dist/index.js"
+  if [[ ! -f "$EXTENSION_ENTRY" ]]; then
     echo "Extension not built. Run: npm install && npm run build" >&2
     exit 1
   fi
 
+  if ! command -v node &>/dev/null; then
+    echo "node is required to patch the app. Install Node.js >= 20 first." >&2
+    exit 1
+  fi
+
   echo "Freebuff Ads Remover"
-  echo "Extension: $extension_entry"
+  echo "Extension: $EXTENSION_ENTRY"
   echo "Freebuff:  $app_path"
   echo ""
 
+  # Electron ignores --require / NODE_OPTIONS for packaged apps; the extension
+  # is loaded by patching the app payload (see scripts/patch-freebuff-app.mjs).
+  # ELECTRON_RUN_AS_NODE would turn the app into a plain Node process — drop it.
+  unset ELECTRON_RUN_AS_NODE || true
+  export FREEBUFF_ADS_REMOVER_ENTRY="$EXTENSION_ENTRY"
+
   if is_appimage "$app_path"; then
-    local extract_dir="/tmp/freebuff-ads-remover-extract"
     local squashfs_root
-    if ! squashfs_root=$(extract_appimage "$app_path" "$extract_dir"); then
+    if ! squashfs_root=$(extract_appimage "$app_path" "$EXTRACT_ROOT"); then
       echo "Failed to extract AppImage" >&2
       exit 1
     fi
@@ -114,18 +147,37 @@ main() {
       exit 1
     fi
 
+    patch_resources "$squashfs_root/resources"
+
     echo "Electron:  $electron_bin"
     echo ""
 
-    exec "$electron_bin" \
-      --require "$extension_entry" \
-      --no-sandbox \
-      "$@"
-  else
-    exec "$FREEBUFF_CMD" \
-      --require "$extension_entry" \
-      "$@"
+    exec "$electron_bin" --no-sandbox "$@"
   fi
+
+  # Non-AppImage install: look for the app payload next to the binary.
+  local resolved
+  resolved=$(readlink -f "$(command -v "$FREEBUFF_CMD")" 2>/dev/null || command -v "$FREEBUFF_CMD")
+  local resources_dir
+  for candidate in \
+    "$(dirname "$resolved")/resources" \
+    "$(dirname "$resolved")/../resources" \
+    "$(dirname "$resolved")/../lib/freebuff/resources" \
+    "$(dirname "$resolved")/../lib/freebuff-desktop/resources"; do
+    if [[ -f "$candidate/app.asar" || -f "$candidate/app/electron/main.cjs" ]]; then
+      resources_dir="$candidate"
+      break
+    fi
+  done
+
+  if [[ -z "${resources_dir:-}" ]]; then
+    echo "Could not locate Freebuff's app.asar next to $resolved." >&2
+    echo "Ads removal needs the AppImage build, or an install where the app payload is writable." >&2
+    exit 1
+  fi
+
+  patch_resources "$resources_dir"
+  exec "$FREEBUFF_CMD" "$@"
 }
 
 main "$@"

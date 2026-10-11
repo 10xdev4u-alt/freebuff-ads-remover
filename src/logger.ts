@@ -11,6 +11,25 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
   error: 3,
 };
 
+function formatArg(arg: unknown): string {
+  if (typeof arg === 'string') return arg;
+  if (typeof arg === 'number' || typeof arg === 'boolean' || typeof arg === 'bigint') {
+    return arg.toString();
+  }
+  if (typeof arg === 'undefined') return 'undefined';
+  if (typeof arg === 'symbol') return arg.description ?? '[symbol]';
+  if (typeof arg === 'function') return arg.name ? `[function ${arg.name}]` : '[function]';
+  if (arg instanceof Error) return arg.stack ?? arg.message;
+  if (typeof arg === 'object' && arg !== null) {
+    try {
+      return JSON.stringify(arg);
+    } catch {
+      return '[unserializable]';
+    }
+  }
+  return '[unknown]';
+}
+
 export class Logger {
   private level: LogLevel;
   private logToFile: boolean;
@@ -51,7 +70,7 @@ export class Logger {
 
     const timestamp = new Date().toISOString();
     const formatted = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-    const parts = args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a)));
+    const parts = args.map(formatArg);
     const line = parts.length > 0 ? `${formatted} ${parts.join(' ')}` : formatted;
 
     if (level === 'error') {

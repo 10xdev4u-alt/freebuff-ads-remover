@@ -5,6 +5,8 @@ import { CssInjector } from '../src/css-injector.js';
 import { DEFAULT_CONFIG } from '../src/types.js';
 import { Logger } from '../src/logger.js';
 
+const flushAsync = (): Promise<void> => new Promise((resolve) => { setTimeout(resolve, 0); });
+
 describe('ElectronHook', () => {
   let hook: ElectronHook;
   let interceptor: AdInterceptor;
@@ -27,7 +29,7 @@ describe('ElectronHook', () => {
       },
     };
 
-    hook.activate(mockSession as never);
+    hook.activate(mockSession);
     expect(hook.isActive()).toBe(true);
     expect(mockSession.defaultSession.webRequest.onBeforeRequest).toHaveBeenCalled();
   });
@@ -41,7 +43,7 @@ describe('ElectronHook', () => {
       },
     };
 
-    hook.activate(mockSession as never);
+    hook.activate(mockSession);
     hook.deactivate();
     expect(hook.isActive()).toBe(false);
   });
@@ -55,8 +57,8 @@ describe('ElectronHook', () => {
       },
     };
 
-    hook.activate(mockSession as never);
-    hook.activate(mockSession as never);
+    hook.activate(mockSession);
+    hook.activate(mockSession);
     expect(mockSession.defaultSession.webRequest.onBeforeRequest).toHaveBeenCalledTimes(1);
   });
 
@@ -70,7 +72,71 @@ describe('ElectronHook', () => {
       },
     };
 
-    hook.activate(mockSession as never);
+    hook.activate(mockSession);
     expect(onBeforeRequestMock).toHaveBeenCalled();
+  });
+
+  it('enables the CSS fallback when the Electron app API is available', async () => {
+    const mockSession = {
+      defaultSession: {
+        webRequest: {
+          onBeforeRequest: vi.fn(),
+        },
+      },
+    };
+    const mockApp = {
+      whenReady: () => Promise.resolve(),
+      on: vi.fn(),
+      removeListener: vi.fn(),
+    };
+
+    hook.activate(mockSession, { app: mockApp, webContents: { getAllWebContents: () => [] } });
+    await flushAsync();
+    expect(hook.isActive()).toBe(true);
+    expect(cssInjector.getInjectedSurfaces()).toContain('all');
+    expect(mockApp.on).toHaveBeenCalledWith('web-contents-created', expect.any(Function));
+  });
+
+  it('skips the CSS fallback without the Electron app API', () => {
+    const mockSession = {
+      defaultSession: {
+        webRequest: {
+          onBeforeRequest: vi.fn(),
+        },
+      },
+    };
+
+    hook.activate(mockSession);
+    expect(hook.isActive()).toBe(true);
+    expect(cssInjector.getInjectedSurfaces()).toHaveLength(0);
+  });
+
+  it('refuses to activate against a session without webRequest', () => {
+    hook.activate({ defaultSession: {} });
+    expect(hook.isActive()).toBe(false);
+
+    hook.activate(undefined);
+    expect(hook.isActive()).toBe(false);
+  });
+
+  it('cleans up the CSS fallback on deactivate', () => {
+    const mockSession = {
+      defaultSession: {
+        webRequest: {
+          onBeforeRequest: vi.fn(),
+        },
+      },
+    };
+    const mockApp = {
+      whenReady: () => Promise.resolve(),
+      on: vi.fn(),
+      removeListener: vi.fn(),
+    };
+
+    hook.activate(mockSession, { app: mockApp });
+    hook.deactivate();
+    expect(hook.isActive()).toBe(false);
+    expect(mockApp.removeListener).toHaveBeenCalledWith('web-contents-created', expect.any(Function));
+    expect(mockSession.defaultSession.webRequest.onBeforeRequest).toHaveBeenCalledWith(null, null);
   });
 });

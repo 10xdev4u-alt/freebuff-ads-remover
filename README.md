@@ -33,16 +33,21 @@ Your App → Extension intercepts → Ad requests blocked → Clean UI
 ### One-command launcher (recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/10xdev4u-alt/freebuff-ads-remover/main/scripts/launch-freebuff.sh -o launch-freebuff.sh
-chmod +x launch-freebuff.sh
-./launch-freebuff.sh
+git clone https://github.com/10xdev4u-alt/freebuff-ads-remover.git
+cd freebuff-ads-remover
+npm install
+npm run build
+./scripts/launch-freebuff.sh
 ```
 
-### Manual
+The launcher patches Freebuff's app payload (Electron ignores `--require` for
+packaged apps), starts it with the extension loaded, and is safe to re-run.
+
+### Verify it works
 
 ```bash
-# From this repo's root
-freebuff --require ./dist/index.js
+./scripts/launch-freebuff.sh --remote-debugging-port=9222
+node scripts/verify-remover.mjs   # -> PASS — ad requests are blocked
 ```
 
 ## Configuration

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadConfig, saveConfig, getConfigPath, getConfigDir, DEFAULT_CONFIG } from '../src/config.js';
+import { loadConfig, saveConfig, getConfigPath, getConfigDir } from '../src/config.js';
+import { DEFAULT_CONFIG } from '../src/types.js';
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

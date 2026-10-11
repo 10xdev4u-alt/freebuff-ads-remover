@@ -77,5 +77,7 @@ export function watchConfig(onChange: (config: Config) => void): () => void {
     }
   });
 
-  return () => watcher.close();
+  return () => {
+    watcher.close();
+  };
 }

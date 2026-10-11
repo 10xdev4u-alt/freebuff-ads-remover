@@ -3,6 +3,8 @@ import { Logger } from './logger.js';
 import { AdInterceptor } from './interceptor.js';
 import { CssInjector } from './css-injector.js';
 import { ElectronHook } from './electron-hook.js';
+import type { ElectronApi } from './electron-hook.js';
+import { getElectron } from './electron-bridge.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, PLACEMENT_IDS, DEFAULT_CONFIG } from './types.js';
 export type { AdSurface, AdEndpoint, ExtensionConfig, InterceptResult, AdPattern } from './types.js';
@@ -13,6 +15,8 @@ export { AdInterceptor } from './interceptor.js';
 export { CssInjector } from './css-injector.js';
 export type { CssInjectionTarget } from './css-injector.js';
 export { ElectronHook } from './electron-hook.js';
+export type { ElectronApi } from './electron-hook.js';
+export { WebContentsCssTarget } from './web-contents-css.js';
 
 let logger: Logger | null = null;
 let interceptor: AdInterceptor | null = null;
@@ -20,21 +24,17 @@ let cssInjector: CssInjector | null = null;
 let electronHook: ElectronHook | null = null;
 let unwatchConfig: (() => void) | null = null;
 
-export function activate(session?: unknown): boolean {
+export function activate(session?: unknown, electronApi?: ElectronApi): boolean {
   try {
     const config = loadConfig();
-
     logger = new Logger(config.logLevel, config.logToFile);
     logger.info('Freebuff Ads Remover activating...');
-
     interceptor = new AdInterceptor(config, logger);
     cssInjector = new CssInjector(config, logger);
     electronHook = new ElectronHook(interceptor, cssInjector, logger);
-
     if (session) {
-      electronHook.activate(session as never);
+      electronHook.activate(session, electronApi);
     }
-
     unwatchConfig = watchConfig((newConfig) => {
       logger?.info('Config changed, reloading...');
       interceptor?.updateConfig(newConfig);
@@ -42,7 +42,6 @@ export function activate(session?: unknown): boolean {
       logger?.setLevel(newConfig.logLevel);
       logger?.setLogToFile(newConfig.logToFile);
     });
-
     logger.info('Freebuff Ads Remover activated successfully');
     return true;
   } catch (err) {
@@ -72,24 +71,22 @@ export function getStats(): { requestCount: number; blockCount: number; patterns
 
 export function isElectronAvailable(): boolean {
   try {
-    return typeof process !== 'undefined' && !!process.versions?.electron;
+    return typeof process !== 'undefined' && !!process.versions.electron;
   } catch {
     return false;
   }
 }
 
 if (isElectronAvailable()) {
-  try {
-    const electron = require('electron') as {
-      app: { whenReady: () => Promise<void>; on: (event: string, cb: () => void) => void };
-      session: unknown;
-    };
-    electron.app.whenReady().then(() => {
-      activate(electron.session);
-    }).catch((err: unknown) => {
-      console.error('[freebuff-ads-remover] App ready failed:', err);
-    });
-  } catch (err) {
-    console.error('[freebuff-ads-remover] Failed to load electron:', err);
+  const electron = getElectron();
+  if (electron) {
+    void electron.app
+      .whenReady()
+      .then(() => {
+        activate(electron.session, electron);
+      })
+      .catch((err: unknown) => {
+        console.error('[freebuff-ads-remover] app.whenReady failed:', err);
+      });
   }
 }
