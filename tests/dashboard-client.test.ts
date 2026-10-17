@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../src/dashboard-client.js';
 import { AD_CSS_SELECTORS, AD_STAGES } from '../src/types.js';
-import type { FarBuffShieldApi, StatsSnapshot } from '../src/types.js';
+import type { AdStage, BlockEvent, FarBuffShieldApi, StatsSnapshot } from '../src/types.js';
 
 const HIDE_SELECTORS = Object.values(AD_CSS_SELECTORS).flat().join(',');
 
@@ -320,5 +320,50 @@ describe('dashboard client', () => {
     snap.byStage.delivery = 0;
     api().update(snap);
     expect(shadowEl('[data-stage="delivery"]').classList.contains('lit')).toBe(false);
+  });
+
+  it('gives every block in a same-millisecond burst its own blip', () => {
+    api().install({ hideSelectors: HIDE_SELECTORS });
+    const host = el('#far-shield-host') as HTMLElement & {
+      __farShield?: { radar: { blips: unknown[] } };
+    };
+    const blips = (): number => host.__farShield?.radar.blips.length ?? -1;
+
+    const AT = 1_700_000_000_000;
+    const block = (stage: AdStage, at: number): BlockEvent => ({
+      stage,
+      surface: 'billboard',
+      endpoint: '/api/ad/impression',
+      at,
+    });
+
+    const snap = emptySnapshot();
+    snap.total = 1;
+    snap.recent = [block('bid', AT)];
+    api().update(snap);
+    expect(blips()).toBe(1);
+
+    // Three more blocks land in the SAME millisecond. Newer entries are
+    // prepended, so a plain `at > watermark` check would drop all three.
+    snap.total = 4;
+    snap.recent = [block('media', AT), block('policy', AT), block('delivery', AT), ...snap.recent];
+    api().update(snap);
+    expect(blips()).toBe(4);
+
+    // Re-pushing the same snapshot must not re-emit what already has a blip.
+    api().update(snap);
+    expect(blips()).toBe(4);
+
+    // A genuinely newer block still appends...
+    snap.total = 5;
+    snap.recent = [block('promo', AT + 1), ...snap.recent];
+    api().update(snap);
+    expect(blips()).toBe(5);
+
+    // ...and so does a burst sharing that newer millisecond.
+    snap.total = 6;
+    snap.recent = [block('inventory', AT + 1), ...snap.recent];
+    api().update(snap);
+    expect(blips()).toBe(6);
   });
 });

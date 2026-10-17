@@ -239,6 +239,12 @@ npm run build              # dist/dashboard-client.js back to the shipped UI
 Then restart Freebuff. Nothing is persisted by the shield (the view choice is
 in-memory only), so there is no state to clean up.
 
+Don't try to "fix" that with `localStorage`. The app's UI is served from
+`http://127.0.0.1:<random port>/` and the **port changes on every launch**, so
+the origin — and with it the storage bucket — is brand new each time. A write
+succeeds and is simply never read back. The only case that can work is the
+session itself, which the retained view state already covers.
+
 To also undo the app-level patch — removing the extension from Freebuff
 entirely — restore the untouched archive and restart:
 

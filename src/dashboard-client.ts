@@ -1,4 +1,4 @@
-import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } from './types.js';
+import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } from './types.js';
 
 /**
  * Classic-script contract: this file may contain ONLY type imports and no
@@ -429,6 +429,7 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
     domHidden: HTMLElement;
     since: HTMLElement;
     pseg: HTMLElement;
+    stagePanel: HTMLElement;
     closeBtn: HTMLElement;
     radarBox: HTMLElement;
     radarCanvas: HTMLCanvasElement;
@@ -447,7 +448,9 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
 
   interface RadarState {
     ctx: CanvasRenderingContext2D | null;
+    /** Last fitted layout width in CSS px, and the DPR it was fitted at. */
     size: number;
+    dpr: number;
     sweep: number;
     blips: Blip[];
     frame: number | null;
@@ -467,6 +470,10 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
     lastEventAt: number;
     /** Newest event timestamp already turned into a blip. */
     lastBlipAt: number;
+    /** How many events sharing lastBlipAt have already become blips — `recent`
+     *  can hold several blocks in the same millisecond, and a plain `>`
+     *  watermark would silently drop the extra ones. */
+    lastBlipCount: number;
     view: ShieldView;
     radar: RadarState;
   }
@@ -533,8 +540,8 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
           </div>
         </header>
         <div class="pseg" data-f="pseg" role="tablist" aria-label="Shield view">
-          <button type="button" role="tab" data-view-btn="radar" aria-selected="true">Radar</button>
-          <button type="button" role="tab" data-view-btn="ledger" aria-selected="false">Ledger</button>
+          <button type="button" role="tab" id="far-tab-radar" data-view-btn="radar" aria-selected="true" aria-controls="far-stage-panel">Radar</button>
+          <button type="button" role="tab" id="far-tab-ledger" data-view-btn="ledger" aria-selected="false" aria-controls="far-stage-panel">Ledger</button>
         </div>
         <div class="hero">
           <div class="hero-main">
@@ -550,7 +557,7 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
             <polyline class="spark-line" data-f="sparkLine" points=""/>
           </svg>
         </div>
-        <div class="stage-area">
+        <div class="stage-area" data-f="stagePanel" id="far-stage-panel" role="tabpanel" aria-labelledby="far-tab-radar" tabindex="0">
           <div class="radar-box" data-f="radarBox"><canvas data-f="radar" width="168" height="168"></canvas></div>
           <div class="heat-wrap">
             <div class="heat-grid" data-f="heat"></div>
@@ -599,6 +606,7 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
       domHidden: byData('domHidden'),
       since: byData('since'),
       pseg: byData('pseg'),
+      stagePanel: byData('stagePanel'),
       closeBtn: byData('close'),
       radarBox: byData('radarBox'),
       radarCanvas: canvas,
@@ -636,8 +644,9 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
       prevStages: {},
       lastEventAt: 0,
       lastBlipAt: 0,
+      lastBlipCount: 0,
       view: previous?.view ?? 'radar',
-      radar: { ctx: null, size: 0, sweep: -Math.PI / 2, blips: [], frame: null, last: 0 },
+      radar: { ctx: null, size: 0, dpr: 0, sweep: -Math.PI / 2, blips: [], frame: null, last: 0 },
     };
     (host as HostWithRegistry).__farShield = nextState;
     wire(nextState);
@@ -694,6 +703,7 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
       button.setAttribute('aria-selected', String(on));
       button.tabIndex = on ? 0 : -1;
     }
+    s.bound.stagePanel.setAttribute('aria-labelledby', `far-tab-${view}`);
     if (view === 'radar' && !s.bound.panel.hasAttribute('hidden')) {
       s.radar.blips.length = 0; // start each sweep clean
       ensureLoop(s);
@@ -907,12 +917,30 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
   }
 
   function spawnBlips(s: ShieldState, snapshot: StatsSnapshot): void {
-    const newer = snapshot.recent.filter((event) => event.at > s.lastBlipAt);
     const newest = snapshot.recent[0];
-    if (newest) s.lastBlipAt = Math.max(s.lastBlipAt, newest.at);
-    if (newer.length === 0) return;
-    // `recent` is newest-first; walk it oldest-first so blips land in order.
-    const ordered = newer.slice(0, 12).reverse();
+    if (!newest) return;
+    const watermark = s.lastBlipAt;
+    const nextWatermark = Math.max(watermark, newest.at);
+    const atWatermark = snapshot.recent.filter((event) => event.at === nextWatermark).length;
+
+    let fresh: BlockEvent[];
+    if (nextWatermark > watermark) {
+      // Watermark advanced, so everything newer than the old one is unseen.
+      fresh = snapshot.recent.filter((event) => event.at > watermark);
+    } else {
+      // Same millisecond as the last push. `recent` is newest-first and new
+      // blocks are unshifted, so the unseen ones are the FIRST `atWatermark -
+      // seen` of that group — taking the last ones instead would re-emit
+      // blocks that already have a blip.
+      const unseen = atWatermark - s.lastBlipCount;
+      if (unseen <= 0) return;
+      fresh = snapshot.recent.filter((event) => event.at === nextWatermark).slice(0, unseen);
+    }
+    s.lastBlipAt = nextWatermark;
+    s.lastBlipCount = atWatermark;
+    if (fresh.length === 0) return;
+    // Walk oldest-first so blips land on the dial in the order they happened.
+    const ordered = fresh.slice(0, 12).reverse();
     for (const event of ordered) {
       const index = STAGE_META.findIndex((meta) => meta.id === event.stage);
       if (index < 0) continue;
@@ -937,9 +965,15 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
   function syncRadar(s: ShieldState): void {
     const box = s.bound.radarBox;
     if (!box.isConnected) return;
-    const width = Math.round(box.getBoundingClientRect().width);
-    if (width < 1 || width === s.radar.size) return;
+    // offsetWidth is the layout width: getBoundingClientRect() would report the
+    // post-transform box, so an ancestor scale() would mis-size the canvas.
+    const width = box.offsetWidth;
+    if (width < 1) return;
     const dpr = Math.min(typeof devicePixelRatio === 'number' ? devicePixelRatio : 1, 2);
+    // DPR belongs in the cache key: dragging the window to a differently scaled
+    // monitor changes dpr without changing the CSS width, and without this the
+    // backing store is never re-fitted and the dial goes soft.
+    if (width === s.radar.size && dpr === s.radar.dpr) return;
     const canvas = s.bound.radarCanvas;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(width * dpr);
@@ -949,6 +983,7 @@ import type { AdStage, FarBuffShieldApi, ShieldInstallOptions, StatsSnapshot } f
     if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     s.radar.ctx = ctx;
     s.radar.size = width;
+    s.radar.dpr = dpr;
   }
 
   function drawRadar(s: ShieldState, now: number, counts: Record<string, number>): void {
