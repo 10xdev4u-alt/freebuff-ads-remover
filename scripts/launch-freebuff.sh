@@ -167,7 +167,7 @@ adopt_live_payload() {
 patch_resources() {
   local resources_dir="$1"
 
-  if [[ ! -f "$resources_dir/app.asar" && ! -f "$resources_dir/app/electron/main.cjs" ]]; then
+  if [[ ! -f "$resources_dir/app.asar" && ! -f "$resources_dir/app.asar.orig" ]]; then
     echo "No app.asar found in $resources_dir — cannot install the ads remover into this build." >&2
     exit 1
   fi
@@ -263,7 +263,7 @@ main() {
     "$(dirname "$resolved")/../resources" \
     "$(dirname "$resolved")/../lib/freebuff/resources" \
     "$(dirname "$resolved")/../lib/freebuff-desktop/resources"; do
-    if [[ -f "$candidate/app.asar" || -f "$candidate/app/electron/main.cjs" ]]; then
+    if [[ -f "$candidate/app.asar" || -f "$candidate/app.asar.orig" ]]; then
       resources_dir="$candidate"
       break
     fi

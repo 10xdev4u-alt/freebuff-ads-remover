@@ -57,7 +57,9 @@ export class AdInterceptor {
     if (endpoint.includes('/api/ad/policy')) return 'sponsorBreak';
     if (endpoint.includes('/api/ad/slot')) return 'sponsorBreak';
     if (endpoint.includes('/api/ads')) return 'sponsorBreak';
-    if (endpoint.includes('/api/v1/ads/agentic/offer')) return 'sponsorBreak';
+    if (endpoint.includes('/api/v1/ads')) return 'sponsorBreak';
+    if (endpoint.includes('/api/sponsored-survey')) return 'invitation';
+    if (endpoint.includes('/api/telemetry/ad-density')) return 'sponsorBreak';
     return null;
   }
 

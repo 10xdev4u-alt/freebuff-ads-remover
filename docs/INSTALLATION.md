@@ -93,14 +93,13 @@ FREEBUFF_ADS_REMOVER_ENTRY="$PWD/dist/index.js" \
 # Restore the original app payload (keeps your Freebuff install intact)
 mv /tmp/freebuff-ads-remover-extract/squashfs-root/resources/app.asar.orig \
    /tmp/freebuff-ads-remover-extract/squashfs-root/resources/app.asar
-rm -rf /tmp/freebuff-ads-remover-extract/squashfs-root/resources/app
 
 # Remove extension state
 rm -rf ~/.config/freebuff-ads-remover
 ```
 
 Non-AppImage installs: move `<resources>/app.asar.orig` back to
-`<resources>/app.asar` and delete `<resources>/app`.
+`<resources>/app.asar`.
 
 Then launch Freebuff normally — the next AppImage update also discards the
 patch automatically.

@@ -8,7 +8,7 @@
   [![CI](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions/workflows/ci.yml/badge.svg)](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions)
   [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
   [![Platform: Linux](https://img.shields.io/badge/platform-linux-lightgrey)](docs/INSTALLATION.md)
-  [![Version: 1.2.0](https://img.shields.io/badge/version-1.2.0-blue)](CHANGELOG.md)
+  [![Version: 1.3.0](https://img.shields.io/badge/version-1.3.0-blue)](CHANGELOG.md)
 </div>
 
 ---
@@ -57,6 +57,16 @@ node scripts/verify-remover.mjs   # -> PASS — ad requests are blocked
 
 Then click the shield badge (bottom-right of the app) to open the dashboard.
 
+After a Freebuff update, check that no ad route slipped through:
+
+```bash
+npm run audit -- /tmp/freebuff-ads-remover-extract/squashfs-root/resources
+# -> 41/41 ad routes blocked
+```
+
+It scrapes every `/api/...` route out of the new orchestrator and renderer bundle,
+keeps the ad-related ones, and fails with the list of any the interceptor misses.
+
 ## How it works
 
 ```
@@ -65,7 +75,7 @@ Your App → Extension intercepts → Ad requests blocked → Clean UI
               Non-ad requests pass through normally
 ```
 
-Electron ignores `--require`, `NODE_OPTIONS` and `--app` for packaged apps, so the launcher extracts the AppImage, unpacks `app.asar` to `app/`, and prepends a loader to `electron/main.cjs` — the original archive is preserved as `app.asar.orig`. The extension then hooks `session.webRequest.onBeforeRequest` before the app boots. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Electron ignores `--require`, `NODE_OPTIONS` and `--app` for packaged apps, so the launcher extracts the AppImage, repacks `app.asar` with a loader prepended to `electron/main.cjs` — the untouched archive is preserved as `app.asar.orig`. (Since `0.0.186` Freebuff enables the Electron `OnlyLoadAppFromAsar` fuse, so an unpacked `app/` directory is rejected at boot.) The extension then hooks `session.webRequest.onBeforeRequest` before the app boots. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Configuration
 
@@ -148,7 +158,7 @@ No. Zero network calls of its own — local filtering, CSS hiding, file logging.
 <details>
 <summary>Which Freebuff versions work?</summary>
 
-AppImage builds. Verified live on `0.0.169` and `0.0.170`; the launcher re-patches each new payload automatically.
+AppImage builds. Verified live on `0.0.169`, `0.0.170` and `0.0.186`; the launcher re-patches each new payload automatically.
 
 </details>
 
@@ -160,7 +170,7 @@ AppImage builds. Verified live on `0.0.169` and `0.0.170`; the launcher re-patch
 | [Configuration](docs/CONFIGURATION.md) | Every config key, per-surface table |
 | [Architecture](docs/ARCHITECTURE.md) | Components, data flow, updater survival |
 | [Research](docs/RESEARCH.md) | Reverse-engineering notes |
-| [Changelog](CHANGELOG.md) | Release history (current: `1.2.0`) |
+| [Changelog](CHANGELOG.md) | Release history (current: `1.3.0`) |
 | [Security](SECURITY.md) | Supported versions, private reporting |
 | [Live site](https://10xdev4u-alt.github.io/freebuff-ads-remover/) | Landing page with interactive shield demo |
 
@@ -169,7 +179,7 @@ AppImage builds. Verified live on `0.0.169` and `0.0.170`; the launcher re-patch
 ```bash
 npm install
 npm run build
-npm test            # vitest, 154 tests
+npm test            # vitest, 163 tests
 npm run lint
 npm run typecheck
 npm run test:coverage  # 80% threshold enforced

@@ -14,8 +14,9 @@ is live:
 | `~/.local/share/freebuff-ads-remover/` | **The live install.** The patched app loads the extension from here. |
 | anywhere else (`/tmp/...`, a fresh `git clone`) | A scratch copy. Editing it changes nothing in the app. |
 
-The launcher prepends this block to `resources/app/electron/main.cjs` inside the
-extracted AppImage (`/tmp/freebuff-ads-remover-extract/squashfs-root/resources/app/`):
+The launcher repacks `resources/app.asar` inside the extracted AppImage
+(`/tmp/freebuff-ads-remover-extract/squashfs-root/resources/app.asar`) with this
+block prepended to `electron/main.cjs` inside the archive:
 
 ```js
 // freebuff-ads-remover:begin (auto-injected by patch-freebuff-app.mjs; do not edit)
@@ -250,14 +251,13 @@ entirely — restore the untouched archive and restart:
 
 ```bash
 cd /tmp/freebuff-ads-remover-extract/squashfs-root/resources
-mv app app.disabled          # patched tree aside
 mv app.asar.orig app.asar    # original archive back in place
 ```
 
-To re-enable, swap them back and let the launcher re-patch:
+To re-enable, just launch through the launcher again — it re-patches the
+archive on every start:
 
 ```bash
-mv app.asar app.asar.orig && mv app.disabled app
 ./scripts/launch-freebuff.sh
 ```
 

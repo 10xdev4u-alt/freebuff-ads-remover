@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-22
+
+Freebuff `0.0.186` broke the patch entirely: the app shipped with the Electron
+`OnlyLoadAppFromAsar` fuse enabled, so the unpacked `resources/app/` directory
+this project used to create made Electron exit before `main.cjs` ran — no
+window, no error, no log line. Ads came back the moment the app did boot.
+
+### Fixed
+
+- Patching now **repacks `app.asar`** instead of leaving an unpacked `app/`
+  directory. The pristine archive is still kept as `app.asar.orig`, and the
+  repack is verified by reading the marker back out of the new archive.
+- Automatic migration of an existing unpacked `app/` install back to a repacked
+  archive on the next launch.
+- Launcher: payload detection accepts `app.asar.orig`, so a previously patched
+  extract still resolves.
+
+### Added
+
+- Blocks the ad endpoints introduced in Freebuff `0.0.186`:
+  `/api/ad/intent`, `/api/ad/report`, `/api/ad/invitation/git/*`
+  (invitation prefix matching, was three leaf paths),
+  `/api/v1/ads*` (all remote ad calls: impression, click, engagement,
+  invitation, policy, prefs, proposal, sponsored-skills) and
+  `/api/telemetry/ad-density`.
+- CSS fallback selector for `0.0.186` partner units
+  (`[class*="partner-placement"]`), which carry no `partner-ad` class.
+- `tests/patch-freebuff-app.test.ts`: pins the repack contract (no `app/` dir,
+  pristine backup untouched, idempotent re-bake, legacy migration).
+- `scripts/audit-endpoints.mjs` (`npm run audit`) — scrapes every route out of a
+  payload's orchestrator + renderer bundle and reports ad routes the interceptor
+  misses. Covers Freebuff's near-daily releases.
+- Blocks `/api/sponsored-survey` (sponsored questionnaire served through the
+  orchestrator).
+
 ## [1.2.0] - 2026-10-11
 
 ### Added

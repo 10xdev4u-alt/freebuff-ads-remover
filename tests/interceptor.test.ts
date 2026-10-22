@@ -53,6 +53,44 @@ describe('AdInterceptor', () => {
     expect(result.surface).toBe('invitation');
   });
 
+  it('blocks 0.0.186 intent and report endpoints', () => {
+    expect(interceptor.intercept('http://127.0.0.1:5174/api/ad/intent', 'POST').blocked).toBe(true);
+    expect(interceptor.intercept('http://127.0.0.1:5174/api/ad/report', 'POST').blocked).toBe(true);
+  });
+
+  it('blocks new invitation subpaths (git review flow)', () => {
+    for (const sub of ['inspect', 'preview', 'approve', 'decline', 'open-root']) {
+      const result = interceptor.intercept(`http://127.0.0.1:5174/api/ad/invitation/git/${sub}`, 'POST');
+      expect(result.blocked, sub).toBe(true);
+      expect(result.surface, sub).toBe('invitation');
+    }
+  });
+
+  it('blocks every remote ad call, not just the agentic offer', () => {
+    for (const path of [
+      '/api/v1/ads/impression',
+      '/api/v1/ads/click',
+      '/api/v1/ads/engagement',
+      '/api/v1/ads/invitation/event',
+      '/api/v1/ads/policy',
+      '/api/v1/ads/prefs',
+      '/api/v1/ads/sponsored-skills',
+    ]) {
+      expect(interceptor.intercept(`https://freebuff.com${path}`, 'POST').blocked, path).toBe(true);
+    }
+  });
+
+  it('blocks sponsored survey prompts', () => {
+    const result = interceptor.intercept('http://127.0.0.1:5174/api/sponsored-survey', 'POST');
+    expect(result.blocked).toBe(true);
+    expect(result.surface).toBe('invitation');
+  });
+
+  it('blocks ad-density telemetry', () => {
+    const result = interceptor.intercept('http://127.0.0.1:5174/api/telemetry/ad-density', 'POST');
+    expect(result.blocked).toBe(true);
+  });
+
   it('blocks /api/ad/break-event', () => {
     const result = interceptor.intercept('http://127.0.0.1:5174/api/ad/break-event', 'POST');
     expect(result.blocked).toBe(true);

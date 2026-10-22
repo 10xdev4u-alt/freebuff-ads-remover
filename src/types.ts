@@ -37,6 +37,8 @@ export function stageForEndpoint(endpoint: string): AdStage {
   if (endpoint.includes('/api/ad/proposal')) return 'bid';
   if (endpoint.includes('/api/ad/policy')) return 'policy';
   if (endpoint.includes('/api/ad/invitation')) return 'promo';
+  if (endpoint.includes('/api/sponsored-survey')) return 'promo';
+  if (endpoint.includes('/api/telemetry/ad-density')) return 'delivery';
   if (endpoint.includes('/api/ad/intent')) return 'inventory';
   if (endpoint.includes('/api/ad/report')) return 'delivery';
   if (endpoint.includes('creative-image')) return 'media';
@@ -67,12 +69,16 @@ export const AD_ENDPOINTS = [
   '/api/ad/proposal-prefs',
   '/api/ad/partner',
   '/api/ad/slot',
-  '/api/ad/invitation/click',
-  '/api/ad/invitation/displayed',
-  '/api/ad/invitation/recheck',
+  // Prefix, not a leaf: 0.0.186 added /api/ad/invitation/git/{inspect,preview,approve,decline,open-root}.
+  '/api/ad/invitation',
   '/api/ads',
   '/api/ads/first-party/creative-image/',
-  '/api/v1/ads/agentic/offer',
+  // Prefix: covers every remote ad call (agentic/offer, impression, click,
+  // engagement, invitation/*, policy, prefs, proposal, sponsored-skills).
+  '/api/v1/ads',
+  // Sponsored survey prompt (advertiser questionnaire served through the orchestrator).
+  '/api/sponsored-survey',
+  '/api/telemetry/ad-density',
 ] as const;
 
 export type AdEndpoint = (typeof AD_ENDPOINTS)[number];
@@ -203,6 +209,8 @@ export const AD_CSS_SELECTORS: Record<AdSurface, string[]> = {
   partner: [
     '[class*="partnerAd"]',
     '[class*="partner-ad"]',
+    // 0.0.186 partner units: a.partner-placement.partner-placement-{composer,skill-picker,...}
+    '[class*="partner-placement"]',
     '[data-ad-surface="partner"]',
   ],
   invitation: [

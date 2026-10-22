@@ -19,12 +19,12 @@ describe('ad stages', () => {
     '/api/ad/proposal-prefs': 'bid',
     '/api/ad/partner': 'inventory',
     '/api/ad/slot': 'inventory',
-    '/api/ad/invitation/click': 'promo',
-    '/api/ad/invitation/displayed': 'promo',
-    '/api/ad/invitation/recheck': 'promo',
+    '/api/ad/invitation': 'promo',
     '/api/ads': 'inventory',
     '/api/ads/first-party/creative-image/': 'media',
-    '/api/v1/ads/agentic/offer': 'inventory',
+    '/api/v1/ads': 'inventory',
+    '/api/sponsored-survey': 'promo',
+    '/api/telemetry/ad-density': 'delivery',
   };
 
   it('maps every known endpoint to a stage', () => {

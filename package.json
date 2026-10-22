@@ -1,6 +1,6 @@
 {
   "name": "freebuff-ads-remover",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Pluggable extension to remove ads from Freebuff Desktop",
   "homepage": "https://10xdev4u-alt.github.io/freebuff-ads-remover/",
   "bugs": {
@@ -22,7 +22,8 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ tests/",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json",
-    "prepare": "husky"
+    "prepare": "husky",
+    "audit": "node scripts/audit-endpoints.mjs"
   },
   "keywords": [
     "freebuff",

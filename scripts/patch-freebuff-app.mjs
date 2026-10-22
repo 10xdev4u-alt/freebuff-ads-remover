@@ -5,20 +5,26 @@
 // Electron provides no supported preload path for packaged apps: `--require`,
 // NODE_OPTIONS and `--app` are all ignored. The only injection point is the
 // app payload itself, so this script:
-//   1. extracts resources/app.asar into resources/app/
-//   2. prepends an idempotent loader block to resources/app/electron/main.cjs
-//   3. renames app.asar to app.asar.orig (Electron prefers app.asar when both
-//      exist; with it gone, resources/app/ is the application directory)
+//   1. extracts resources/app.asar into a staging dir
+//   2. prepends an idempotent loader block to electron/main.cjs
+//   3. repacks the staging dir back into resources/app.asar
+//   4. keeps the untouched archive as app.asar.orig
+//
+// It must repack the archive, not leave an unpacked resources/app/ directory:
+// Freebuff >= 0.0.186 ships with the Electron `OnlyLoadAppFromAsar` fuse
+// enabled, so an app/ directory makes Electron bail out before main.cjs runs
+// (silent exit 1, no window, no log line).
 //
 // Usage: node patch-freebuff-app.mjs <resources-dir>
 // Env:   FREEBUFF_ADS_REMOVER_ENTRY — absolute path of the extension entry
 //        (defaults to ../dist/index.js relative to this script)
 
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, copyFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MARKER = '// freebuff-ads-remover:begin (auto-injected by patch-freebuff-app.mjs; do not edit)';
+const LOADER_RE = /\/\/ freebuff-ads-remover:begin[\s\S]*?\/\/ freebuff-ads-remover:end\n/;
 
 function fail(message) {
   console.error(`[patch-freebuff-app] ${message}`);
@@ -35,8 +41,9 @@ const entry = process.env.FREEBUFF_ADS_REMOVER_ENTRY || join(scriptDir, '..', 'd
 const asarPath = join(resourcesDir, 'app.asar');
 const backupPath = join(resourcesDir, 'app.asar.orig');
 const appDir = join(resourcesDir, 'app');
-const mainPath = join(appDir, 'electron', 'main.cjs');
-const stagingDir = join(resourcesDir, 'app.far-staging');
+const stagingDir = join(resourcesDir, 'app.asar-staging');
+const pendingAsar = join(resourcesDir, 'app.asar.patching');
+const unpackedDir = join(resourcesDir, 'app.asar.unpacked');
 const stagedMainPath = join(stagingDir, 'electron', 'main.cjs');
 
 function loaderBlock() {
@@ -50,64 +57,97 @@ try {
 `;
 }
 
+/** Returns the archive's electron/main.cjs, or null when the asar is unusable. */
+async function readMain(asarFile) {
+  const { extractFile } = await import('@electron/asar');
+  try {
+    return extractFile(asarFile, 'electron/main.cjs').toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+function dropLegacyAppDir() {
+  if (existsSync(appDir)) {
+    rmSync(appDir, { recursive: true, force: true });
+    console.log('[patch-freebuff-app] removed legacy unpacked resources/app/ (OnlyLoadAppFromAsar)');
+  }
+}
+
 async function main() {
   if (!existsSync(resourcesDir)) {
     fail(`resources dir not found: ${resourcesDir}`);
   }
 
-  if (existsSync(mainPath)) {
-    const current = readFileSync(mainPath, 'utf8');
-    if (current.includes(MARKER)) {
-      if (existsSync(asarPath)) {
-        rmSync(backupPath, { force: true });
-        renameSync(asarPath, backupPath);
-        console.log('[patch-freebuff-app] moved aside leftover app.asar (Electron would prefer it)');
-      }
-      const expectedRequire = `require(${JSON.stringify(entry)});`;
-      if (current.includes(expectedRequire)) {
-        console.log('[patch-freebuff-app] already patched');
-        return;
-      }
-      // Extension moved (e.g. /tmp wiped, repo relocated): re-bake the entry.
-      const stripped = current.replace(
-        /\/\/ freebuff-ads-remover:begin[\s\S]*?\/\/ freebuff-ads-remover:end\n/,
-        '',
-      );
-      writeFileSync(mainPath, loaderBlock() + stripped, 'utf8');
-      console.log(`[patch-freebuff-app] updated loader entry to ${entry}`);
+  // Migration: earlier versions patched by unpacking app.asar into resources/app/.
+  // Freebuff >= 0.0.186 refuses to boot that layout, so put the archive back and
+  // let the repack path below patch it properly.
+  if (!existsSync(asarPath) && existsSync(backupPath)) {
+    renameSync(backupPath, asarPath);
+    console.log('[patch-freebuff-app] restored app.asar from app.asar.orig (legacy patch migration)');
+  }
+
+  if (!existsSync(asarPath)) {
+    if (existsSync(stagedMainPath)) {
+      rmSync(stagingDir, { recursive: true, force: true });
+    }
+    fail(`no app.asar found in ${resourcesDir} — cannot install the ads remover into this build`);
+  }
+
+  if (existsSync(unpackedDir)) {
+    fail('app.asar.unpacked is present; repacking would drop unpacked native modules. Refusing to patch.');
+  }
+
+  const current = await readMain(asarPath);
+  const patched = typeof current === 'string' && current.includes(MARKER);
+
+  if (patched) {
+    dropLegacyAppDir();
+    if (current.includes(`require(${JSON.stringify(entry)});`)) {
+      console.log('[patch-freebuff-app] already patched');
       return;
     }
   }
 
-  if (!existsSync(asarPath) && existsSync(stagedMainPath)) {
-    // Interrupted patch: staging was written but the final rename never ran.
-    rmSync(appDir, { recursive: true, force: true });
-    renameSync(stagingDir, appDir);
-    console.log('[patch-freebuff-app] recovered interrupted patch');
-    return;
-  }
+  const { extractAll, createPackageWithOptions } = await import('@electron/asar');
 
-  if (!existsSync(asarPath)) {
-    fail(`neither app.asar nor a patched app/ directory found in ${resourcesDir}`);
-  }
-
-  const { extractAll } = await import('@electron/asar');
   rmSync(stagingDir, { recursive: true, force: true });
+  rmSync(pendingAsar, { force: true });
   mkdirSync(stagingDir, { recursive: true });
   extractAll(asarPath, stagingDir);
 
   if (!existsSync(stagedMainPath)) {
+    rmSync(stagingDir, { recursive: true, force: true });
     fail('unexpected app layout: electron/main.cjs missing from app.asar');
   }
-  writeFileSync(stagedMainPath, loaderBlock() + readFileSync(stagedMainPath, 'utf8'), 'utf8');
 
-  rmSync(appDir, { recursive: true, force: true });
-  rmSync(backupPath, { force: true });
-  renameSync(asarPath, backupPath);
-  renameSync(stagingDir, appDir);
+  // Re-baking an already patched archive (extension moved): swap the loader.
+  const body = readFileSync(stagedMainPath, 'utf8').replace(LOADER_RE, '');
+  writeFileSync(stagedMainPath, loaderBlock() + body, 'utf8');
 
-  console.log(`[patch-freebuff-app] patched ${appDir}`);
+  await createPackageWithOptions(stagingDir, pendingAsar, {});
+
+  const packedMain = await readMain(pendingAsar);
+  if (!packedMain || !packedMain.includes(MARKER)) {
+    rmSync(pendingAsar, { force: true });
+    rmSync(stagingDir, { recursive: true, force: true });
+    fail('repacked archive failed verification (loader marker missing)');
+  }
+
+  if (!patched) {
+    rmSync(backupPath, { force: true });
+    copyFileSync(asarPath, backupPath);
+  }
+
+  renameSync(pendingAsar, asarPath);
+  rmSync(stagingDir, { recursive: true, force: true });
+  dropLegacyAppDir();
+
+  console.log(`[patch-freebuff-app] patched ${asarPath} (${statSync(asarPath).size} bytes)`);
   console.log(`[patch-freebuff-app] loader entry: ${entry}`);
+  if (existsSync(backupPath)) {
+    console.log(`[patch-freebuff-app] pristine archive kept at ${backupPath}`);
+  }
 }
 
 main().catch((err) => {

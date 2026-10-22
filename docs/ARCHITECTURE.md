@@ -9,10 +9,15 @@ Freebuff Ads Remover is a **pluggable Electron extension** that removes all ads 
 1. **Pluggable** — Loaded through a tiny injected loader in the app's main
    process entry. Electron provides no preload flag for packaged apps
    (`--require`, `NODE_OPTIONS` and `--app` are all ignored), so the launcher
-   patches `resources/app.asar` into a `resources/app/` directory and prepends
-   an idempotent `require()` block to `electron/main.cjs`. The original
-   archive is kept as `app.asar.orig`, so the install can be restored at any
-   time by moving it back.
+   unpacks `resources/app.asar` to a staging dir, prepends an idempotent
+   `require()` block to `electron/main.cjs`, and repacks the archive in place.
+   The original archive is kept as `app.asar.orig`, so the install can be
+   restored at any time by moving it back.
+
+   The repack is mandatory on Freebuff `>= 0.0.186`: that build enables the
+   Electron `OnlyLoadAppFromAsar` fuse, so leaving an unpacked `app/`
+   directory makes Electron exit before `main.cjs` runs (silent failure — no
+   window, no log line).
 2. **Non-destructive** — App functionality is never affected. Only ad requests are blocked.
 3. **Configurable** — Every ad surface can be toggled individually.
 4. **Safe** — Errors are caught and logged. The app never crashes due to the extension.
@@ -71,9 +76,9 @@ the launcher (and the patch). The launcher self-heals on the next start:
 ## Data Flow
 
 ```
-1. Launcher extracts the AppImage and patches resources/app.asar:
-   extracts it to resources/app/, prepends the loader to electron/main.cjs,
-   and moves the original archive aside as app.asar.orig
+1. Launcher extracts the AppImage and patches resources/app.asar: unpacks it
+   to a staging dir, prepends the loader to electron/main.cjs, repacks the
+   archive, and keeps the untouched original as app.asar.orig
 2. Electron boots resources/app/ and the loader requires the extension
 3. Extension reads config from ~/.config/freebuff-ads-remover/config.json
 4. Extension hooks into Electron session.webRequest.onBeforeRequest
