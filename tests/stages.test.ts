@@ -9,6 +9,8 @@ describe('ad stages', () => {
     '/api/ad/break-event': 'delivery',
     '/api/ad/billboard': 'inventory',
     '/api/ad/intermission': 'inventory',
+    '/api/ad/intent': 'inventory',
+    '/api/ad/report': 'delivery',
     '/api/ad/impression': 'delivery',
     '/api/ad/click': 'delivery',
     '/api/ad/click-return': 'delivery',

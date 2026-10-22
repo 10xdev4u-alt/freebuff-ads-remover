@@ -46,6 +46,8 @@ export class AdInterceptor {
     if (endpoint.includes('/api/ad/break')) return 'sponsorBreak';
     if (endpoint.includes('/api/ad/billboard')) return 'billboard';
     if (endpoint.includes('/api/ad/intermission')) return 'intermission';
+    if (endpoint.includes('/api/ad/intent')) return 'sponsorBreak';
+    if (endpoint.includes('/api/ad/report')) return 'sponsorBreak';
     if (endpoint.includes('/api/ad/impression')) return 'sponsorBreak';
     if (endpoint.includes('/api/ad/click')) return 'sponsorBreak';
     if (endpoint.includes('/api/ad/engagement')) return 'sponsorBreak';

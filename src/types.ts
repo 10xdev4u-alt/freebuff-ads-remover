@@ -37,6 +37,8 @@ export function stageForEndpoint(endpoint: string): AdStage {
   if (endpoint.includes('/api/ad/proposal')) return 'bid';
   if (endpoint.includes('/api/ad/policy')) return 'policy';
   if (endpoint.includes('/api/ad/invitation')) return 'promo';
+  if (endpoint.includes('/api/ad/intent')) return 'inventory';
+  if (endpoint.includes('/api/ad/report')) return 'delivery';
   if (endpoint.includes('creative-image')) return 'media';
   if (
     endpoint.includes('/api/ad/impression') ||
@@ -55,6 +57,8 @@ export const AD_ENDPOINTS = [
   '/api/ad/break-event',
   '/api/ad/billboard',
   '/api/ad/intermission',
+  '/api/ad/intent',
+  '/api/ad/report',
   '/api/ad/impression',
   '/api/ad/click',
   '/api/ad/click-return',
