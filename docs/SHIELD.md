@@ -187,14 +187,16 @@ Expected: 154 tests pass, no lint or type errors, and a
 To see it in the app:
 
 ```bash
-./scripts/launch-freebuff.sh --remote-debugging-port=9222
-# then, with the panel open:
-node scripts/screenshot-dashboard.mjs /tmp/shield.png
+# Freebuff >= 0.0.186 refuses --remote-debugging-port (it ships its own scoped
+# CDP bridge), so verify through the log + the on-screen badge instead:
+grep "Blocked ad request" ~/.config/freebuff-ads-remover/extension.log | tail
 ```
 
 `scripts/screenshot-dashboard.mjs` opens the panel through the DevTools endpoint
 and prints the total, stage counts and recent events straight out of the shadow
-root — the fastest way to confirm which build the app is actually running.
+root — the fastest way to confirm which build the app is actually running. It
+needs `--remote-debugging-port=9222`, which Freebuff `>= 0.0.186` rejects, so it
+only works on older payloads.
 
 ### Headless verification without the app
 
@@ -221,7 +223,8 @@ never assert on `style.background.includes('hsla')` after setting it; and a
 | --- | --- |
 | Panel never appears | `Dashboard.start()` logs `client source not found` when `dist/dashboard-client.js` is missing. Run `npm run build`. |
 | Old UI after a rebuild | The app reads `dist/` at activate time — restart Freebuff. Editing a scratch clone changes nothing; build in the live install. |
-| Badge appears, counts stay 0 | No requests are being blocked. Confirm with `node scripts/verify-remover.mjs`; stats come from the interceptor, not the client. |
+| Badge appears, counts stay 0 | No requests are being blocked. Set `"logLevel": "debug"` and look for `Blocked ad request:`; stats come from the interceptor, not the client. |
+| App exits instantly, no window | Either a stale `~/.config/Freebuff/Singleton*` lock (remove it) or `--remote-debugging-port` was passed — Freebuff `>= 0.0.186` rejects the app-wide CDP flag. |
 | Radar canvas blank | The rAF loop stops when the panel is closed. It restarts on open; if it stays blank, check for a JS error in the page console. |
 | Two badges / duplicate host | A host with no registry is dropped and re-mounted on `install()`. If you see two, an older client version is also injected — restart the app. |
 | Sparkline or heat row collapses | `perMinute` is sparse. Rebuild the contiguous axis from `snapshot.at` (see Data model). |

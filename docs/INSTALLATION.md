@@ -32,12 +32,11 @@ from your icon after an update and the shield comes back by itself.
 
 ### Extra flags
 
-Everything after the script name is passed to Freebuff, e.g. the runtime
-verifier below needs the DevTools endpoint:
+Everything after the script name is passed to Freebuff.
 
-```bash
-./scripts/launch-freebuff.sh --remote-debugging-port=9222
-```
+Avoid `--remote-debugging-port`: Freebuff `>= 0.0.186` runs its own scoped CDP
+bridge (loopback + per-boot token, deliberately not app-wide) and exits with
+status 1 the moment the app-wide flag is present.
 
 ## Option 2: Manual launch
 
@@ -46,24 +45,25 @@ extracted binary directly:
 
 ```bash
 FREEBUFF_ADS_REMOVER_ENTRY="$PWD/dist/index.js" \
-  /tmp/freebuff-ads-remover-extract/squashfs-root/@codebufffreebuff-desktop \
-  --no-sandbox
+  /tmp/freebuff-ads-remover-extract/squashfs-root/freebuff --no-sandbox
 ```
 
 ## Verification
 
-1. Launch Freebuff with the DevTools endpoint open:
+1. Set `"logLevel": "debug"` in `~/.config/freebuff-ads-remover/config.json`
+   (hot-reloads — no restart needed).
+2. Launch Freebuff from your icon, then check the log:
    ```bash
-   ./scripts/launch-freebuff.sh --remote-debugging-port=9222
+   grep -E "Ad interceptor activated|Blocked ad request" \
+     ~/.config/freebuff-ads-remover/extension.log | tail
    ```
-2. In another terminal, run the end-to-end probe:
-   ```bash
-   node scripts/verify-remover.mjs
-   ```
-   Expected output: `[verify] PASS — ad requests are blocked, the app still works`
-3. Check the log: `cat ~/.config/freebuff-ads-remover/extension.log`
-   — you should see `Electron session hook activated` and, with
-   `"logLevel": "debug"`, one `Blocked ad request:` line per ad call.
+   Expected: `Ad interceptor activated {"patterns":21,...}` and one
+   `Blocked ad request:` line per cancelled ad call.
+3. The shield badge (bottom-right) counts the same blocks live.
+
+`scripts/verify-remover.mjs` drives the same checks over CDP and still works on
+Freebuff `< 0.0.186`; newer builds refuse the app-wide
+`--remote-debugging-port` flag, so use the log instead.
 
 ## Troubleshooting
 
@@ -85,7 +85,7 @@ FREEBUFF_ADS_REMOVER_ENTRY="$PWD/dist/index.js" \
 - Ensure config has `"enabled": true` in `~/.config/freebuff-ads-remover/config.json`
 - Try toggling `"cssFallback": true`
 - Restart the app after config changes
-- Run `node scripts/verify-remover.mjs` to confirm the block is active
+- Set `"logLevel": "debug"` and look for `Blocked ad request:` lines in the log
 
 ## Uninstall
 

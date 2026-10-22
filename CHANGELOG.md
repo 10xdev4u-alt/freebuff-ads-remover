@@ -40,6 +40,15 @@ window, no error, no log line. Ads came back the moment the app did boot.
 - Blocks `/api/sponsored-survey` (sponsored questionnaire served through the
   orchestrator).
 
+### Changed
+
+- Docs: verification is log-based (`"logLevel": "debug"` →
+  `Blocked ad request:`). Freebuff `>= 0.0.186` ships its own scoped CDP bridge
+  and exits when the app-wide `--remote-debugging-port` flag is passed, so
+  `verify-remover.mjs` / `screenshot-dashboard.mjs` only work on older payloads.
+- Documented the stale-`~/.config/Freebuff/Singleton*`-lock failure mode that
+  makes the app exit silently after a hard kill.
+
 ## [1.2.0] - 2026-10-11
 
 ### Added

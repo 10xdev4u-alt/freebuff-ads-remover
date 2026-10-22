@@ -51,9 +51,18 @@ Point your desktop icon at `scripts/launch-freebuff.sh` and forget about it — 
 ### Verify it works
 
 ```bash
-./scripts/launch-freebuff.sh --remote-debugging-port=9222
-node scripts/verify-remover.mjs   # -> PASS — ad requests are blocked
+# 1. set "logLevel": "debug" in ~/.config/freebuff-ads-remover/config.json
+# 2. launch the app from your icon
+grep "Blocked ad request" ~/.config/freebuff-ads-remover/extension.log | tail
 ```
+
+One line per cancelled ad call (`/api/ad/policy`, `/api/ad/impression`, …). The
+shield badge counts them live too.
+
+> Do not pass `--remote-debugging-port` to Freebuff `>= 0.0.186`: the app ships
+> its own scoped CDP bridge and exits immediately when the app-wide flag is
+> present, so `scripts/verify-remover.mjs` and `scripts/screenshot-dashboard.mjs`
+> only work on older builds.
 
 Then click the shield badge (bottom-right of the app) to open the dashboard.
 
