@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Freebuff Ads Remover — pluggable extension that removes every ad from Freebuff Desktop, with a live shield dashboard.">
+<meta name="description" content="Freebuff Ads Remover — a pluggable extension that strips every ad from Freebuff Desktop and ships a live shield dashboard. Zero ads. Zero telemetry. Zero compromise.">
 <title>Freebuff Ads Remover — Clean Desktop, Zero Ads</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    --bg:#000000; --panel:#0d0d0d; --panel2:#111111; --card:#101012;
-    --fg:#f5f6f8; --muted:#a1a1aa; --faint:#6b6f7a;
-    --accent:#3ddc84; --accent-dim:rgba(61,220,132,.14);
+    --bg:#05070a; --panel:#0c0f14; --panel2:#11151c; --card:#0f1319;
+    --fg:#f4f6fa; --muted:#9aa3b2; --faint:#5b6372;
+    --accent:#3ddc84; --accent-2:#7cffb2; --accent-dim:rgba(61,220,132,.14);
+    --danger:#ff5d6c; --danger-dim:rgba(255,93,108,.12);
     --border:rgba(255,255,255,.08); --ring:rgba(61,220,132,.5);
     --font-display:"Inter Tight",Inter,ui-sans-serif,system-ui,sans-serif;
     --font-body:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -24,1093 +25,232 @@
   html{scroll-behavior:smooth}
   body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
   ::selection{background:rgba(61,220,132,.28)}
-  a{color:inherit}
+  a{color:inherit;text-decoration:none}
+  .container{max-width:1180px;margin:0 auto;padding:0 clamp(20px,4vw,40px)}
 
-  /* ---------- nav ---------- */
-  .nav{position:sticky;top:0;z-index:50;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,40px);background:rgba(0,0,0,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;font-size:17px}
+  /* nav */
+  .nav{position:sticky;top:0;z-index:50;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,40px);background:rgba(5,7,10,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;font-size:17px}
   .brand img{width:28px;height:28px}
   .nav-links{display:flex;align-items:center;gap:8px}
-  .nav-links a.nl{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:8px 12px;border-radius:8px;transition:color .2s,background .2s}
+  .nav-links a.nl{color:var(--muted);font-size:14px;font-weight:500;padding:8px 12px;border-radius:8px;transition:color .2s,background .2s}
   .nav-links a.nl:hover{color:var(--fg);background:rgba(255,255,255,.05)}
   .ver-pill{font-family:var(--font-mono);font-size:11px;color:var(--accent);border:1px solid rgba(61,220,132,.35);background:var(--accent-dim);border-radius:999px;padding:4px 10px;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-  /* ---------- hero vessel ---------- */
-  .vessel-wrap{padding:8px 8px 32px}
-  @media(min-width:768px){.vessel-wrap{padding:12px 12px 48px}}
-  .vessel{position:relative;overflow:hidden;border-radius:24px;min-height:640px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:96px 24px 80px;background:linear-gradient(to bottom,#000 0%,#0d0d0d 50%,#111 100%);box-shadow:0 8px 30px rgba(0,0,0,.3)}
-  @media(min-width:768px){.vessel{border-radius:32px;min-height:680px}}
-  .vessel::before{content:'';position:absolute;inset:0;background:radial-gradient(600px circle at var(--mx,50%) var(--my,38%),rgba(61,220,132,.07),transparent 42%),radial-gradient(500px circle at var(--mx,50%) var(--my,38%),rgba(255,255,255,.03),transparent 40%);pointer-events:none}
-  .vessel::after{content:'';position:absolute;inset:0;opacity:.05;pointer-events:none;background-image:linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px);background-size:80px 100%;mask-image:linear-gradient(to bottom,black 30%,transparent 95%);-webkit-mask-image:linear-gradient(to bottom,black 30%,transparent 95%)}
-  .grain{position:absolute;inset:0;opacity:.05;pointer-events:none;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-  .hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:860px}
-  .hero-badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--muted);border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:999px;padding:6px 14px;margin-bottom:28px}
-  .hero-badge .pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(61,220,132,.9);animation:blink 1.6s infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
-  h1{font-family:var(--font-display);font-size:clamp(2.6rem,7vw,5rem);font-weight:800;letter-spacing:-.045em;line-height:1.02;margin-bottom:20px}
-  h1 .glow{color:var(--accent);text-shadow:0 0 34px rgba(61,220,132,.45)}
-  .sub{font-size:clamp(1rem,2.2vw,1.25rem);color:var(--muted);max-width:600px;margin-bottom:36px;line-height:1.65}
-  .installbar{display:flex;align-items:center;gap:4px;width:min(620px,100%);text-align:left;background:rgba(255,255,255,.035);border:1px solid var(--border);border-radius:12px;padding:6px 6px 6px 16px;box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 12px 40px rgba(0,0,0,.4);margin-bottom:20px;transition:border-color .25s}
-  .installbar:focus-within{border-color:rgba(61,220,132,.45)}
-  .installbar .prompt{color:var(--accent);font-family:var(--font-mono);font-size:13px;user-select:none}
-  .installbar code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);font-size:12.5px;color:#d7dbe3}
-  .copybtn{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--fg);border-radius:8px;padding:8px 14px;font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,border-color .2s;white-space:nowrap}
-  .copybtn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.16)}
-  .copybtn.copied{border-color:rgba(61,220,132,.5);color:var(--accent)}
-  .cta-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
-  .btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:15px;border-radius:12px;padding:13px 26px;transition:transform .25s var(--ease),box-shadow .25s,background .2s}
-  .btn:hover{transform:translateY(-2px)}
-  .btn-primary{background:var(--accent);color:#06220f;box-shadow:0 8px 30px rgba(61,220,132,.28)}
-  .btn-primary:hover{box-shadow:0 12px 38px rgba(61,220,132,.4)}
-  .btn-ghost{border:1px solid var(--border);color:var(--fg);background:rgba(255,255,255,.03)}
-  .btn-ghost:hover{background:rgba(255,255,255,.07)}
-  .hero-note{font-family:var(--font-mono);font-size:12px;color:var(--faint)}
-  .hero-note b{color:var(--accent);font-weight:600}
+  /* hero */
+  .hero{padding:96px 0 64px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:-20% -10% auto -10%;height:60%;background:radial-gradient(60% 50% at 50% 0%,rgba(61,220,132,.18),transparent 70%);pointer-events:none}
+  .hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
+  @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:40px}}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--accent);border:1px solid rgba(61,220,132,.3);background:var(--accent-dim);border-radius:999px;padding:6px 12px;margin-bottom:20px}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  h1{font-family:var(--font-display);font-weight:900;font-size:clamp(40px,6.4vw,76px);line-height:.98;letter-spacing:-.035em;margin-bottom:20px}
+  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero-sub{color:var(--muted);font-size:clamp(16px,1.6vw,20px);max-width:520px;margin-bottom:32px}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:24px}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;padding:14px 22px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s,background .2s}
+  .btn-primary{background:var(--accent);color:#04110a;box-shadow:0 8px 24px rgba(61,220,132,.25)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(61,220,132,.35)}
+  .btn-ghost{background:rgba(255,255,255,.04);color:var(--fg);border-color:var(--border)}
+  .btn-ghost:hover{background:rgba(255,255,255,.08)}
+  .hero-proof{display:flex;align-items:center;gap:14px;color:var(--faint);font-size:13px;font-family:var(--font-mono)}
+  .hero-proof strong{color:var(--fg)}
+  .hero-visual{position:relative;border:1px solid var(--border);border-radius:20px;overflow:hidden;background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .hero-visual img{width:100%;display:block}
+  .hero-visual .badge{position:absolute;top:14px;right:14px;font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(5,7,10,.7);backdrop-filter:blur(8px);border:1px solid rgba(61,220,132,.3);border-radius:999px;padding:5px 10px}
 
-  /* ---------- endpoint ticker ---------- */
-  .ticker{border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:14px 0;background:#050505}
-  .ticker-track{display:flex;gap:0;width:max-content;animation:tick 36s linear infinite}
-  .ticker:hover .ticker-track{animation-play-state:paused}
-  .ticker span{font-family:var(--font-mono);font-size:12px;color:var(--faint);padding:0 22px;white-space:nowrap}
-  .ticker span b{color:var(--accent);font-weight:600}
-  .ticker span i{font-style:normal;color:#3a3f4b;padding-right:22px}
-  @keyframes tick{to{transform:translateX(-50%)}}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:48px 0}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--panel);padding:24px 20px}
+  .stat .n{font-family:var(--font-display);font-weight:800;font-size:34px;letter-spacing:-.02em;color:var(--accent)}
+  .stat .l{color:var(--muted);font-size:13px;margin-top:4px}
 
-  /* ---------- sections ---------- */
-  section.block{padding:96px 24px;scroll-margin-top:80px}
-  .wrap{max-width:1000px;margin:0 auto}
-  .kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
-  h2{font-family:var(--font-display);font-size:clamp(1.7rem,4vw,2.3rem);font-weight:700;letter-spacing:-.035em;line-height:1.1;margin-bottom:12px}
-  .lede{color:var(--muted);font-size:16px;line-height:1.7;max-width:62ch;margin-bottom:8px}
-  .lede code{font-family:var(--font-mono);font-size:.85em;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:1px 7px;color:var(--fg)}
-  .demo-hint{margin-top:18px;display:inline-flex;align-items:center;gap:10px;border:1px dashed rgba(61,220,132,.4);background:var(--accent-dim);border-radius:12px;padding:12px 18px;font-size:14px;color:#c9d1de}
-  .demo-hint .arr{color:var(--accent);font-weight:700}
+  /* sections */
+  section{padding:88px 0}
+  .section-head{max-width:640px;margin-bottom:48px}
+  .section-head .kicker{font-family:var(--font-mono);font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
+  h2{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,4vw,46px);line-height:1.05;letter-spacing:-.025em;margin-bottom:12px}
+  .section-head p{color:var(--muted);font-size:17px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:880px){.grid3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:border-color .2s,transform .2s var(--ease)}
+  .card:hover{border-color:rgba(61,220,132,.3);transform:translateY(-3px)}
+  .card .icon{width:40px;height:40px;border-radius:10px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .card h3{font-family:var(--font-display);font-weight:700;font-size:19px;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:14px;line-height:1.6}
 
-  .features{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:48px}
-  @media(max-width:640px){.features{grid-template-columns:1fr}}
-  .feature{background:linear-gradient(to bottom,#101013,#0b0b0d);border:1px solid var(--border);border-radius:14px;padding:26px 24px;transition:transform .3s var(--ease),border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
-  .feature::before{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(to right,transparent,rgba(255,255,255,.14),transparent)}
-  .feature:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.16);box-shadow:0 16px 44px rgba(0,0,0,.5)}
-  .feature .ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--accent-dim);border:1px solid rgba(61,220,132,.3);margin-bottom:16px;color:var(--accent)}
-  .feature .ic svg{width:17px;height:17px}
-  .feature h3{font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
-  .feature p{color:var(--muted);font-size:14px;line-height:1.65}
-  .feature p code{font-family:var(--font-mono);font-size:.82em;background:rgba(255,255,255,.06);border-radius:5px;padding:0 6px;color:var(--fg)}
+  /* how it works */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:step}
+  @media(max-width:880px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative}
+  .step .n{font-family:var(--font-mono);font-size:12px;color:var(--accent);margin-bottom:12px}
+  .step h3{font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:8px}
+  .step p{color:var(--muted);font-size:14px}
 
-  .flow{display:flex;align-items:stretch;justify-content:center;gap:0;margin-top:48px;flex-wrap:wrap}
-  .fstep{flex:1 1 200px;max-width:280px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;text-align:left;position:relative}
-  .fstep .n{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:.1em;margin-bottom:10px}
-  .fstep h3{font-family:var(--font-display);font-size:16px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em}
-  .fstep p{color:var(--muted);font-size:13.5px;line-height:1.65}
-  .fstep p code{font-family:var(--font-mono);font-size:.82em;background:rgba(255,255,255,.06);border-radius:5px;padding:0 6px;color:var(--fg)}
-  .farr{align-self:center;color:var(--accent);font-size:22px;padding:0 14px;flex:0 0 auto}
-  @media(max-width:700px){.farr{transform:rotate(90deg);padding:10px 0}.fstep{max-width:none}}
+  /* tagline reveal */
+  .reveal{padding:120px 0;text-align:center;position:relative}
+  .reveal h2{font-size:clamp(36px,6vw,72px);max-width:900px;margin:0 auto;line-height:1.05}
+  .reveal h2 .muted{color:var(--faint)}
+  .reveal p{color:var(--muted);margin-top:24px;font-size:18px}
 
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:48px}
-  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:26px 12px;text-align:center}
-  .stat-value{font-family:var(--font-display);font-size:2.4rem;font-weight:800;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums}
-  .stat-label{color:var(--muted);font-size:.82rem;margin-top:4px}
+  /* faq */
+  details{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:12px}
+  details[open]{border-color:rgba(61,220,132,.3)}
+  summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--accent);font-size:20px;font-weight:400}
+  details[open] summary::after{content:"−"}
+  details p{color:var(--muted);margin-top:12px;font-size:14px;line-height:1.6}
 
-  /* ---------- FAQ ---------- */
-  .faq{max-width:832px;margin:0 auto}
-  .faq-head{text-align:center;margin-bottom:48px}
-  .faq-list{display:flex;flex-direction:column;gap:12px}
-  details.faq-item{border-radius:10px;border:1px solid transparent;transition:background .25s,border-color .25s}
-  details.faq-item[open]{background:var(--card);border-color:var(--border);box-shadow:0 1px 4px rgba(255,255,255,.05),0 0 0 1px var(--border)}
-  details.faq-item summary{display:flex;align-items:center;justify-content:space-between;gap:20px;list-style:none;cursor:pointer;padding:16px;font-size:15.5px;font-weight:500;color:var(--muted);transition:color .2s}
-  details.faq-item summary::-webkit-details-marker{display:none}
-  details.faq-item summary:hover{color:var(--fg)}
-  details.faq-item[open] summary{color:var(--fg)}
-  details.faq-item summary:focus-visible{outline:2px solid var(--ring);outline-offset:4px;border-radius:8px}
-  .plus{flex-shrink:0;width:18px;height:18px;color:var(--muted);transition:transform .25s var(--ease)}
-  details[open] .plus{transform:rotate(45deg);color:var(--accent)}
-  .faq-a{padding:0 48px 20px 16px;font-size:14px;line-height:1.8;color:var(--muted)}
-  .faq-a code{font-family:var(--font-mono);font-size:.85em;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:1px 7px;color:var(--fg)}
-  .faq-a a{color:var(--fg)}
+  /* final cta */
+  .final{padding:120px 0;text-align:center;position:relative;overflow:hidden}
+  .final::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 50% 50%,rgba(61,220,132,.16),transparent 70%);pointer-events:none}
+  .final h2{font-size:clamp(32px,5vw,56px);margin-bottom:16px}
+  .final p{color:var(--muted);margin-bottom:32px;font-size:17px}
 
-  footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--faint);font-size:13px}
-  footer .frow{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;color:var(--muted);font-weight:600}
-  footer .frow img{width:22px;height:22px}
+  footer{border-top:1px solid var(--border);padding:32px 0;color:var(--faint);font-size:13px}
+  .footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
   footer a{color:var(--muted)}
-
-  /* ---------- reveal ---------- */
-  .js .rv{opacity:0;transform:translateY(22px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
-  .js .rv.in{opacity:1;transform:none}
-  .js .rv.d1{transition-delay:.08s}.js .rv.d2{transition-delay:.16s}.js .rv.d3{transition-delay:.24s}
-
-  @media(max-width:640px){
-    h1{font-size:2.4rem}
-    section.block{padding:64px 20px}
-    .installbar code{font-size:11px}
-    .nav-links a.nl{display:none}
-  }
-  @media(prefers-reduced-motion:reduce){
-    .ticker-track{animation:none}
-    .hero-badge .pulse-dot{animation:none}
-    .js .rv{opacity:1;transform:none;transition:none}
-    html{scroll-behavior:auto}
-  }
+  footer a:hover{color:var(--fg)}
 </style>
 </head>
 <body>
+
 <nav class="nav">
   <a class="brand" href="#"><img src="assets/logo.svg" alt="">Freebuff Ads Remover</a>
   <div class="nav-links">
-    <a class="nl" href="#demo">Demo</a>
     <a class="nl" href="#features">Features</a>
+    <a class="nl" href="#how">How it works</a>
     <a class="nl" href="#faq">FAQ</a>
     <a class="nl" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">GitHub</a>
     <span class="ver-pill">v1.3.0</span>
   </div>
 </nav>
 
-<div class="vessel-wrap">
-  <header class="vessel" id="heroVessel">
-    <div class="grain" aria-hidden="true"></div>
-    <div class="hero-inner">
-      <span class="hero-badge"><span class="pulse-dot"></span>v1.2.0 &middot; MIT &middot; Linux AppImage</span>
-      <h1>Zero ads.<br>Full <span class="glow">Freebuff.</span></h1>
-      <p class="sub">A pluggable extension that removes every ad from Freebuff Desktop — with a live shield dashboard counting every stop.</p>
-      <div class="installbar">
-        <span class="prompt">$</span>
-        <code id="installCmd">git clone https://github.com/10xdev4u-alt/freebuff-ads-remover.git &amp;&amp; cd freebuff-ads-remover &amp;&amp; npm install &amp;&amp; npm run build &amp;&amp; ./scripts/launch-freebuff.sh</code>
-        <button class="copybtn" id="copyBtn" type="button">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          <span>Copy</span>
-        </button>
-      </div>
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> v1.3.0 · supports Freebuff 0.0.192</span>
+      <h1>Every ad. <span class="grad">Gone.</span><br>Every pixel. <span class="grad">Yours.</span></h1>
+      <p class="hero-sub">A pluggable extension that strips every ad surface from Freebuff Desktop — network calls cancelled, DOM nuked, telemetry silenced — and ships a live shield dashboard so you can watch them die in real time.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">Get Started</a>
-        <a class="btn btn-ghost" href="#demo">Watch it work</a>
+        <a class="btn btn-primary" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">Get the remover →</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
       </div>
-      <p class="hero-note">point your desktop icon at the launcher — <b>updates self-heal</b></p>
+      <div class="hero-proof"><strong>43/43</strong> ad routes blocked · <strong>9</strong> ads stopped per session · <strong>0</strong> ad creatives served</div>
     </div>
-  </header>
+    <div class="hero-visual">
+      <img src="assets/shield-panel.png" alt="Freebuff Ads Remover shield dashboard">
+      <span class="badge">● LIVE</span>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="n">43</div><div class="l">ad routes blocked</div></div>
+    <div class="stat"><div class="n">9</div><div class="l">ads stopped / session</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">ad creatives served</div></div>
+    <div class="stat"><div class="n">164</div><div class="l">tests passing</div></div>
+  </div>
 </div>
 
-<div class="ticker" aria-hidden="true"><div class="ticker-track" id="tickerTrack"></div></div>
-
-<section class="block" id="demo">
-  <div class="wrap">
-    <p class="kicker rv">Live demo</p>
-    <h2 class="rv">The shield, running right here.</h2>
-    <p class="lede rv">This page hosts the <code>real dashboard client</code> shipped in <code>dist/</code> — same bundle the app injects. It is blocking a simulated ad stream below; the green badge follows you everywhere on this page. <strong>Click it.</strong></p>
-    <p class="demo-hint rv"><span class="arr">&darr;</span> Scroll anywhere — the badge floats bottom-right, exactly like in Freebuff.</p>
-  </div>
-</section>
-
-<section class="block" id="features" style="padding-top:0">
-  <div class="wrap">
-    <p class="kicker rv">Coverage</p>
-    <h2 class="rv">Every surface. Every stage.</h2>
-    <p class="lede rv">Network kills at the Electron session layer, CSS burial for server-rendered leftovers, and per-stage stats for all of it.</p>
-    <div class="features">
-      <div class="feature rv">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.5 5.5l13 13"/></svg></div>
-        <h3>Network Blocking</h3>
-        <p>19 ad and tracking endpoints cancelled in <code>onBeforeRequest</code> — impressions, clicks, proposals, creatives.</p>
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="kicker">Features</div>
+      <h2>Three layers of defense. Zero survivors.</h2>
+      <p>Network interception, DOM annihilation, and telemetry silencing — stacked so that if one layer misses, the next doesn't.</p>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <div class="icon">⊘</div>
+        <h3>Network kill-switch</h3>
+        <p>Every ad endpoint — 43 of them — is intercepted and cancelled before a single byte leaves the machine. Inventory, bids, policy, media, delivery, promo: all dead.</p>
       </div>
-      <div class="feature rv">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 19.8 5.5v5.9c0 4.9-3.3 8.2-7.8 9.9-4.5-1.7-7.8-5-7.8-9.9V5.5L12 2.6z"/><path d="M8.9 12.1l2.2 2.2 4-4.4"/></svg></div>
-        <h3>Shield Dashboard</h3>
-        <p>Badge plus panel: funnel stages, top surfaces, latest stops, sparkline, DOM-hide counter. One toggle.</p>
+      <div class="card">
+        <div class="icon">▢</div>
+        <h3>DOM annihilation</h3>
+        <p>Ad containers, sponsor cards, top banners, home takeovers, MCP cards — hidden with aggressive CSS so even cached shells can't flash on screen.</p>
       </div>
-      <div class="feature rv d1">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></div>
-        <h3>Sponsored Cards</h3>
-        <p>Server-rendered <code>sponsored-ad</code> creatives carry no keywords — hidden by their real markup instead.</p>
+      <div class="card">
+        <div class="icon">▢</div>
+        <h3>Telemetry silenced</h3>
+        <p>Ad-density and display-ad telemetry never phone home. No impressions, no clicks, no engagement signals. Your usage stays yours.</p>
       </div>
-      <div class="feature rv d2">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></div>
-        <h3>Update Survival</h3>
-        <p>In-app updater restarts bypass the patch — the launcher adopts the newer live payload on next start.</p>
+      <div class="card">
+        <div class="icon">raison</div>
+        <h3>Live shield dashboard</h3>
+        <p>A real-time dashboard inside Freebuff shows every blocked request, per-stage counts, and recent events. Watch ads die as they're attempted.</p>
+      </div>
+      <div class="card">
+        <div class="icon">↻</div>
+        <h3>Survives updates</h3>
+        <p>An audit tool scrapes every route from each new Freebuff release and exits non-zero on gaps. 0.0.192: 43/43 blocked on day one.</p>
+      </div>
+      <div class="card">
+        <div class="icon">⚡</div>
+        <h3>Zero config</h3>
+        <p>Patch once, launch, done. Rebuild the extension, restart the app — no repatch needed. The dashboard client reloads at activate time.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="block" id="how" style="padding-top:0">
-  <div class="wrap">
-    <p class="kicker rv">Mechanism</p>
-    <h2 class="rv">Why patching is the only way in.</h2>
-    <p class="lede rv">Electron ignores <code>--require</code>, <code>NODE_OPTIONS</code> and <code>--app</code> for packaged apps — and <code>ELECTRON_RUN_AS_NODE</code> turns the app into a plain Node process. So the patch lives in the payload.</p>
-    <div class="flow">
-      <div class="fstep rv"><p class="n">01</p><h3>Extract</h3><p>AppImage unpacks to a work dir; re-extracted when its hash changes.</p></div>
-      <span class="farr rv d1">&#8594;</span>
-      <div class="fstep rv d1"><p class="n">02</p><h3>Patch</h3><p><code>app.asar</code> becomes <code>app/</code>, loader prepended to <code>main.cjs</code>.</p></div>
-      <span class="farr rv d2">&#8594;</span>
-      <div class="fstep rv d2"><p class="n">03</p><h3>Activate</h3><p>Extension hooks the session before boot; dashboard injects per page.</p></div>
+<section id="how">
+  <div class="container">
+    <div class="section-head">
+      <div class="kicker">How it works</div>
+      <h2>Three steps. Then forget it exists.</h2>
+      <p>Install once. The remover patches the Freebuff app, loads on every launch, and stays out of your way.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="n">01 · INSTALL</div><h3>Clone & build</h3><p>Clone the repo, run npm install and npm run build. The dist/ is what the app loads.</p></div>
+      <div class="step"><div class="n">02 · PATCH</div><h3>Patch the app</h3><p>Run patch-freebuff-app.mjs against the extracted AppImage. It repacks app.asar with the loader baked in.</p></div>
+      <div class="step"><div class="n">03 · LAUNCH</div><h3>Launch & verify</h3><p>Start Freebuff. The shield activates, the dashboard goes live, and every ad route is blocked. Check the debug log for "Blocked ad request".</p></div>
     </div>
   </div>
 </section>
 
-<section class="block" id="stats" style="padding-top:0">
-  <div class="wrap">
-    <div class="stats">
-      <div class="stat rv"><div class="stat-value">19</div><div class="stat-label">Endpoints blocked</div></div>
-      <div class="stat rv d1"><div class="stat-value">10</div><div class="stat-label">Surfaces covered</div></div>
-      <div class="stat rv d2"><div class="stat-value">154</div><div class="stat-label">Tests passing</div></div>
-      <div class="stat rv d3"><div class="stat-value">92%</div><div class="stat-label">Coverage enforced</div></div>
-    </div>
+<section class="reveal">
+  <div class="container">
+    <h2><span class="muted">Ads are not a feature.</span><br>They're a tax on your attention.</h2>
+    <p>We removed the tax. Keep the product.</p>
   </div>
 </section>
 
-<section class="block faq" id="faq" style="padding-top:0">
-  <div class="faq-head rv">
-    <p class="kicker">FAQ</p>
-    <h2>Asked, answered.</h2>
+<section id="faq">
+  <div class="container">
+    <div class="section-head">
+      <div class="kicker">FAQ</div>
+      <h2>Questions, answered.</h2>
+    </div>
+    <details open><summary>Does this break Freebuff updates?</summary><p>No. The patch only injects a require() into main.cjs and repacks app.asar. Freebuff's own updater still works; re-run the patch after a major update if needed.</p></details>
+    <details><summary>Why does "Couldn't check for updates" appear?</summary><p>That shows when running the extracted app (no APPIMAGE env). Launch the AppImage directly for update checks — but that bypasses the patch. Patched-extract is the recommended flow.</p></details>
+    <details><summary>Is my data sent anywhere?</summary><p>No. The remover is fully local. It blocks telemetry endpoints and never phones home itself.</p></details>
+    <details><summary>Which Freebuff versions are supported?</summary><p>0.0.186 and 0.0.192 are verified live. The audit tool covers any future release automatically.</p></details>
+    <details><summary>Can I contribute?</summary><p>Yes — PRs welcome. Run npm test and npm run audit before submitting.</p></details>
   </div>
-  <div class="faq-list">
-    <details class="faq-item rv" open>
-      <summary>Do I need to do anything when Freebuff updates?<svg class="plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
-      <p class="faq-a">No. Restart the app from your icon — the launcher adopts the newer payload and re-patches it by itself.</p>
-    </details>
-    <details class="faq-item rv">
-      <summary>How do I prove blocking is active?<svg class="plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
-      <p class="faq-a">Launch with <code>--remote-debugging-port=9222</code> and run <code>node scripts/verify-remover.mjs</code> — expect <code>PASS</code>. Or set <code>"logLevel": "debug"</code> and watch <code>Blocked ad request:</code> lines in the extension log.</p>
-    </details>
-    <details class="faq-item rv">
-      <summary>Does it modify my Freebuff install?<svg class="plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
-      <p class="faq-a">No. The AppImage file is never touched — the patch applies to an extracted copy under <code>/tmp</code>, with the original archive preserved as <code>app.asar.orig</code>.</p>
-    </details>
-    <details class="faq-item rv">
-      <summary>Does the extension phone home?<svg class="plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
-      <p class="faq-a">No. Zero network calls of its own — local filtering, CSS hiding, file logging. See <a href="https://github.com/10xdev4u-alt/freebuff-ads-remover/blob/main/SECURITY.md">SECURITY.md</a>.</p>
-    </details>
-    <details class="faq-item rv">
-      <summary>How do I turn off just the dashboard?<svg class="plus" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></summary>
-      <p class="faq-a">Set <code>"dashboard": false</code> in the config — blocking keeps working and the badge unmounts.</p>
-    </details>
+</section>
+
+<section class="final">
+  <div class="container">
+    <h2>Clean desktop.<br><span class="grad">Zero ads.</span></h2>
+    <p>Install in five minutes. Watch every ad die in real time.</p>
+    <div class="cta-row" style="justify-content:center">
+      <a class="btn btn-primary" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">Get the remover →</a>
+      <a class="btn btn-ghost" href="https://github.com/10xdev4u-alt/freebuff-ads-remover#readme">Read the docs</a>
+    </div>
   </div>
 </section>
 
 <footer>
-  <div class="frow"><img src="assets/logo.svg" alt="">Freebuff Ads Remover</div>
-  <p>Built by 10xdev4u-alt + the-ai-developer &middot; MIT &middot; 2026 &middot; <a href="https://github.com/10xdev4u-alt/freebuff-ads-remover">GitHub</a></p>
+  <div class="container footer-row">
+    <div>© 2026 Freebuff Ads Remover · MIT License</div>
+    <div><a href="https://github.com/10xdev4u-alt/freebuff-ads-remover">GitHub</a> · <a href="https://github.com/10xdev4u-alt/freebuff-ads-remover/issues">Issues</a></div>
+  </div>
 </footer>
 
-<script>
-
-// ===== FAR-CLIENT-START (generated — see CONTRIBUTING.md) =====
-"use strict";
-/**
- * Classic-script contract: this file may contain ONLY type imports and no
- * value exports. dist/dashboard-client.js is evaluated verbatim inside the
- * Freebuff page via webContents.executeJavaScript, so any emitted import or
- * export statement would be a syntax error in the page.
- */
-(() => {
-    'use strict';
-    const HOST_ID = 'far-shield-host';
-    const STAGE_META = [
-        { id: 'inventory', label: 'Inv', color: '#9aa3b5' },
-        { id: 'bid', label: 'Bid', color: '#f2b84b' },
-        { id: 'policy', label: 'Pol', color: '#6aa8ff' },
-        { id: 'media', label: 'Med', color: '#c084fc' },
-        { id: 'delivery', label: 'Dlv', color: '#3ddc84' },
-        { id: 'promo', label: 'Prm', color: '#ff7d9c' },
-    ];
-    const STAGE_TITLES = {
-        inventory: 'Inventory',
-        bid: 'Bid',
-        policy: 'Policy',
-        media: 'Media',
-        delivery: 'Delivery',
-        promo: 'Promo',
-    };
-    const SHIELD_SVG = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">'
-        + '<path d="M12 2.6 19.8 5.5v5.9c0 4.9-3.3 8.2-7.8 9.9-4.5-1.7-7.8-5-7.8-9.9V5.5L12 2.6z"'
-        + ' stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>'
-        + '<path d="M8.9 12.1l2.2 2.2 4-4.4" stroke="currentColor" stroke-width="1.8"'
-        + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    const CSS = `
-:host {
-  all: initial;
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 2147483646;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-.far-root { all: initial; display: block; color: #e8ebf1; }
-
-.badge {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(150deg, #262a33 0%, #171a20 70%);
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-}
-.badge:hover {
-  transform: translateY(-1px);
-  border-color: rgba(61, 220, 132, 0.5);
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(61, 220, 132, 0.15);
-}
-.badge:focus-visible { outline: 2px solid #3ddc84; outline-offset: 2px; }
-.mark { display: inline-flex; width: 22px; height: 22px; color: #c9d1de; }
-.mark svg { width: 100%; height: 100%; display: block; }
-.mark-sm { width: 15px; height: 15px; }
-.badge-count {
-  position: absolute;
-  right: -5px;
-  top: -5px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #3ddc84;
-  color: #06220f;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-  font-variant-numeric: tabular-nums;
-}
-.badge.pulse { animation: far-pulse 0.55s ease; }
-@keyframes far-pulse {
-  0% { transform: scale(1); }
-  35% { transform: scale(1.14); }
-  100% { transform: scale(1); }
-}
-
-.panel {
-  position: absolute;
-  right: 0;
-  bottom: 58px;
-  width: 340px;
-  max-height: 72vh;
-  overflow: auto;
-  background: linear-gradient(180deg, #1b1e25 0%, #14161b 100%);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 14px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  color: #e8ebf1;
-  padding: 14px 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  animation: far-in 0.18s ease;
-  scrollbar-width: thin;
-  scrollbar-color: #3a3f4b transparent;
-}
-.panel[hidden] { display: none; }
-.panel::-webkit-scrollbar { width: 6px; }
-.panel::-webkit-scrollbar-thumb { background: #3a3f4b; border-radius: 3px; }
-@keyframes far-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  color: #e8ebf1;
-}
-.header-title { display: flex; align-items: center; gap: 7px; }
-.version {
-  font-size: 10px;
-  font-weight: 600;
-  color: #6d7488;
-  font-variant-numeric: tabular-nums;
-}
-.version:empty { display: none; }
-.live {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #8b93a7;
-  font-weight: 600;
-}
-.live-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #3ddc84;
-  box-shadow: 0 0 8px rgba(61, 220, 132, 0.9);
-  animation: far-blink 1.6s infinite;
-}
-@keyframes far-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-
-.hero {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-}
-.hero-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.header-total {
-  font-size: 32px;
-  line-height: 1;
-  font-weight: 750;
-  color: #3ddc84;
-  font-variant-numeric: tabular-nums;
-}
-.hero-label { font-size: 11px; color: #8b93a7; white-space: nowrap; }
-.spark { width: 76px; height: auto; display: block; overflow: visible; }
-.spark-line {
-  fill: none;
-  stroke: #3ddc84;
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.spark-area { fill: url(#far-spark-fill); stroke: none; }
-
-.pipeline {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-top: 2px;
-}
-.stage {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 8px;
-  border-radius: 10px;
-  background: #101318;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-.stage.lit { border-color: rgba(255, 255, 255, 0.12); background: #141821; }
-.stage-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--stage-color, #9aa3b5);
-  box-shadow: 0 0 7px var(--stage-color, transparent);
-}
-.stage.lit .stage-dot { box-shadow: 0 0 9px var(--stage-color); }
-.stage-label {
-  font-size: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #8b93a7;
-  white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.stage-count {
-  margin-left: auto;
-  font-size: 12px;
-  font-weight: 700;
-  color: #e8ebf1;
-  font-variant-numeric: tabular-nums;
-}
-.stage.hit { animation: far-hit 0.7s ease; }
-@keyframes far-hit {
-  0% { box-shadow: 0 0 0 1px var(--stage-color); background: rgba(255, 255, 255, 0.09); }
-  100% { box-shadow: 0 0 0 1px transparent; background: #101318; }
-}
-.section-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #7d8598;
-  font-weight: 650;
-  margin-top: 2px;
-}
-.surfaces,
-.events {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  max-height: 118px;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #3a3f4b transparent;
-}
-.surfaces::-webkit-scrollbar,
-.events::-webkit-scrollbar { width: 6px; }
-.surfaces::-webkit-scrollbar-thumb,
-.events::-webkit-scrollbar-thumb { background: #3a3f4b; border-radius: 3px; }
-.surface-row {
-  display: grid;
-  grid-template-columns: 84px 1fr 28px;
-  gap: 7px;
-  align-items: center;
-  font-size: 11px;
-  padding: 3px 6px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.025);
-}
-.surface-name {
-  color: #aab1c2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.surface-bar {
-  height: 6px;
-  border-radius: 3px;
-  background: #22262f;
-  overflow: hidden;
-}
-.surface-fill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #2fbf71, #3ddc84);
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-.surface-count {
-  text-align: right;
-  color: #e8ebf1;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
-.event {
-  display: grid;
-  grid-template-columns: auto auto auto 1fr;
-  gap: 7px;
-  align-items: center;
-  font-size: 11px;
-  padding: 2px 0;
-}
-.event.enter { animation: far-slide 0.3s ease; }
-@keyframes far-slide {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: none; }
-}
-.event .t {
-  color: #6d7488;
-  font-variant-numeric: tabular-nums;
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-}
-.event-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #9aa3b5;
-}
-.event-tag {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 10px;
-  font-weight: 600;
-  color: #8b93a7;
-  white-space: nowrap;
-}
-.event-pill {
-  justify-self: start;
-  max-width: 100%;
-  padding: 1px 7px;
-  border-radius: 5px;
-  background: #22262f;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  color: #c6cbd6;
-  font-size: 10.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.empty { color: #6d7488; font-size: 11px; font-style: italic; }
-
-.footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 10px;
-  color: #6d7488;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  padding-top: 8px;
-}
-.dom-hidden::before { content: "\\25CF  "; color: #c084fc; }
-
-@media (prefers-reduced-motion: reduce) {
-  .badge.pulse,
-  .stage.hit,
-  .event.enter,
-  .panel,
-  .live-dot { animation: none; }
-}
-`;
-    let state = null;
-    function fmtTime(at) {
-        const date = new Date(at);
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-    }
-    function endpointLabel(endpoint) {
-        const parts = endpoint.split('/').filter(Boolean);
-        return parts[parts.length - 1] ?? endpoint;
-    }
-    function surfaceLabel(surface) {
-        return surface.replace(/([A-Z])/g, ' $1').toLowerCase();
-    }
-    function stageColor(stage) {
-        return STAGE_META.find((meta) => meta.id === stage)?.color ?? '#9aa3b5';
-    }
-    function buildPipelineMarkup() {
-        return STAGE_META.map((meta) => {
-            return `<div class="stage" data-stage="${meta.id}" role="listitem" title="${STAGE_TITLES[meta.id]}" style="--stage-color: ${meta.color}">
-        <span class="stage-dot"></span>
-        <span class="stage-label">${meta.label}</span>
-        <span class="stage-count" data-stage-count="${meta.id}">0</span>
-      </div>`;
-        }).join('');
-    }
-    function buildMarkup() {
-        return `
-      <button class="badge" type="button" data-f="badge" aria-label="Freebuff Shield dashboard">
-        <span class="mark" aria-hidden="true">${SHIELD_SVG}</span>
-        <span class="badge-count" data-f="badgeCount">0</span>
-      </button>
-      <section class="panel" data-f="panel" hidden aria-label="Ad blocking dashboard">
-        <header class="header">
-          <div class="header-title"><span class="mark mark-sm" aria-hidden="true">${SHIELD_SVG}</span> Freebuff Shield <span class="version" data-f="version"></span></div>
-          <div class="live"><span class="live-dot"></span> live</div>
-        </header>
-        <div class="hero">
-          <div class="hero-main">
-            <span class="header-total" data-f="headerTotal">0</span>
-            <span class="hero-label">ads stopped this session</span>
-          </div>
-          <svg class="spark" data-f="spark" viewBox="0 0 72 30" aria-hidden="true">
-            <defs><linearGradient id="far-spark-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#3ddc84" stop-opacity="0.28"/>
-              <stop offset="1" stop-color="#3ddc84" stop-opacity="0"/>
-            </linearGradient></defs>
-            <path class="spark-area" data-f="sparkArea" d=""/>
-            <polyline class="spark-line" data-f="sparkLine" points=""/>
-          </svg>
-        </div>
-        <div class="pipeline" role="list" aria-label="Ad funnel stages">${buildPipelineMarkup()}</div>
-        <div class="section-label">Top surfaces</div>
-        <ul class="surfaces" data-f="surfaces"></ul>
-        <div class="section-label">Latest stops</div>
-        <ul class="events" data-f="events"></ul>
-        <footer class="footer">
-          <span class="dom-hidden" data-f="domHidden">0 hidden in page</span>
-          <span class="since" data-f="since"></span>
-        </footer>
-      </section>
-    `;
-    }
-    function bind(root) {
-        const byData = (key) => {
-            const found = root.querySelector(`[data-f="${key}"]`);
-            if (!found)
-                throw new Error(`dashboard markup missing data-f="${key}"`);
-            return found;
-        };
-        const stageCounts = {};
-        for (const meta of STAGE_META) {
-            const node = root.querySelector(`[data-stage-count="${meta.id}"]`);
-            if (node)
-                stageCounts[meta.id] = node;
-        }
-        return {
-            badge: byData('badge'),
-            badgeCount: byData('badgeCount'),
-            panel: byData('panel'),
-            headerTotal: byData('headerTotal'),
-            version: byData('version'),
-            sparkLine: root.querySelector('[data-f="sparkLine"]'),
-            sparkArea: root.querySelector('[data-f="sparkArea"]'),
-            stageCounts,
-            surfaces: byData('surfaces'),
-            events: byData('events'),
-            domHidden: byData('domHidden'),
-            since: byData('since'),
-        };
-    }
-    function createHost(doc) {
-        const host = doc.createElement('div');
-        host.id = HOST_ID;
-        const shadow = host.attachShadow({ mode: 'open' });
-        const style = doc.createElement('style');
-        style.textContent = CSS;
-        shadow.appendChild(style);
-        const root = doc.createElement('div');
-        root.className = 'far-root';
-        root.innerHTML = buildMarkup();
-        shadow.appendChild(root);
-        const bound = bind(root);
-        doc.body.appendChild(host);
-        return { host, bound };
-    }
-    function freshState(doc, options) {
-        state?.observer?.disconnect();
-        const { host, bound } = createHost(doc);
-        const nextState = {
-            host,
-            bound,
-            selectors: options.hideSelectors,
-            version: options.version ?? '',
-            observer: null,
-            counted: new WeakSet(),
-            domHidden: 0,
-            prevTotal: 0,
-            prevStages: {},
-            lastEventAt: 0,
-        };
-        host.__farShield = nextState;
-        wireBadge(nextState);
-        return nextState;
-    }
-    function wireBadge(s) {
-        s.bound.badge.addEventListener('click', () => {
-            const hidden = s.bound.panel.hasAttribute('hidden');
-            if (hidden) {
-                s.bound.panel.removeAttribute('hidden');
-            }
-            else {
-                s.bound.panel.setAttribute('hidden', '');
-            }
-        });
-    }
-    function readRegistry(host) {
-        return host.__farShield ?? null;
-    }
-    function ensureObserver(doc, s) {
-        if (s.observer || typeof MutationObserver === 'undefined')
-            return;
-        const observer = new MutationObserver((entries) => {
-            let changed = false;
-            for (const entry of entries) {
-                for (const raw of entry.addedNodes) {
-                    if (raw.nodeType !== 1)
-                        continue;
-                    changed = countMatches(raw, s) || changed;
-                }
-            }
-            if (changed)
-                renderDomCount(s);
-        });
-        observer.observe(doc.documentElement, { childList: true, subtree: true });
-        s.observer = observer;
-    }
-    function countMatches(element, s) {
-        if (!s.selectors)
-            return false;
-        let changed = false;
-        if (!s.counted.has(element) && element.matches(s.selectors)) {
-            s.counted.add(element);
-            s.domHidden += 1;
-            changed = true;
-        }
-        for (const nested of element.querySelectorAll(s.selectors)) {
-            if (s.counted.has(nested))
-                continue;
-            s.counted.add(nested);
-            s.domHidden += 1;
-            changed = true;
-        }
-        return changed;
-    }
-    function renderVersion(s) {
-        s.bound.version.textContent = s.version ? `v${s.version}` : '';
-    }
-    function renderDomCount(s) {
-        s.bound.domHidden.textContent = `${String(s.domHidden)} hidden in page`;
-    }
-    function renderSpark(s, snapshot) {
-        const line = s.bound.sparkLine;
-        const area = s.bound.sparkArea;
-        if (!line || !area)
-            return;
-        const buckets = snapshot.perMinute.slice(-30);
-        if (buckets.length === 0) {
-            line.setAttribute('points', '');
-            area.setAttribute('d', '');
-            return;
-        }
-        const width = 72;
-        const height = 30;
-        const pad = 3;
-        const vals = buckets.map((bucket) => bucket.count);
-        const max = Math.max(1, ...vals);
-        const step = buckets.length > 1 ? (width - pad * 2) / (buckets.length - 1) : 0;
-        const pts = vals.map((v, i) => `${(pad + i * step).toFixed(1)},${(height - pad - (v / max) * (height - pad * 2)).toFixed(1)}`);
-        line.setAttribute('points', pts.join(' '));
-        const base = height - pad;
-        area.setAttribute('d', `M${String(pad)},${String(base)} L${pts.join(' L')} L${(width - pad).toFixed(1)},${String(base)} Z`);
-    }
-    function restartClass(element, className) {
-        if (!element)
-            return;
-        element.classList.remove(className);
-        element.getBoundingClientRect();
-        element.classList.add(className);
-    }
-    function renderSurfaces(s, snapshot) {
-        const entries = Object.entries(snapshot.bySurface)
-            .filter(([, count]) => count > 0)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 6);
-        const max = entries[0]?.[1] ?? 1;
-        const doc = s.host.ownerDocument;
-        const list = doc.createElement('ul');
-        list.className = 'surfaces';
-        list.setAttribute('data-f', 'surfaces');
-        for (const [surface, count] of entries) {
-            const row = doc.createElement('li');
-            row.className = 'surface-row';
-            row.setAttribute('data-surface', surface);
-            const name = doc.createElement('span');
-            name.className = 'surface-name';
-            name.textContent = surfaceLabel(surface);
-            const bar = doc.createElement('span');
-            bar.className = 'surface-bar';
-            const fill = doc.createElement('span');
-            fill.className = 'surface-fill';
-            fill.style.width = `${String(Math.round((count / max) * 100))}%`;
-            bar.appendChild(fill);
-            const number = doc.createElement('span');
-            number.className = 'surface-count';
-            number.textContent = String(count);
-            row.append(name, bar, number);
-            list.appendChild(row);
-        }
-        s.bound.surfaces.replaceWith(list);
-        s.bound.surfaces = list;
-    }
-    function renderEvents(s, snapshot) {
-        const doc = s.host.ownerDocument;
-        const list = doc.createElement('ul');
-        list.className = 'events';
-        list.setAttribute('data-f', 'events');
-        const recent = snapshot.recent.slice(0, 6);
-        if (recent.length === 0) {
-            const empty = doc.createElement('li');
-            empty.className = 'empty';
-            empty.textContent = 'watching for ads…';
-            list.appendChild(empty);
-        }
-        else {
-            recent.forEach((event, index) => {
-                const item = doc.createElement('li');
-                item.className = 'event';
-                if (index === 0 && event.at !== s.lastEventAt)
-                    item.classList.add('enter');
-                const time = doc.createElement('span');
-                time.className = 't';
-                time.textContent = fmtTime(event.at);
-                const dot = doc.createElement('span');
-                dot.className = 'event-dot';
-                dot.setAttribute('data-stage', event.stage);
-                dot.style.background = stageColor(event.stage);
-                const tag = doc.createElement('span');
-                tag.className = 'event-tag';
-                tag.textContent = `[${event.stage}]`;
-                const pill = doc.createElement('span');
-                pill.className = 'event-pill';
-                pill.textContent = endpointLabel(event.endpoint);
-                item.append(time, dot, tag, pill);
-                list.appendChild(item);
-            });
-            s.lastEventAt = recent[0]?.at ?? s.lastEventAt;
-        }
-        s.bound.events.replaceWith(list);
-        s.bound.events = list;
-    }
-    function install(options) {
-        const doc = document;
-        const existing = doc.getElementById(HOST_ID);
-        if (existing?.shadowRoot) {
-            const shared = readRegistry(existing);
-            if (shared) {
-                shared.selectors = options.hideSelectors;
-                shared.version = options.version ?? shared.version;
-                state = shared;
-                renderVersion(shared);
-                ensureObserver(doc, shared);
-                return;
-            }
-            const bound = bind(existing.shadowRoot);
-            const adopted = {
-                host: existing,
-                bound,
-                selectors: options.hideSelectors,
-                version: options.version ?? '',
-                observer: null,
-                counted: new WeakSet(),
-                domHidden: 0,
-                prevTotal: 0,
-                prevStages: {},
-                lastEventAt: 0,
-            };
-            existing.__farShield = adopted;
-            wireBadge(adopted);
-            state = adopted;
-            renderVersion(adopted);
-            ensureObserver(doc, adopted);
-            return;
-        }
-        const next = freshState(doc, options);
-        state = next;
-        renderVersion(next);
-        ensureObserver(doc, next);
-    }
-    function update(snapshot) {
-        if (!state)
-            return;
-        if (!state.host.isConnected) {
-            install({ hideSelectors: state.selectors, version: state.version });
-        }
-        const s = state;
-        s.bound.badgeCount.textContent = String(snapshot.total);
-        s.bound.headerTotal.textContent = String(snapshot.total);
-        if (snapshot.total > s.prevTotal)
-            restartClass(s.bound.badge, 'pulse');
-        s.prevTotal = snapshot.total;
-        for (const meta of STAGE_META) {
-            const counts = snapshot.byStage;
-            const count = counts[meta.id] ?? 0;
-            const node = s.bound.stageCounts[meta.id];
-            if (node) {
-                node.textContent = String(count);
-                const stageEl = node.closest('.stage');
-                if (count > (s.prevStages[meta.id] ?? 0)) {
-                    restartClass(stageEl, 'hit');
-                }
-                stageEl?.classList.toggle('lit', count > 0);
-            }
-            s.prevStages[meta.id] = count;
-        }
-        renderSurfaces(s, snapshot);
-        renderEvents(s, snapshot);
-        renderSpark(s, snapshot);
-        renderDomCount(s);
-        s.bound.since.textContent = `since ${fmtTime(snapshot.startedAt)}`;
-    }
-    function isOpen() {
-        if (!state)
-            return false;
-        return !state.bound.panel.hasAttribute('hidden');
-    }
-    function unmount() {
-        state?.observer?.disconnect();
-        state = null;
-        document.getElementById(HOST_ID)?.remove();
-    }
-    const api = { install, update, unmount, isOpen };
-    globalThis.farBuffShield = api;
-})();
-//# sourceMappingURL=dashboard-client.js.map
-// ===== FAR-CLIENT-END =====
-
-</script>
-<script>
-(function () {
-  'use strict';
-  document.documentElement.classList.add('js');
-
-  /* mouse-tracked hero glow, rAF-throttled */
-  var vessel = document.getElementById('heroVessel');
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var frame = null, mx = 0, my = 0;
-  if (vessel && !reduceMotion) {
-    vessel.addEventListener('mousemove', function (e) {
-      var r = vessel.getBoundingClientRect();
-      mx = e.clientX - r.left; my = e.clientY - r.top;
-      if (frame !== null) return;
-      frame = requestAnimationFrame(function () {
-        frame = null;
-        vessel.style.setProperty('--mx', mx + 'px');
-        vessel.style.setProperty('--my', my + 'px');
-      });
-    });
-  }
-
-  /* copy install command */
-  var copyBtn = document.getElementById('copyBtn');
-  copyBtn.addEventListener('click', function () {
-    var text = document.getElementById('installCmd').textContent;
-    var done = function () {
-      copyBtn.classList.add('copied');
-      copyBtn.querySelector('span').textContent = 'Copied';
-      setTimeout(function () {
-        copyBtn.classList.remove('copied');
-        copyBtn.querySelector('span').textContent = 'Copy';
-      }, 1600);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, done);
-    } else { done(); }
-  });
-
-  /* endpoint ticker content (x2 for the loop) */
-  var eps = ['/api/ad/impression', '/api/ad/engagement', '/api/ad/policy', '/api/ad/proposal', '/api/ad/slot', '/api/ad/break', '/api/ad/billboard', '/api/ad/partner', '/api/ad/invitation/displayed', '/api/ads', '/api/v1/ads/agentic/offer'];
-  var track = document.getElementById('tickerTrack');
-  var half = eps.map(function (e) { return '<span><b>BLOCKED</b><i>&rsaquo;</i>' + e + '</span>'; }).join('');
-  track.innerHTML = half + half;
-
-  /* scroll reveals */
-  var io = ('IntersectionObserver' in window && !reduceMotion)
-    ? new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-          if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
-        });
-      }, { threshold: 0.12 })
-    : null;
-  document.querySelectorAll('.rv').forEach(function (el) { if (io) io.observe(el); else el.classList.add('in'); });
-
-  /* LIVE shield demo: the real client, fed a simulated ad stream */
-  var SURFACE = { impression: 'sponsorBreak', engagement: 'sponsorBreak', proposal: 'showcase', policy: 'sponsorBreak', ads: 'sponsorBreak', slot: 'sponsorBreak', displayed: 'invitation' };
-  var STAGE = { impression: 'delivery', engagement: 'delivery', proposal: 'bid', policy: 'policy', ads: 'inventory', slot: 'inventory', displayed: 'promo' };
-  var FEED = ['impression', 'impression', 'engagement', 'proposal', 'impression', 'policy', 'engagement', 'ads', 'impression', 'displayed', 'engagement', 'proposal'];
-  var demo = {
-    total: 34, at: Date.now(), startedAt: Date.now() - 9 * 60000,
-    byStage: { inventory: 4, bid: 6, policy: 2, media: 0, delivery: 21, promo: 1 },
-    bySurface: { sponsorBreak: 26, billboard: 0, intermission: 0, spotlight: 0, showcase: 6, sponsoredTask: 0, sponsoredRun: 0, partner: 0, invitation: 1, sponsoredCard: 0 },
-    byEndpoint: {}, recent: [], perMinute: []
-  };
-  (function seed() {
-    var now = Date.now(), m = Math.floor(now / 60000);
-    for (var i = 11; i >= 0; i--) demo.perMinute.push({ minute: m - i, count: 1 + ((i * 7) % 5) });
-    var t = now;
-    FEED.slice(0, 6).forEach(function (k) {
-      t -= 4000 + ((t / 1000) % 17) * 1000;
-      demo.recent.push({ stage: STAGE[k], surface: SURFACE[k], endpoint: '/api/ad/' + k, at: t });
-    });
-  })();
-  var cursor = 0;
-  farBuffShield.install({ hideSelectors: 'a.sponsored-ad', version: '1.2.0' });
-  farBuffShield.update(demo);
-  setInterval(function () {
-    var k = FEED[cursor % FEED.length]; cursor++;
-    demo.total++;
-    demo.at = Date.now();
-    demo.byStage[STAGE[k]]++;
-    demo.bySurface[SURFACE[k]]++;
-    demo.byEndpoint['/api/ad/' + k] = (demo.byEndpoint['/api/ad/' + k] || 0) + 1;
-    demo.recent.unshift({ stage: STAGE[k], surface: SURFACE[k], endpoint: '/api/ad/' + k, at: Date.now() });
-    demo.recent = demo.recent.slice(0, 20);
-    var min = Math.floor(Date.now() / 60000);
-    var last = demo.perMinute[demo.perMinute.length - 1];
-    if (last && last.minute === min) last.count++;
-    else demo.perMinute.push({ minute: min, count: 1 });
-    demo.perMinute = demo.perMinute.slice(-30);
-    farBuffShield.update(demo);
-  }, 1400);
-})();
-</script>
 </body>
 </html>
