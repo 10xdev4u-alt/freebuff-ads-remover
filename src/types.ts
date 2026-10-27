@@ -39,6 +39,8 @@ export function stageForEndpoint(endpoint: string): AdStage {
   if (endpoint.includes('/api/ad/invitation')) return 'promo';
   if (endpoint.includes('/api/sponsored-survey')) return 'promo';
   if (endpoint.includes('/api/telemetry/ad-density')) return 'delivery';
+  if (endpoint.includes('/api/telemetry/display-ad')) return 'delivery';
+  if (endpoint.includes('/api/ad/display')) return 'delivery';
   if (endpoint.includes('/api/ad/intent')) return 'inventory';
   if (endpoint.includes('/api/ad/report')) return 'delivery';
   if (endpoint.includes('creative-image')) return 'media';
@@ -79,6 +81,8 @@ export const AD_ENDPOINTS = [
   // Sponsored survey prompt (advertiser questionnaire served through the orchestrator).
   '/api/sponsored-survey',
   '/api/telemetry/ad-density',
+  '/api/telemetry/display-ad',
+  '/api/ad/display',
 ] as const;
 
 export type AdEndpoint = (typeof AD_ENDPOINTS)[number];
@@ -225,6 +229,12 @@ export const AD_CSS_SELECTORS: Record<AdSurface, string[]> = {
     'a.sponsored-ad',
     'a.ad-card',
     '[class*="sponsored-ad"]',
+    // 0.0.192 new ad surfaces
+    '[class*="ad-home-takeover"]',
+    '[class*="ad-top-banner"]',
+    '[class*="ad-mcp-card"]',
+    '[class*="ad-sponsor"]',
+    '[class*="ad-report-dialog"]',
   ],
 };
 
