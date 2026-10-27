@@ -113,6 +113,14 @@
   .footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
   footer a{color:var(--muted)}
   footer a:hover{color:var(--fg)}
+
+  /* motion */
+  .reveal-on-scroll{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  .reveal-on-scroll.in{opacity:1;transform:none}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .hero-visual{animation:float 6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .eyebrow .dot{animation:pulse 1.6s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -252,5 +260,10 @@
   </div>
 </footer>
 
+
+<script>
+  const io = new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.card,.step,details,.stat,.reveal h2').forEach(el=>{el.classList.add('reveal-on-scroll');io.observe(el)});
+</script>
 </body>
 </html>
