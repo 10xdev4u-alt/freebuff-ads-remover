@@ -25,6 +25,8 @@ describe('ad stages', () => {
     '/api/v1/ads': 'inventory',
     '/api/sponsored-survey': 'promo',
     '/api/telemetry/ad-density': 'delivery',
+    '/api/telemetry/display-ad': 'delivery',
+    '/api/ad/display': 'delivery',
   };
 
   it('maps every known endpoint to a stage', () => {

@@ -49,7 +49,7 @@ for (const src of sources) {
   }
 }
 const AD_ROUTE = /(^|\/)ad(s)?\//i;
-const AD_EXTRA = /ad-density|sponsored-survey|creative-image/i;
+const AD_EXTRA = /ad-density|display-ad|sponsored-survey|creative-image/i;
 // Not ads, just words that contain "ad".
 const NOT_AD = /admission|adapter|address|admin/i;
 // Router mount prefix, not a handler.
