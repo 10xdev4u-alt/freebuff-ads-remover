@@ -105,6 +105,19 @@ describe('WebContentsCssTarget', () => {
     target.dispose();
   });
 
+  it('injects into the hosted workspace on freebuff.com', async () => {
+    const app = makeApp();
+    const wc = makeWebContents('https://freebuff.com/?thread=abc');
+    const logger = new Logger('error', false);
+    const target = new WebContentsCssTarget(app, () => [wc], logger);
+
+    await target.insertCSS('.ad {}');
+    await flush();
+
+    expect(wc.insertCSS).toHaveBeenCalledWith('.ad {}');
+    target.dispose();
+  });
+
   it('ignores devtools webContents', async () => {
     const app = makeApp();
     const wc = makeWebContents(APP_URL, 'devtools');

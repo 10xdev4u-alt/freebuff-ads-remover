@@ -81,12 +81,17 @@ the launcher (and the patch). The launcher self-heals on the next start:
    archive, and keeps the untouched original as app.asar.orig
 2. Electron boots resources/app/ and the loader requires the extension
 3. Extension reads config from ~/.config/freebuff-ads-remover/config.json
-4. Extension hooks into Electron session.webRequest.onBeforeRequest
+4. Extension hooks Electron session.webRequest.onBeforeRequest — the default
+   session for the locally served UI, plus every other session discovered from
+   a webContents (0.0.196 opens threads in a hosted workspace running in its
+   own `persist:freebuff-hosted-v1-*` partition)
 5. For each request, extension checks URL against ad patterns
 6. If ad request → cancel request (return empty)
 7. If non-ad request → allow (pass through)
 8. CSS fallback (webContents.insertCSS) hides any ad containers
-   that render before the network block
+   that render before the network block. It is injected into both app
+   surfaces: the local orchestrator origin and the hosted `freebuff.com`
+   workspace. Previewed third-party sites are never touched.
 ```
 
 ## Extension API

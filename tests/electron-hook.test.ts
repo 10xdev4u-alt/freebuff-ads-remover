@@ -7,6 +7,50 @@ import { Logger } from '../src/logger.js';
 
 const flushAsync = (): Promise<void> => new Promise((resolve) => { setTimeout(resolve, 0); });
 
+function makeContents(session: unknown): {
+  session: unknown;
+  getType: () => string;
+  getURL: () => string;
+  isDestroyed: () => boolean;
+  insertCSS: () => Promise<string>;
+  removeInsertedCSS: () => Promise<void>;
+  on: () => void;
+} {
+  return {
+    session,
+    getType: () => 'window',
+    getURL: () => 'http://127.0.0.1:5174/',
+    isDestroyed: () => false,
+    insertCSS: () => Promise.resolve('key'),
+    removeInsertedCSS: () => Promise.resolve(),
+    on: () => undefined,
+  };
+}
+
+function makeApp(): {
+  whenReady: () => Promise<void>;
+  on: (event: string, listener: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, listener: (...args: unknown[]) => void) => void;
+  emit: (event: string, ...args: unknown[]) => void;
+} {
+  const listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+  return {
+    whenReady: () => Promise.resolve(),
+    on: (event, listener) => {
+      const existing = listeners.get(event) ?? [];
+      existing.push(listener);
+      listeners.set(event, existing);
+    },
+    removeListener: (event, listener) => {
+      const existing = listeners.get(event) ?? [];
+      listeners.set(event, existing.filter((l) => l !== listener));
+    },
+    emit: (event, ...args) => {
+      for (const listener of listeners.get(event) ?? []) listener(...args);
+    },
+  };
+}
+
 describe('ElectronHook', () => {
   let hook: ElectronHook;
   let interceptor: AdInterceptor;
@@ -166,6 +210,67 @@ describe('ElectronHook', () => {
 
     hooked.deactivate();
     expect(dashboard.deactivate).toHaveBeenCalled();
+  });
+
+  it('hooks the hosted-workspace session exposed by a webContents', () => {
+    const mockSession = {
+      defaultSession: { webRequest: { onBeforeRequest: vi.fn() } },
+    };
+    const hostedRequest = { onBeforeRequest: vi.fn() };
+    const hostedContents = makeContents({ webRequest: hostedRequest });
+    const app = {
+      whenReady: () => Promise.resolve(),
+      on: vi.fn(),
+      removeListener: vi.fn(),
+    };
+
+    hook.activate(mockSession, {
+      app,
+      webContents: { getAllWebContents: () => [hostedContents] },
+    });
+
+    expect(hostedRequest.onBeforeRequest).toHaveBeenCalledWith(
+      { urls: ['*://*/*'] },
+      expect.any(Function),
+    );
+    expect(hook.getSessionCount()).toBe(2);
+  });
+
+  it('hooks sessions created after activation', () => {
+    const mockSession = {
+      defaultSession: { webRequest: { onBeforeRequest: vi.fn() } },
+    };
+    const app = makeApp();
+    hook.activate(mockSession, { app, webContents: { getAllWebContents: () => [] } });
+
+    const lateRequest = { onBeforeRequest: vi.fn() };
+    app.emit('session-created', {}, { webRequest: lateRequest });
+
+    expect(lateRequest.onBeforeRequest).toHaveBeenCalled();
+    expect(hook.getSessionCount()).toBe(2);
+  });
+
+  it('hooks a partition session from a late webContents and blocks there', () => {
+    const mockSession = {
+      defaultSession: { webRequest: { onBeforeRequest: vi.fn() } },
+    };
+    const app = makeApp();
+    hook.activate(mockSession, { app, webContents: { getAllWebContents: () => [] } });
+
+    const lateRequest = { onBeforeRequest: vi.fn() };
+    app.emit('web-contents-created', {}, makeContents({ webRequest: lateRequest }));
+
+    const listener = lateRequest.onBeforeRequest.mock.calls[0]?.[1] as (
+      details: { url: string; method: string },
+      callback: (response: { cancel?: boolean }) => void,
+    ) => void;
+    const callback = vi.fn();
+    listener({ url: 'https://freebuff.com/api/v1/ads/impression', method: 'POST' }, callback);
+    expect(callback).toHaveBeenCalledWith({ cancel: true });
+
+    hook.deactivate();
+    expect(lateRequest.onBeforeRequest).toHaveBeenCalledWith(null, null);
+    expect(hook.getSessionCount()).toBe(0);
   });
 
   it('leaves the dashboard untouched without the app API', () => {

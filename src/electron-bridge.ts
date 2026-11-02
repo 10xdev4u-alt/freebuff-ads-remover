@@ -7,8 +7,20 @@ export interface ElectronWebRequestLike {
   onBeforeRequest(filter: { urls: string[] } | null, listener: WebRequestListener | null): void;
 }
 
+export interface ElectronSessionLike {
+  webRequest?: ElectronWebRequestLike;
+}
+
 export interface ElectronSessionModuleLike {
-  defaultSession?: { webRequest?: ElectronWebRequestLike };
+  defaultSession?: ElectronSessionLike;
+}
+
+/**
+ * Electron webContents view of a session: `session.fromPartition()` is not
+ * enumerable, so a webContents is how the hosted-workspace partition is found.
+ */
+export interface ElectronWebContentsLike {
+  session?: ElectronSessionLike;
 }
 
 export interface ElectronAppLike {
