@@ -16,10 +16,16 @@ interface WcState {
   keys: Map<string, string>;
 }
 
-// Only the app's own UI (the locally served orchestrator) — never injected
-// into previewed third-party sites, whose class names could collide with
-// our ad-surface selectors.
+// The app's own UI is served two ways: locally by the orchestrator (shown at
+// home), and as the hosted workspace on freebuff.com, which the desktop app
+// opens for threads. Both are first-party Freebuff surfaces. Previewed
+// third-party sites are neither, and must never receive these rules.
 export const APP_URL_PATTERN = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?([/?#]|$)/;
+export const HOSTED_URL_PATTERN = /^https:\/\/(?:[a-z0-9-]+\.)*freebuff\.com(:\d+)?([/?#]|$)/i;
+
+export function isInjectionTarget(url: string): boolean {
+  return APP_URL_PATTERN.test(url) || HOSTED_URL_PATTERN.test(url);
+}
 
 /**
  * CssInjectionTarget backed by webContents.insertCSS — `session` has no
@@ -126,13 +132,14 @@ export class WebContentsCssTarget implements CssInjectionTarget {
   private injectInto(contents: WebContentsLike, id: string, css: string): void {
     if (this.disposed || contents.isDestroyed()) return;
     if (contents.getType() === 'devtools') return;
-    if (!APP_URL_PATTERN.test(contents.getURL())) return;
+    if (!isInjectionTarget(contents.getURL())) return;
     const state = this.states.get(contents);
     if (!state) return;
     const generation = state.generation;
     void contents
       .insertCSS(css)
       .then((key) => {
+        this.logger.debug('CSS injected', { url: contents.getURL(), id });
         if (this.disposed) return;
         const current = this.states.get(contents);
         if (!current || current.generation !== generation) return;

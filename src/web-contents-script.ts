@@ -1,6 +1,6 @@
 import type { ElectronAppLike } from './electron-bridge.js';
 import type { Logger } from './logger.js';
-import { APP_URL_PATTERN } from './web-contents-css.js';
+import { isInjectionTarget } from './web-contents-css.js';
 
 interface ScriptWebContentsLike {
   getType(): string;
@@ -99,12 +99,17 @@ export class WebContentsScriptTarget {
 
   private execute(contents: ScriptWebContentsLike, code: string): void {
     if (this.disposed || contents.isDestroyed()) return;
-    if (contents.getType() === 'devtools') return;
-    if (!APP_URL_PATTERN.test(contents.getURL())) return;
+    const url = contents.getURL();
+    const type = contents.getType();
+    if (type === 'devtools') return;
+    if (!isInjectionTarget(url)) return;
     void contents
       .executeJavaScript(code)
+      .then(() => {
+        this.logger.debug('Script target executed', { url, type, bytes: code.length });
+      })
       .catch((err: unknown) => {
-        this.logger.debug('executeJavaScript failed', err);
+        this.logger.debug('executeJavaScript failed', { url, type, err });
       });
   }
 }

@@ -164,6 +164,69 @@ describe('AdInterceptor', () => {
     }
   });
 
+  it('allows tracking endpoints when blockTracking is false', () => {
+    const allowed = new AdInterceptor(
+      { ...DEFAULT_CONFIG, blockTracking: false },
+      logger,
+    );
+    const trackingEndpoints = [
+      '/api/ad/impression',
+      '/api/ad/click',
+      '/api/ad/click-return',
+      '/api/ad/engagement',
+      '/api/ad/break-event',
+      '/api/ad/report',
+      '/api/v1/ads/impression',
+      '/api/v1/ads/click',
+      '/api/v1/ads/click-return',
+      '/api/v1/ads/engagement',
+      '/api/v1/ads/invitation/click',
+      '/api/v1/ads/invitation/event',
+    ];
+
+    for (const endpoint of trackingEndpoints) {
+      const result = allowed.intercept(`http://127.0.0.1:5174${endpoint}`, 'POST');
+      expect(result.blocked).toBe(false);
+    }
+  });
+
+  it('keeps blocking ad content when blockTracking is false', () => {
+    const allowed = new AdInterceptor(
+      { ...DEFAULT_CONFIG, blockTracking: false },
+      logger,
+    );
+    const adEndpoints = [
+      '/api/ad/break',
+      '/api/ad/policy',
+      '/api/ad/slot',
+      '/api/ad/proposal',
+      '/api/ad/display',
+      '/api/ads/first-party/creative-image/abc.png',
+      '/api/v1/ads/agentic/offer',
+      '/api/v1/ads/policy',
+      '/api/v1/ads/proposal',
+    ];
+
+    for (const endpoint of adEndpoints) {
+      const result = allowed.intercept(`http://127.0.0.1:5174${endpoint}`, 'POST');
+      expect(result.blocked).toBe(true);
+    }
+  });
+
+  it('does not count allowed tracking as a blocked request', () => {
+    const allowed = new AdInterceptor(
+      { ...DEFAULT_CONFIG, blockTracking: false },
+      logger,
+    );
+
+    allowed.intercept('http://127.0.0.1:5174/api/ad/impression', 'POST');
+    allowed.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
+
+    const stats = allowed.getStats();
+    expect(stats.requestCount).toBe(2);
+    expect(stats.blockCount).toBe(1);
+  });
+
   it('blocks proposal endpoints', () => {
     const result = interceptor.intercept('http://127.0.0.1:5174/api/ad/proposal', 'POST');
     expect(result.blocked).toBe(true);
