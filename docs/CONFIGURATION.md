@@ -37,7 +37,12 @@ Master toggle. When `false`, the extension does nothing.
 
 ### `blockTracking` (default: `true`)
 
-When `true`, blocks all tracking endpoints (impression, click, engagement). Set to `false` to allow tracking (not recommended).
+When `true`, blocks tracking endpoints (impression, click, click-return,
+engagement, report, break-event, invitation click/event, and their `/api/v1/ads`
+equivalents). Set to `false` to let those through so the ad server still
+sees analytics from an ad-free client — useful for comparing dashboards.
+Ad delivery, policy, slot, creative and proposal routes stay blocked either
+way.
 
 ### `cssFallback` (default: `true`)
 

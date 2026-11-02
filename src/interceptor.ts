@@ -1,5 +1,5 @@
 import type { InterceptResult, AdSurface, AdPattern } from './types.js';
-import { AD_ENDPOINTS, PLACEMENT_IDS, stageForEndpoint } from './types.js';
+import { AD_ENDPOINTS, PLACEMENT_IDS, TRACKING_ENDPOINTS, stageForEndpoint } from './types.js';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
@@ -94,6 +94,13 @@ export class AdInterceptor {
       return { blocked: false };
     }
 
+    // Tracking-only calls may be allowed through, but the ad content, policy
+    // and creative routes below stay blocked either way.
+    if (!this.config.blockTracking && this.isTracking(url)) {
+      this.logger.debug(`Allowed tracking request: ${url}`);
+      return { blocked: false };
+    }
+
     for (const pattern of this.patterns) {
       if (this.matches(url, pattern.pattern)) {
         this.blockCount++;
@@ -125,6 +132,10 @@ export class AdInterceptor {
       return url.includes(pattern);
     }
     return url.includes(pattern);
+  }
+
+  private isTracking(url: string): boolean {
+    return TRACKING_ENDPOINTS.some((endpoint) => this.matches(url, endpoint));
   }
 
   activate(): void {

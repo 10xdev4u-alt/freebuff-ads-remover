@@ -87,6 +87,31 @@ export const AD_ENDPOINTS = [
 
 export type AdEndpoint = (typeof AD_ENDPOINTS)[number];
 
+/**
+ * Delivery bookkeeping, not ad delivery: these calls only report that an ad
+ * was rendered, clicked or ignored. Blocking them starves the ad server of
+ * analytics but does not remove anything, so `blockTracking: false` lets them
+ * through while every content, policy and creative route stays blocked.
+ *
+ * `intercept()` checks this list before the ad patterns because matching is
+ * substring-based: the broader `/api/ad/break` pattern also contains
+ * `/api/ad/break-event`, and the v1 prefix covers every v1 ad call.
+ */
+export const TRACKING_ENDPOINTS = [
+  '/api/ad/impression',
+  '/api/ad/click', // also covers /api/ad/click-return
+  '/api/ad/engagement',
+  '/api/ad/break-event',
+  '/api/ad/report',
+  '/api/ad/invitation/click',
+  '/api/ad/invitation/displayed',
+  '/api/v1/ads/impression',
+  '/api/v1/ads/click', // also covers /api/v1/ads/click-return
+  '/api/v1/ads/engagement',
+  '/api/v1/ads/invitation/click',
+  '/api/v1/ads/invitation/event',
+] as const;
+
 export const PLACEMENT_IDS = {
   intermission: 'Desktop-Intermission',
   inlineChat: 'Desktop-Inline-Chat',
@@ -235,6 +260,15 @@ export const AD_CSS_SELECTORS: Record<AdSurface, string[]> = {
     '[class*="ad-mcp-card"]',
     '[class*="ad-sponsor"]',
     '[class*="ad-report-dialog"]',
+    // 0.0.196 hosted workspace: proposal/setup/thread ads all share the
+    // sponsored-* prefix (sponsored-proposal, sponsored-setup-card, etc.)
+    '[class*="sponsored-"]',
+    '[class*="tab-sponsored"]',
+    '[class*="ad-banner"]',
+    '[class*="ad-with-reward"]',
+    '[class*="ad-reward"]',
+    '[class*="ad-greptile"]',
+    '[class*="ad-posthog"]',
   ],
 };
 

@@ -130,7 +130,11 @@ getStats(): { requestCount: number; blockCount: number; patterns: number } | nul
 }
 ```
 
-## File Structure
+## Limitations
+
+- **Orchestrator-side fetches.** The extension hooks Electron's `session.webRequest`, so only renderer and hosted-page traffic is covered. The Bun orchestrator process can call ad endpoints directly; those are not interceptable and rely on the CSS fallback plus the hosted page's own ad container classes.
+- **Session-scoped stats.** The shield's counters reset on every launch; there is no persistent lifetime store by design.
+- **Hosted workspace coverage.** 0.0.196+ opens threads on `https://freebuff.com` in a `persist:freebuff-hosted-v1-*` partition; the extension hooks that session via its `webContents`. Previewed third-party sites are never touched.
 
 ```
 freebuff-ads-remover/
