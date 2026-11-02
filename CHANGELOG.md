@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-11-02
+
+Freebuff `0.0.196` moved threads into a hosted workspace on `https://freebuff.com`
+with its own session partition, so the extension's shield and ad hiding vanished
+the moment a thread opened. Also made `blockTracking` a real feature.
+
+### Added
+
+- Hooks every Electron session (default + any discovered via `webContents` or
+  `session-created`), so the hosted workspace partition is covered.
+- Hosted workspace (`freebuff.com`) is now a first-party injection target for
+  CSS and the dashboard script; previewed third-party sites stay excluded.
+- `blockTracking` semantics: tracking endpoints (impression, click,
+  click-return, engagement, report, break-event, invitation click/event and
+  their `/api/v1/ads` equivalents) pass through when `false`; ad content stays
+  blocked.
+- `scripts/audit-endpoints.mjs` now also audits DOM selector literals the app
+  uses and reports uncovered surfaces, plus a review list of CSS-only ad classes.
+- Coverage for `0.0.196` surfaces: `sponsored-*`, `tab-sponsored`, `ad-banner`,
+  `ad-with-reward`, `ad-reward`, `ad-greptile`, `ad-posthog`.
+
+### Fixed
+
+- `blockTracking` was a dead config key.
+- Shield badge and ad hiding now persist inside threads.
+
+### Changed
+
+- Docs: documented orchestrator-side fetch limitation and session-scoped stats.
+
 ## [1.3.0] - 2026-10-22
 
 Freebuff `0.0.186` broke the patch entirely: the app shipped with the Electron
