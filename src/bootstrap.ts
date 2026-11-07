@@ -116,6 +116,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
           runtimeVerifier,
           logger,
           loadPackageVersion(),
+          blockLog,
           // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
         ).then((h) => { verifyService = h; }).catch((e) => logger?.warn('Verify service failed', e));
       }

@@ -22,10 +22,11 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync, copyFileSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 
 const MARKER_PREFIX = '// freebuff-ads-remover:begin';
 function makeMarker() {
-  const nonce = Math.random().toString(36).slice(2, 10);
+  const nonce = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID().slice(0,8) : Math.random().toString(36).slice(2,10);
   return `${MARKER_PREFIX}-${nonce}`;
 }
 const LOADER_RE = /\/\/ freebuff-ads-remover:begin[\s\S]*?\/\/ freebuff-ads-remover:end\n/;

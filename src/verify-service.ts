@@ -106,20 +106,6 @@ export async function startVerifyService(
       return;
     }
 
-    if (req.url && req.url.startsWith('/export') && req.method === 'GET') {
-      const url = new URL(req.url, 'http://127.0.0.1');
-      const format = url.searchParams.get('format') === 'csv' ? 'csv' : 'json';
-      if (blockLog) {
-        const body = format === 'csv' ? blockLog.toCsv() : blockLog.toJson();
-        res.setHeader('content-type', format === 'csv' ? 'text/csv' : 'application/json');
-        res.end(body);
-      } else {
-        res.statusCode = 503;
-        res.end('no block log');
-      }
-      return;
-    }
-
     res.statusCode = 404;
     res.end('not found');
   });
