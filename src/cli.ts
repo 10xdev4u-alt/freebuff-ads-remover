@@ -10,6 +10,7 @@ import { replay } from './replay.js';
 import { discover } from './discovery.js';
 import { runGate } from './gate.js';
 import { verifyCorpus } from './corpus.js';
+import { BlockLog } from './block-log.js';
 import { synthesizeDelta } from './rule-synthesis.js';
 import { buildTrustReport } from './trust-report.js';
 import { RuleRegistry } from './rule-registry.js';
@@ -160,6 +161,14 @@ function cmdAutopilot(flags: Record<string, string | boolean>): number {
   return r.gate.pass ? 0 : 1;
 }
 
+function cmdExport(flags: Record<string, string | boolean>): number {
+  const format = (flags['format'] as string) || 'json';
+  const log = new BlockLog((process.env.FREEBUFF_CONFIG_DIR || '') + '/block-log.jsonl');
+  if (format === 'csv') console.log(log.toCsv());
+  else console.log(log.toJson());
+  return 0;
+}
+
 function cmdHelp(): number {
   console.log(`farbuff — Freebuff Ads Remover CLI
 
@@ -190,6 +199,7 @@ export function runCli(argv: string[]): number {
     case 'corpus': return cmdCorpusVerify(flags);
     case 'synthesize': return cmdSynthesize(flags);
     case 'trust': return cmdTrust();
+    case 'export': return cmdExport(flags);
     case 'autopilot': return cmdAutopilot(flags);
     case 'help':
     default: return cmdHelp();

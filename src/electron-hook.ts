@@ -209,6 +209,28 @@ export class ElectronHook {
       if (d.id !== undefined) tracker.record(d.id, d.url);
       callback(result.blocked ? { cancel: true } : {});
     });
+    if (typeof webRequest.onHeadersReceived === 'function') {
+      webRequest.onHeadersReceived((details: unknown, callback: (r: unknown) => void) => {
+        try {
+          const d = details as { statusCode?: number; url: string; responseHeaders?: Record<string, string[]> };
+          const status = d.statusCode ?? 0;
+          const headers = d.responseHeaders ?? {};
+          if (status >= 300 && status < 400) {
+            const loc = headers['location'] ?? headers['Location'];
+            const target = Array.isArray(loc) ? loc[0] : loc;
+            if (target) {
+              let resolved = target;
+              try { resolved = new URL(target, d.url).toString(); } catch { /* keep */ }
+              if (this.interceptor.isAdUrl(resolved)) {
+                callback({ cancel: true });
+                return;
+              }
+            }
+          }
+        } catch { /* fail open */ }
+        callback({});
+      });
+    }
     if (typeof webRequest.onBeforeRedirect === 'function') {
       webRequest.onBeforeRedirect((details) => {
         const d = details as { id?: number; redirectURL?: string };
