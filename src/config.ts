@@ -104,7 +104,7 @@ export function loadConfig(): Config {
       ...parsed,
       surfaces: { ...DEFAULT_CONFIG.surfaces, ...parsed.surfaces },
     };
-    if (merged.preset && PRESETS[merged.preset]) {
+    if (merged.preset !== null) {
       Object.assign(merged, PRESETS[merged.preset]);
       if (PRESETS[merged.preset].surfaces) {
         merged.surfaces = { ...merged.surfaces, ...PRESETS[merged.preset].surfaces };
