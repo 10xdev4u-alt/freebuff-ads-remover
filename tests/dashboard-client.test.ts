@@ -40,6 +40,7 @@ function emptySnapshot(): StatsSnapshot {
     byEndpoint: {},
     recent: [],
     perMinute: [],
+    perSurfaceMinute: {},
   };
 }
 
