@@ -4,14 +4,14 @@ import { buildDomRemoverScript, buildDomRemoverFromSelectors } from '../src/dom-
 describe('dom-remover', () => {
   it('builds a self-contained IIFE', () => {
     const s = buildDomRemoverScript({ selectors: ['.ad-x', '[class*="sponsor"]'], debug: false });
-    expect(s).toContain('__farBuffDomRemover');
+    expect(s).toContain('__farBuffDomArmor');
     expect(s).toContain('MutationObserver');
     expect(s).toContain('.ad-x');
   });
 
   it('is idempotent-guarded', () => {
     const s = buildDomRemoverScript({ selectors: ['.a'], debug: false });
-    expect(s).toMatch(/var GUARD = '__farBuffDomRemover_v' \+ VERSION;/);
+    expect(s).toMatch(/var GUARD = '__farBuffDomArmor_v' \+ VERSION;/);
   });
 
   it('builds from selectors map without throwing', () => {
