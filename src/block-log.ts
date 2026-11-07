@@ -15,7 +15,6 @@ export class BlockLog {
     const line = JSON.stringify(entry) + '\n';
     try {
       fs.appendFileSync(this.filePath, line);
-      // rotate if too big
       const stat = fs.statSync(this.filePath);
       if (stat.size > this.maxBytes) {
         const rotated = this.filePath + '.1';
@@ -24,10 +23,25 @@ export class BlockLog {
     } catch { /* fail open */ }
   }
 
-  read(): BlockLogEntry[] {
+  read(opts?: { since?: number; limit?: number }): BlockLogEntry[] {
     if (!fs.existsSync(this.filePath)) return [];
+    let entries: BlockLogEntry[] = [];
     try {
-      return fs.readFileSync(this.filePath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l) as BlockLogEntry);
+      entries = fs.readFileSync(this.filePath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l) as BlockLogEntry);
     } catch { return []; }
+    if (opts?.since) entries = entries.filter((e) => e.at >= (opts.since as number));
+    if (opts?.limit) entries = entries.slice(-opts.limit);
+    return entries;
+  }
+
+  toJson(opts?: { since?: number; limit?: number }): string {
+    return JSON.stringify(this.read(opts));
+  }
+
+  toCsv(opts?: { since?: number; limit?: number }): string {
+    const entries = this.read(opts);
+    const header = 'v,at,stage,surface,endpoint,session';
+    const rows = entries.map((e) => [e.v, e.at, e.stage, e.surface, e.endpoint, e.session].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    return [header, ...rows].join('\n');
   }
 }

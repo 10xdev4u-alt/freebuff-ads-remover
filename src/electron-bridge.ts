@@ -5,6 +5,7 @@ export type WebRequestListener = (
 
 export interface ElectronWebRequestLike {
   onBeforeRequest(filter: { urls: string[] } | null, listener: WebRequestListener | null): void;
+  onHeadersReceived?(listener: (details: unknown, callback: (r: unknown) => void) => void): void;
   onBeforeRedirect?(listener: (details: { id?: number; url: string; redirectURL?: string }) => void): void;
   onCompleted?(listener: (details: { id?: number }) => void): void;
   onErrorOccurred?(listener: (details: { id?: number }) => void): void;
