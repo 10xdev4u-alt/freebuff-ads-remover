@@ -7,8 +7,8 @@
     "url": "https://github.com/10xdev4u-alt/freebuff-ads-remover/issues"
   },
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/bootstrap.js",
+  "types": "dist/bootstrap.d.ts",
   "files": [
     "dist",
     "config",

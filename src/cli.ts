@@ -59,8 +59,8 @@ function cmdDoctor(): number {
   console.log('Node:', process.version);
   console.log('Platform:', process.platform, process.arch);
   // check dist
-  const distIndex = path.join(process.cwd(), 'dist', 'index.js');
-  console.log('dist/index.js exists:', fs.existsSync(distIndex));
+  const distIndex = path.join(process.cwd(), 'dist', 'bootstrap.js');
+  console.log('dist/bootstrap.js exists:', fs.existsSync(distIndex));
   return 0;
 }
 

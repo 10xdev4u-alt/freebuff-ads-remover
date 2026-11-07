@@ -37,7 +37,7 @@ if (!resourcesDir) {
   fail('usage: patch-freebuff-app.mjs <resources-dir>');
 }
 
-const entry = process.env.FREEBUFF_ADS_REMOVER_ENTRY || join(scriptDir, '..', 'dist', 'index.js');
+const entry = process.env.FREEBUFF_ADS_REMOVER_ENTRY || join(scriptDir, '..', 'dist', 'bootstrap.js');
 const asarPath = join(resourcesDir, 'app.asar');
 const backupPath = join(resourcesDir, 'app.asar.orig');
 const appDir = join(resourcesDir, 'app');
