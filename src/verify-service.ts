@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Logger } from './logger.js';
 import type { RuntimeVerifier } from './runtime-verifier.js';
+import type { BlockLog } from './block-log.js';
 import type { VerificationReport } from './runtime-verifier.js';
 
 export interface VerifyServiceConfig {
@@ -36,6 +37,7 @@ export async function startVerifyService(
   verifier: RuntimeVerifier,
   logger: Logger,
   appVersion: string,
+  blockLog?: BlockLog,
 ): Promise<VerifyServiceHandle | null> {
   if (!config.enabled) return null;
 
@@ -87,6 +89,34 @@ export async function startVerifyService(
       const report = verifier.getLastReport();
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify(report ?? { pass: false, reason: 'no-report-yet' }));
+      return;
+    }
+
+    if (req.url && req.url.startsWith('/export') && req.method === 'GET') {
+      const url = new URL(req.url, 'http://127.0.0.1');
+      const format = url.searchParams.get('format') === 'csv' ? 'csv' : 'json';
+      if (blockLog) {
+        const body = format === 'csv' ? blockLog.toCsv() : blockLog.toJson();
+        res.setHeader('content-type', format === 'csv' ? 'text/csv' : 'application/json');
+        res.end(body);
+      } else {
+        res.statusCode = 503;
+        res.end('no block log');
+      }
+      return;
+    }
+
+    if (req.url && req.url.startsWith('/export') && req.method === 'GET') {
+      const url = new URL(req.url, 'http://127.0.0.1');
+      const format = url.searchParams.get('format') === 'csv' ? 'csv' : 'json';
+      if (blockLog) {
+        const body = format === 'csv' ? blockLog.toCsv() : blockLog.toJson();
+        res.setHeader('content-type', format === 'csv' ? 'text/csv' : 'application/json');
+        res.end(body);
+      } else {
+        res.statusCode = 503;
+        res.end('no block log');
+      }
       return;
     }
 

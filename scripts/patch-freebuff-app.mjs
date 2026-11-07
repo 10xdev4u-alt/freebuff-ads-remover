@@ -23,7 +23,11 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync,
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const MARKER = '// freebuff-ads-remover:begin (auto-injected by patch-freebuff-app.mjs; do not edit)';
+const MARKER_PREFIX = '// freebuff-ads-remover:begin';
+function makeMarker() {
+  const nonce = Math.random().toString(36).slice(2, 10);
+  return `${MARKER_PREFIX}-${nonce}`;
+}
 const LOADER_RE = /\/\/ freebuff-ads-remover:begin[\s\S]*?\/\/ freebuff-ads-remover:end\n/;
 
 function fail(message) {
@@ -47,12 +51,9 @@ const unpackedDir = join(resourcesDir, 'app.asar.unpacked');
 const stagedMainPath = join(stagingDir, 'electron', 'main.cjs');
 
 function loaderBlock() {
-  return `${MARKER}
-try {
-  require(${JSON.stringify(entry)});
-} catch (err) {
-  console.error('[freebuff-ads-remover] failed to load:', err && err.message ? err.message : err);
-}
+  const marker = makeMarker();
+  return `${marker}
+try{require(${JSON.stringify(entry)});}catch(e){console.error('[freebuff-ads-remover] failed to load:',e&&e.message?e.message:e);}
 // freebuff-ads-remover:end
 `;
 }
@@ -99,11 +100,11 @@ async function main() {
   }
 
   const current = await readMain(asarPath);
-  const patched = typeof current === 'string' && current.includes(MARKER);
+  const patched = typeof current === 'string' && current.includes(MARKER_PREFIX);
 
   if (patched) {
     dropLegacyAppDir();
-    if (current.includes(`require(${JSON.stringify(entry)});`)) {
+    if (current.includes('require(') && current.includes(entry)) {
       console.log('[patch-freebuff-app] already patched');
       return;
     }
@@ -128,7 +129,7 @@ async function main() {
   await createPackageWithOptions(stagingDir, pendingAsar, {});
 
   const packedMain = await readMain(pendingAsar);
-  if (!packedMain || !packedMain.includes(MARKER)) {
+  if (!packedMain || !packedMain.includes(MARKER_PREFIX)) {
     rmSync(pendingAsar, { force: true });
     rmSync(stagingDir, { recursive: true, force: true });
     fail('repacked archive failed verification (loader marker missing)');
