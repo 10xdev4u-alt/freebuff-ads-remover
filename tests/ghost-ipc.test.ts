@@ -10,8 +10,8 @@ describe('ghost ipc guard', () => {
     };
     wrapIpcMain(ipc, ['slotId'], ['slotId']);
     const calls: unknown[] = [];
-    ipc.on('foo', (e, payload) => { calls.push(payload); });
-    handlers['foo']({}, { bar: 1 });
+    ipc.on('foo', (_e, payload) => { calls.push(payload); });
+    handlers['foo']!({}, { bar: 1 });
     expect(calls[0]).toEqual({ bar: 1 });
   });
   it('redacts ad-context payload', () => {
@@ -22,8 +22,8 @@ describe('ghost ipc guard', () => {
     };
     wrapIpcMain(ipc, ['slotId'], ['slotId']);
     const calls: unknown[] = [];
-    ipc.on('ads:context', (e, payload) => { calls.push(payload); });
-    handlers['ads:context']({}, { slotId: 'abc', name: 'x' });
+    ipc.on('ads:context', (_e, payload) => { calls.push(payload); });
+    handlers['ads:context']!({}, { slotId: 'abc', name: 'x' });
     const r = calls[0] as { slotId: string };
     expect(r.slotId).toBe('[redacted]');
   });
