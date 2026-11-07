@@ -823,7 +823,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
 
       const spark = doc.createElement('span');
       spark.className = 'surface-spark';
-      const buckets = snapshot.perSurfaceMinute[surface as keyof typeof snapshot.perSurfaceMinute] || [];
+      const buckets = snapshot.perSurfaceMinute[surface as keyof typeof snapshot.perSurfaceMinute];
       const last = (buckets as { minute: number; count: number }[]).slice(-8);
       spark.textContent = last.map((b) => b.count).join(',') || '—';
       spark.setAttribute('data-spark', last.map((b) => b.count).join(','));
