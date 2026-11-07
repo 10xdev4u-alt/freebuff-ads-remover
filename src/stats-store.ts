@@ -25,6 +25,7 @@ export class StatsStore {
   private byEndpoint: Record<string, number>;
   private recent: BlockEvent[];
   private perMinute: { minute: number; count: number }[];
+  private perSurfaceMinute: Record<AdSurface, { minute: number; count: number }[]>;
 
   constructor(now: () => number = Date.now) {
     this.now = now;
@@ -35,6 +36,8 @@ export class StatsStore {
     this.byEndpoint = {};
     this.recent = [];
     this.perMinute = [];
+    this.perSurfaceMinute = {} as Record<AdSurface, { minute: number; count: number }[]>;
+    for (const s of AD_SURFACES) this.perSurfaceMinute[s] = [];
   }
 
   record(entry: { stage: AdStage; surface: AdSurface; endpoint: string }): BlockEvent {
@@ -50,6 +53,7 @@ export class StatsStore {
     }
 
     this.bucketMinute(Math.floor(event.at / 60_000));
+    this.bucketSurface(event.surface, Math.floor(event.at / 60_000));
     return event;
   }
 
@@ -63,6 +67,7 @@ export class StatsStore {
       byEndpoint: { ...this.byEndpoint },
       recent: this.recent.map((event) => ({ ...event })),
       perMinute: this.perMinute.map((bucket) => ({ ...bucket })),
+      perSurfaceMinute: Object.fromEntries(Object.entries(this.perSurfaceMinute).map(([k,v]) => [k, v.map((b) => ({...b}))])) as Record<AdSurface, { minute: number; count: number }[]>,
     };
   }
 
@@ -74,6 +79,8 @@ export class StatsStore {
     this.byEndpoint = {};
     this.recent = [];
     this.perMinute = [];
+    this.perSurfaceMinute = {} as Record<AdSurface, { minute: number; count: number }[]>;
+    for (const s of AD_SURFACES) this.perSurfaceMinute[s] = [];
   }
 
   private bucketMinute(minute: number): void {
@@ -87,5 +94,14 @@ export class StatsStore {
     while (this.perMinute.length > 0 && (this.perMinute[0]?.minute ?? 0) < cutoff) {
       this.perMinute.shift();
     }
+  }
+
+  private bucketSurface(surface: AdSurface, minute: number): void {
+    const arr = this.perSurfaceMinute[surface];
+    const last = arr[arr.length - 1];
+    if (last && last.minute === minute) last.count += 1;
+    else arr.push({ minute, count: 1 });
+    const cutoff = minute - (MINUTE_WINDOW - 1);
+    while (arr.length > 0 && (arr[0]?.minute ?? 0) < cutoff) arr.shift();
   }
 }

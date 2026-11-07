@@ -199,6 +199,7 @@ export interface StatsSnapshot {
   byEndpoint: Record<string, number>;
   recent: BlockEvent[];
   perMinute: { minute: number; count: number }[];
+  perSurfaceMinute: Record<AdSurface, { minute: number; count: number }[]>;
 }
 
 /** API the dashboard client exposes on globalThis inside the app page. */
