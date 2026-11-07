@@ -22,6 +22,8 @@ describe('dom-remover', () => {
 
   it('escapes selectors safely via JSON', () => {
     const s = buildDomRemoverScript({ selectors: ['a"b'], debug: false });
-    expect(() => JSON.parse(s.match(/var selectors = (\[.*?\]);/s)![1])).not.toThrow();
+    const m = s.match(/var selectors = (\[.*?\]);/s);
+    const raw = m ? String(m[1]) : '[]';
+    expect(() => { JSON.parse(raw); }).not.toThrow();
   });
 });
