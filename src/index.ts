@@ -15,6 +15,7 @@ import { createCrashGuard } from './crash-guard.js';
 import { ShadowCapture } from './shadow-capture.js';
 import { RuleRegistry } from './rule-registry.js';
 import { GENERATED_RULES } from './generated-rules.js';
+import { GhostRuntime } from './ghost/runtime.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
@@ -58,6 +59,7 @@ let dashboard: Dashboard | null = null;
 let electronHook: ElectronHook | null = null;
 let unwatchConfig: (() => void) | null = null;
 let runtimeVerifier: RuntimeVerifier | null = null;
+let ghostRuntime: GhostRuntime | null = null;
 let verifyService: VerifyServiceHandle | null = null;
 let verifyTimer: ReturnType<typeof setTimeout> | null = null;
 const crashGuard = createCrashGuard();
@@ -83,6 +85,9 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     if (session) {
       electronHook.activate(session, electronApi);
     }
+    // Ghost Mode runtime (default off).
+    ghostRuntime = new GhostRuntime(config.ghost);
+    ghostRuntime.activate();
     // Verification subsystem (fail-open).
     try {
       runtimeVerifier = new RuntimeVerifier(logger, {
@@ -175,6 +180,8 @@ export function getStats(): { requestCount: number; blockCount: number; patterns
 export function getShieldSnapshot(): StatsSnapshot | null {
   return statsStore?.snapshot() ?? null;
 }
+
+export function getGhostReport() { return ghostRuntime ? ghostRuntime.report() : null; }
 
 export function isElectronAvailable(): boolean {
   try {
