@@ -40,7 +40,7 @@ function emptySnapshot(): StatsSnapshot {
     byEndpoint: {},
     recent: [],
     perMinute: [],
-    perSurfaceMinute: {},
+    perSurfaceMinute: { sponsorBreak: [], billboard: [], intermission: [], spotlight: [], showcase: [], sponsoredTask: [], sponsoredRun: [], partner: [], invitation: [], sponsoredCard: [] },
   };
 }
 
