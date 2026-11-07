@@ -70,12 +70,17 @@ export class RuntimeVerifier {
   private logger: Logger;
   private config: RuntimeVerifierConfig;
   private attached: Set<WebContentsLike>;
+  private origins: Map<WebContentsLike, string>;
   private lastReport: VerificationReport | null;
+  private getAll: (() => WebContentsLike[]) | null = null;
+  private appRef: AppLike | null = null;
+  private wcCreatedHandler: ((...a: unknown[]) => void) | null = null;
 
   constructor(logger: Logger, config?: Partial<RuntimeVerifierConfig>) {
     this.logger = logger;
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.attached = new Set();
+    this.origins = new Map();
     this.lastReport = null;
   }
 
@@ -84,6 +89,23 @@ export class RuntimeVerifier {
     for (const wc of contentsList) {
       this.attachOne(wc);
     }
+  }
+
+  watch(app: AppLike | null | undefined, getAll: (() => WebContentsLike[]) | null): void {
+    this.appRef = app ?? null;
+    this.getAll = getAll;
+    if (app && typeof app.on === 'function') {
+      this.wcCreatedHandler = (_e: unknown, wc: unknown) => { this.attachOne(wc as WebContentsLike); };
+      app.on('web-contents-created', this.wcCreatedHandler);
+    }
+    if (getAll) this.attachAll(getAll());
+  }
+
+  dispose(): void {
+    if (this.appRef && this.wcCreatedHandler) {
+      try { this.appRef.removeListener('web-contents-created', this.wcCreatedHandler); } catch { /* ignore */ }
+    }
+    this.wcCreatedHandler = null;
   }
 
   attachOne(wc: WebContentsLike): boolean {
@@ -98,6 +120,10 @@ export class RuntimeVerifier {
       void dbg.sendCommand('Network.enable');
       void dbg.sendCommand('Runtime.enable');
       this.attached.add(wc);
+      const u = wc.getURL?.() ?? '';
+      let origin = this.config.orchestratorOrigin.replace(/\/$/, '');
+      try { if (u.startsWith('http')) origin = new URL(u).origin; } catch { /* keep */ }
+      this.origins.set(wc, origin);
       this.logger.debug('RuntimeVerifier attached', { url });
       return true;
     } catch (err) {
@@ -115,6 +141,7 @@ export class RuntimeVerifier {
       }
     }
     this.attached.clear();
+    this.origins.clear();
   }
 
   getAttachedCount(): number {
@@ -130,6 +157,7 @@ export class RuntimeVerifier {
    * Returns a report; never throws.
    */
   async run(): Promise<VerificationReport> {
+    if (this.getAll) { try { this.attachAll(this.getAll()); } catch { /* ignore */ } }
     const allRoutes = [
       ...this.config.probeRoutes.map((r) => ({ route: r, kind: 'ad' as const })),
       ...this.config.controlRoutes.map((r) => ({ route: r, kind: 'control' as const })),
@@ -167,7 +195,8 @@ export class RuntimeVerifier {
         targetResults.push({ url: wc.getURL?.() ?? '', pass: false });
         continue;
       }
-      const results = await this.runProbes(dbg, allRoutes);
+      const origin = this.origins.get(wc) ?? this.config.orchestratorOrigin;
+      const results = await this.runProbes(dbg, allRoutes, origin);
       allProbes.push(...results);
       const adP = results.filter((p) => p.kind === 'ad');
       const ctrlP = results.filter((p) => p.kind === 'control');
@@ -204,6 +233,7 @@ export class RuntimeVerifier {
   private async runProbes(
     dbg: DebuggerLike,
     routes: { route: string; kind: 'ad' | 'control' }[],
+    origin: string,
   ): Promise<ProbeResult[]> {
     const results: ProbeResult[] = [];
     const concurrency = Math.max(1, this.config.concurrency);
@@ -214,7 +244,7 @@ export class RuntimeVerifier {
         const entry = routes[idx];
         if (!entry) return;
         const { route, kind } = entry;
-        results[idx] = await this.probeOne(dbg, route, kind);
+        results[idx] = await this.probeOne(dbg, route, kind, origin);
       }
     };
     const workers = Array.from({ length: Math.min(concurrency, routes.length) }, () => worker());
@@ -222,11 +252,11 @@ export class RuntimeVerifier {
     return results;
   }
 
-  private probeOne(dbg: DebuggerLike, route: string, kind: 'ad' | 'control'): Promise<ProbeResult> {
+  private probeOne(dbg: DebuggerLike, route: string, kind: 'ad' | 'control', origin: string): Promise<ProbeResult> {
     return new Promise<ProbeResult>((resolve) => {
       const id = `__far_verify_${Math.random().toString(36).slice(2)}`;
-      const origin = this.config.orchestratorOrigin.replace(/\/$/, '');
-      const url = `${origin}${route}${route.includes('?') ? '&' : '?'}${id}`;
+      const o = origin.replace(/\/$/, '');
+      const url = `${o}${route}${route.includes('?') ? '&' : '?'}${id}`;
       const requestIds = new Map<string, string>();
       const onEvent = (method: unknown, params: unknown): void => {
         const m = method as string;

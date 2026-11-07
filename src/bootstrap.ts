@@ -104,6 +104,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
           const ec = getElectron();
           // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           const all = ec?.webContents?.getAllWebContents?.() ?? [];
+          runtimeVerifier?.watch(ec?.app, () => (ec?.webContents?.getAllWebContents?.() ?? []) as unknown as Parameters<RuntimeVerifier['attachAll']>[0]);
           runtimeVerifier?.attachAll(all as unknown as Parameters<RuntimeVerifier['attachAll']>[0]);
         } catch (e) {
           logger?.warn('Verifier attach failed', e);

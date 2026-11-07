@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AdInterceptor } from '../../src/interceptor.js';
-import { CssInjector } from '../../src/css-injector.js';
-import { DEFAULT_CONFIG, HIDE_ALL_ADS_CSS, AD_ENDPOINTS, AD_SURFACES } from '../../src/types.js';
-import { Logger } from '../../src/logger.js';
+import { AdInterceptor } from '../src/interceptor.js';
+import { CssInjector } from '../src/css-injector.js';
+import { DEFAULT_CONFIG, HIDE_ALL_ADS_CSS, AD_ENDPOINTS, AD_SURFACES } from '../src/types.js';
+import { Logger } from '../src/logger.js';
 
-describe('E2E: Full Ad Removal Flow', () => {
+describe('Ad removal flow (in-process)', () => {
   let interceptor: AdInterceptor;
   let cssInjector: CssInjector;
   let logger: Logger;
