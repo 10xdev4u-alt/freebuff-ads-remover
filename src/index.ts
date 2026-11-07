@@ -12,6 +12,7 @@ import type { ElectronApi } from './electron-hook.js';
 import type { StatsSnapshot } from './types.js';
 import { getElectron } from './electron-bridge.js';
 import { createCrashGuard } from './crash-guard.js';
+import { ShadowCapture } from './shadow-capture.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
@@ -56,7 +57,8 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     logger = new Logger(config.logLevel, config.logToFile);
     logger.info('Freebuff Ads Remover activating...');
     statsStore = new StatsStore();
-    interceptor = new AdInterceptor(config, logger, statsStore);
+    const shadowCapture = new ShadowCapture(config.shadow);
+    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture);
     cssInjector = new CssInjector(config, logger);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
     electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);
