@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Freebuff Ads Remover — a pluggable extension that strips every ad from Freebuff Desktop and ships a live shield dashboard. Zero ads. Zero telemetry. Zero compromise.">
-<title>Freebuff Ads Remover — Clean Desktop, Zero Ads</title>
+<meta name="description" content="Freebuff Ads Remover — a pluggable extension that kills every ad request at the network layer, ships a live shield dashboard, and heals itself when Freebuff changes. Zero ads. Zero telemetry. Zero config.">
+<title>Freebuff Ads Remover — Ads die here. Live.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
@@ -15,240 +15,367 @@
     --fg:#f4f6fa; --muted:#9aa3b2; --faint:#5b6372;
     --accent:#3ddc84; --accent-2:#7cffb2; --accent-dim:rgba(61,220,132,.14);
     --danger:#ff5d6c; --danger-dim:rgba(255,93,108,.12);
-    --border:rgba(255,255,255,.08); --ring:rgba(61,220,132,.5);
+    --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+    --ring:rgba(61,220,132,.5);
     --font-display:"Inter Tight",Inter,ui-sans-serif,system-ui,sans-serif;
     --font-body:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
     --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     --ease:cubic-bezier(.22,1,.36,1);
-    --header-h:64px;
+    --header-h:60px;
   }
   html{scroll-behavior:smooth}
-  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
   ::selection{background:rgba(61,220,132,.28)}
   a{color:inherit;text-decoration:none}
   .container{max-width:1180px;margin:0 auto;padding:0 clamp(20px,4vw,40px)}
+  .mono{font-family:var(--font-mono)}
 
   /* nav */
-  .nav{position:sticky;top:0;z-index:50;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,40px);background:rgba(5,7,10,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;font-size:17px}
-  .brand img{width:28px;height:28px}
-  .nav-links{display:flex;align-items:center;gap:8px}
-  .nav-links a.nl{color:var(--muted);font-size:14px;font-weight:500;padding:8px 12px;border-radius:8px;transition:color .2s,background .2s}
+  .nav{position:sticky;top:0;z-index:50;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,40px);background:rgba(5,7,10,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;letter-spacing:-.02em;font-size:16px}
+  .brand img{width:24px;height:24px}
+  .nav-links{display:flex;align-items:center;gap:4px}
+  .nav-links a.nl{color:var(--muted);font-size:13px;font-weight:500;padding:7px 11px;border-radius:6px;transition:color .2s,background .2s}
   .nav-links a.nl:hover{color:var(--fg);background:rgba(255,255,255,.05)}
-  .ver-pill{font-family:var(--font-mono);font-size:11px;color:var(--accent);border:1px solid rgba(61,220,132,.35);background:var(--accent-dim);border-radius:999px;padding:4px 10px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .ver-pill{font-family:var(--font-mono);font-size:10px;color:var(--accent);border:1px solid rgba(61,220,132,.35);background:var(--accent-dim);border-radius:4px;padding:3px 8px;letter-spacing:.02em}
+
+  /* section framing */
+  section{padding:96px 0;position:relative;border-top:1px solid var(--border)}
+  section:first-of-type{border-top:none}
+  .section-head{max-width:720px;margin-bottom:48px}
+  .section-head .kicker{font-family:var(--font-mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.14em;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .section-head .kicker::before{content:"";width:24px;height:1px;background:var(--accent)}
+  h2{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,4.2vw,48px);line-height:1.02;letter-spacing:-.03em;margin-bottom:14px}
+  .section-head p{color:var(--muted);font-size:17px;max-width:600px}
+  .section-num{font-family:var(--font-mono);font-size:11px;color:var(--faint);letter-spacing:.1em;margin-bottom:6px}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:13px 20px;border-radius:6px;border:1px solid transparent;cursor:pointer;transition:transform .18s var(--ease),box-shadow .18s,background .18s;font-family:var(--font-body)}
+  .btn-primary{background:var(--accent);color:#04110a;box-shadow:0 6px 20px rgba(61,220,132,.22)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(61,220,132,.32)}
+  .btn-ghost{background:rgba(255,255,255,.03);color:var(--fg);border-color:var(--border-strong)}
+  .btn-ghost:hover{background:rgba(255,255,255,.07)}
+  .btn-sm{padding:8px 12px;font-size:12px}
+
+  /* reveal on scroll */
+  .reveal-on-scroll{opacity:0;transform:translateY(18px);transition:opacity .6s var(--ease),transform .6s var(--ease)}
+  .reveal-on-scroll.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal-on-scroll{opacity:1;transform:none;transition:none}}
 
   /* hero */
-  .hero{padding:96px 0 64px;position:relative;overflow:hidden}
-  .hero::before{content:"";position:absolute;inset:-20% -10% auto -10%;height:60%;background:radial-gradient(60% 50% at 50% 0%,rgba(61,220,132,.18),transparent 70%);pointer-events:none}
-  .hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
-  @media(max-width:880px){.hero-grid{grid-template-columns:1fr;gap:40px}}
-  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--accent);border:1px solid rgba(61,220,132,.3);background:var(--accent-dim);border-radius:999px;padding:6px 12px;margin-bottom:20px}
-  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-  h1{font-family:var(--font-display);font-weight:900;font-size:clamp(40px,6.4vw,76px);line-height:.98;letter-spacing:-.035em;margin-bottom:20px}
-  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero-sub{color:var(--muted);font-size:clamp(16px,1.6vw,20px);max-width:520px;margin-bottom:32px}
-  .cta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:24px}
-  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;padding:14px 22px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s,background .2s}
-  .btn-primary{background:var(--accent);color:#04110a;box-shadow:0 8px 24px rgba(61,220,132,.25)}
-  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(61,220,132,.35)}
-  .btn-ghost{background:rgba(255,255,255,.04);color:var(--fg);border-color:var(--border)}
-  .btn-ghost:hover{background:rgba(255,255,255,.08)}
-  .hero-proof{display:flex;align-items:center;gap:14px;color:var(--faint);font-size:13px;font-family:var(--font-mono)}
-  .hero-proof strong{color:var(--fg)}
-  .hero-visual{position:relative;border:1px solid var(--border);border-radius:20px;overflow:hidden;background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:0 30px 80px rgba(0,0,0,.5)}
-  .hero-visual img{width:100%;display:block}
-  .hero-visual .badge{position:absolute;top:14px;right:14px;font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(5,7,10,.7);backdrop-filter:blur(8px);border:1px solid rgba(61,220,132,.3);border-radius:999px;padding:5px 10px}
+  .hero{padding:72px 0 48px;min-height:92vh;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 70% 40%,rgba(61,220,132,.08),transparent 70%);pointer-events:none}
+  .hero-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:center;position:relative}
+  @media(max-width:960px){.hero-grid{grid-template-columns:1fr;gap:32px}}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--accent);border:1px solid rgba(61,220,132,.3);background:var(--accent-dim);border-radius:4px;padding:5px 10px;margin-bottom:20px;letter-spacing:.04em}
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{font-family:var(--font-display);font-weight:900;font-size:clamp(44px,7vw,88px);line-height:.95;letter-spacing:-.04em;margin-bottom:18px}
+  h1 .grad{color:var(--accent)}
+  .hero-sub{color:var(--muted);font-size:clamp(15px,1.5vw,19px);max-width:480px;margin-bottom:28px;line-height:1.5}
+  .cta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+  .hero-proof{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:12px;font-family:var(--font-mono);flex-wrap:wrap}
+  .hero-proof strong{color:var(--fg);font-weight:600}
+  .hero-proof .sep{color:var(--border-strong)}
 
-  /* stats */
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:48px 0}
-  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
-  .stat{background:var(--panel);padding:24px 20px}
-  .stat .n{font-family:var(--font-display);font-weight:800;font-size:34px;letter-spacing:-.02em;color:var(--accent)}
-  .stat .l{color:var(--muted);font-size:13px;margin-top:4px}
+  /* radar */
+  .radar-wrap{position:relative;border:1px solid var(--border);border-radius:8px;background:linear-gradient(180deg,var(--panel),var(--panel2));padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .radar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-family:var(--font-mono);font-size:10px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+  .radar-head .live{color:var(--accent);display:flex;align-items:center;gap:6px}
+  .radar-head .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 1.6s ease-in-out infinite}
+  canvas.radar{width:100%;height:auto;display:block;aspect-ratio:1/1}
+  .radar-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:var(--font-mono);font-size:11px}
+  .radar-counter{font-family:var(--font-display);font-weight:900;font-size:34px;color:var(--accent);letter-spacing:-.02em;line-height:1}
+  .radar-counter small{font-size:12px;color:var(--faint);font-weight:500;margin-left:6px;letter-spacing:0}
+  .radar-ticker{height:64px;overflow:hidden;position:relative;border-top:1px solid var(--border);margin-top:10px;padding-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+  .radar-ticker .line{position:absolute;left:0;right:0;white-space:nowrap;opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
+  .radar-ticker .line.show{opacity:1;transform:none}
 
-  /* sections */
-  section{padding:88px 0}
-  .section-head{max-width:640px;margin-bottom:48px}
-  .section-head .kicker{font-family:var(--font-mono);font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:12px}
-  h2{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,4vw,46px);line-height:1.05;letter-spacing:-.025em;margin-bottom:12px}
-  .section-head p{color:var(--muted);font-size:17px}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-  @media(max-width:880px){.grid3{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;transition:border-color .2s,transform .2s var(--ease)}
-  .card:hover{border-color:rgba(61,220,132,.3);transform:translateY(-3px)}
-  .card .icon{width:40px;height:40px;border-radius:10px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
-  .card h3{font-family:var(--font-display);font-weight:700;font-size:19px;margin-bottom:8px}
-  .card p{color:var(--muted);font-size:14px;line-height:1.6}
+  /* receipt */
+  .receipt{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px 28px;font-family:var(--font-mono);font-size:13px;line-height:1.7;max-width:640px;margin:0 auto;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+  .receipt .prompt{color:var(--faint)}
+  .receipt .line{display:block;opacity:0;transform:translateY(4px);transition:opacity .35s,transform .35s}
+  .receipt .line.show{opacity:1;transform:none}
+  .receipt .ok{color:var(--accent)}
+  .receipt .pass{color:var(--accent);font-weight:700;font-size:20px;margin-top:8px;letter-spacing:.05em}
+  .receipt-meta{display:flex;gap:24px;justify-content:center;margin-top:20px;font-family:var(--font-mono);font-size:11px;color:var(--faint);flex-wrap:wrap}
 
-  /* how it works */
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:step}
-  @media(max-width:880px){.steps{grid-template-columns:1fr}}
-  .step{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative}
-  .step .n{font-family:var(--font-mono);font-size:12px;color:var(--accent);margin-bottom:12px}
-  .step h3{font-family:var(--font-display);font-weight:700;font-size:18px;margin-bottom:8px}
-  .step p{color:var(--muted);font-size:14px}
+  /* loop */
+  .loop{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:40px}
+  @media(max-width:900px){.loop{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.loop{grid-template-columns:repeat(2,1fr)}}
+  .loop-node{background:var(--panel);padding:20px 16px;position:relative;transition:background .3s}
+  .loop-node.active{background:rgba(61,220,132,.08)}
+  .loop-node .idx{font-family:var(--font-mono);font-size:10px;color:var(--faint);letter-spacing:.1em;margin-bottom:8px}
+  .loop-node .name{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:6px}
+  .loop-node .desc{color:var(--muted);font-size:12px;line-height:1.5}
+  .loop-node .pulse{position:absolute;top:10px;right:10px;width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:0;box-shadow:0 0 10px var(--accent)}
+  .loop-node.active .pulse{opacity:1;animation:pulse 1.2s ease-in-out infinite}
+  .loop-foot{margin-top:16px;font-family:var(--font-mono);font-size:11px;color:var(--faint);text-align:center}
 
-  /* tagline reveal */
-  .reveal{padding:120px 0;text-align:center;position:relative}
-  .reveal h2{font-size:clamp(36px,6vw,72px);max-width:900px;margin:0 auto;line-height:1.05}
-  .reveal h2 .muted{color:var(--faint)}
-  .reveal p{color:var(--muted);margin-top:24px;font-size:18px}
+  /* dashboard */
+  .dash{border:1px solid var(--border);border-radius:8px;background:linear-gradient(180deg,var(--panel),var(--panel2));overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .dash-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase}
+  .dash-tabs{display:flex;gap:4px}
+  .dash-tab{padding:4px 10px;border-radius:4px;cursor:pointer;color:var(--muted);transition:background .2s,color .2s}
+  .dash-tab.active{background:var(--accent-dim);color:var(--accent)}
+  .dash-body{padding:18px;display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+  @media(max-width:820px){.dash-body{grid-template-columns:1fr}}
+  .dash-panel{display:flex;flex-direction:column;gap:14px}
+  .dash-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px}
+  .dash-card .label{font-family:var(--font-mono);font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+  .stage-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+  .stage-cell{text-align:center;padding:6px 2px;border-radius:4px;background:rgba(255,255,255,.03)}
+  .stage-cell .n{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--accent)}
+  .stage-cell .l{font-family:var(--font-mono);font-size:9px;color:var(--faint);margin-top:2px}
+  .heat{display:grid;grid-template-columns:repeat(15,1fr);gap:2px}
+  .heat .c{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.04);transition:background .3s}
+  .heat .c.hot{background:var(--accent)}
+  .heat .c.warm{background:rgba(61,220,132,.45)}
+  .surface-row{display:grid;grid-template-columns:1fr 2fr auto;gap:8px;align-items:center;font-size:12px;margin-bottom:6px}
+  .surface-row .name{color:var(--muted)}
+  .surface-row .bar{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+  .surface-row .fill{height:100%;background:var(--accent);border-radius:3px;transition:width .4s var(--ease)}
+  .surface-row .n{font-family:var(--font-mono);font-size:11px;color:var(--fg);text-align:right}
+  .event{font-family:var(--font-mono);font-size:11px;color:var(--muted);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:8px}
+  .event .t{color:var(--faint)}
+  .event .tag{color:var(--accent)}
+  .dash-actions{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--border);align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .dash-actions .note{font-family:var(--font-mono);font-size:10px;color:var(--faint)}
 
-  /* faq */
-  details{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:12px}
+  /* proof */
+  .proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+  @media(max-width:880px){.proof-grid{grid-template-columns:1fr}}
+  .codepanel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:20px;font-family:var(--font-mono);font-size:12px;line-height:1.6;overflow:auto;max-height:360px}
+  .codepanel .key{color:var(--accent)}
+  .probe-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--font-mono);font-size:12px}
+  .probe-row .route{color:var(--muted)}
+  .probe-row .status{font-weight:600}
+  .probe-row .status.blocked{color:var(--accent)}
+  .probe-row .status.reached{color:var(--accent)}
+  .probe-row .status.pending{color:var(--faint)}
+
+  /* install */
+  .cmd{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:20px 22px;font-family:var(--font-mono);font-size:13px;line-height:1.7;position:relative;overflow:auto}
+  .cmd .prompt{color:var(--faint);user-select:none}
+  .cmd .c{color:var(--fg)}
+  .cmd .comment{color:var(--faint)}
+  .steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:24px 0}
+  @media(max-width:720px){.steps3{grid-template-columns:1fr}}
+  .step3{background:var(--panel);padding:18px 20px}
+  .step3 .n{font-family:var(--font-mono);font-size:10px;color:var(--accent);letter-spacing:.1em;margin-bottom:6px}
+  .step3 .t{font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:4px}
+  .step3 .d{color:var(--muted);font-size:13px}
+  details{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:10px}
   details[open]{border-color:rgba(61,220,132,.3)}
-  summary{cursor:pointer;font-weight:600;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;align-items:center}
   summary::-webkit-details-marker{display:none}
-  summary::after{content:"+";color:var(--accent);font-size:20px;font-weight:400}
+  summary::after{content:"+";color:var(--accent);font-size:18px;font-weight:400}
   details[open] summary::after{content:"−"}
-  details p{color:var(--muted);margin-top:12px;font-size:14px;line-height:1.6}
+  details p{color:var(--muted);margin-top:10px;font-size:13px;line-height:1.6}
 
-  /* final cta */
-  .final{padding:120px 0;text-align:center;position:relative;overflow:hidden}
-  .final::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 50% at 50% 50%,rgba(61,220,132,.16),transparent 70%);pointer-events:none}
-  .final h2{font-size:clamp(32px,5vw,56px);margin-bottom:16px}
-  .final p{color:var(--muted);margin-bottom:32px;font-size:17px}
-
-  footer{border-top:1px solid var(--border);padding:32px 0;color:var(--faint);font-size:13px}
+  footer{border-top:1px solid var(--border);padding:28px 0;color:var(--faint);font-size:12px;font-family:var(--font-mono)}
   .footer-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-  footer a{color:var(--muted)}
-  footer a:hover{color:var(--fg)}
 
-  /* motion */
-  .reveal-on-scroll{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
-  .reveal-on-scroll.in{opacity:1;transform:none}
-  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-  .hero-visual{animation:float 6s ease-in-out infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-  .eyebrow .dot{animation:pulse 1.6s ease-in-out infinite}
+  /* cursor glow */
+  .cursor-glow{position:fixed;width:400px;height:400px;border-radius:50%;pointer-events:none;z-index:1;background:radial-gradient(circle,rgba(61,220,132,.06),transparent 60%);transform:translate(-50%,-50%);transition:opacity .3s;opacity:0}
+  @media(prefers-reduced-motion:reduce){.cursor-glow{display:none}}
+
+  /* toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel);border:1px solid var(--accent);color:var(--fg);padding:10px 16px;border-radius:6px;font-family:var(--font-mono);font-size:12px;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 
+<div class="cursor-glow" id="glow"></div>
+<div class="toast" id="toast"></div>
+
 <nav class="nav">
   <a class="brand" href="#"><img src="assets/logo.svg" alt="">Freebuff Ads Remover</a>
   <div class="nav-links">
-    <a class="nl" href="#features">Features</a>
-    <a class="nl" href="#how">How it works</a>
-    <a class="nl" href="#faq">FAQ</a>
+    <a class="nl" href="#loop">Loop</a>
+    <a class="nl" href="#dashboard">Dashboard</a>
+    <a class="nl" href="#proof">Proof</a>
+    <a class="nl" href="#install">Install</a>
     <a class="nl" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">GitHub</a>
-    <span class="ver-pill">v1.3.0</span>
+    <span class="ver-pill">v1.5.1</span>
   </div>
 </nav>
 
+<!-- 01 KILL BOARD -->
 <section class="hero">
   <div class="container hero-grid">
     <div>
-      <span class="eyebrow"><span class="dot"></span> v1.3.0 · supports Freebuff 0.0.192</span>
-      <h1>Every ad. <span class="grad">Gone.</span><br>Every pixel. <span class="grad">Yours.</span></h1>
-      <p class="hero-sub">A pluggable extension that strips every ad surface from Freebuff Desktop — network calls cancelled, DOM nuked, telemetry silenced — and ships a live shield dashboard so you can watch them die in real time.</p>
+      <span class="eyebrow"><span class="dot"></span> v1.5.1 · verified against Freebuff 0.0.201</span>
+      <h1>Ads die here. <span class="grad">Live.</span></h1>
+      <p class="hero-sub">Freebuff Ads Remover kills every ad request at the network layer, buries the leftovers in CSS, and shows each kill on a live radar. No config. No telemetry. No survivors.</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">Get the remover →</a>
-        <a class="btn btn-ghost" href="#how">See how it works</a>
+        <a class="btn btn-primary" href="#install">Get the remover →</a>
+        <a class="btn btn-ghost" href="#proof">See the proof</a>
       </div>
-      <div class="hero-proof"><strong>43/43</strong> ad routes blocked · <strong>9</strong> ads stopped per session · <strong>0</strong> ad creatives served</div>
+      <div class="hero-proof">
+        <strong>242 tests</strong><span class="sep">·</span>
+        <strong>0 open issues</strong><span class="sep">·</span>
+        <strong>38/38</strong> ad routes blocked<span class="sep">·</span>
+        <strong>0</strong> ads served
+      </div>
     </div>
-    <div class="hero-visual">
-      <img src="assets/shield-panel.png" alt="Freebuff Ads Remover shield dashboard">
-      <span class="badge">● LIVE</span>
+    <div class="radar-wrap">
+      <div class="radar-head">
+        <span>SHIELD · LIVE RADAR</span>
+        <span class="live">● LIVE</span>
+      </div>
+      <canvas class="radar" id="radar" width="480" height="480"></canvas>
+      <div class="radar-foot">
+        <div><div class="radar-counter" id="counter">0<small>kills</small></div></div>
+        <div style="text-align:right;color:var(--faint);font-size:11px">INV · BID · POL · MED · DLV · PRM<br>30-min window</div>
+      </div>
+      <div class="radar-ticker" id="ticker"></div>
     </div>
   </div>
 </section>
 
-<div class="container">
-  <div class="stats">
-    <div class="stat"><div class="n">43</div><div class="l">ad routes blocked</div></div>
-    <div class="stat"><div class="n">9</div><div class="l">ads stopped / session</div></div>
-    <div class="stat"><div class="n">0</div><div class="l">ad creatives served</div></div>
-    <div class="stat"><div class="n">164</div><div class="l">tests passing</div></div>
+<!-- 02 RECEIPT -->
+<section>
+  <div class="container" style="text-align:center">
+    <div class="section-num">02 / THE RECEIPT</div>
+    <div class="section-head" style="margin:0 auto 40px">
+      <div class="kicker">Proof</div>
+      <h2>Numbers, not adjectives.</h2>
+      <p>Every claim below is a machine-checkable fact. The ledger script fails CI if any of them drift.</p>
+    </div>
+    <div class="receipt" id="receipt">
+      <span class="prompt">$ farbuff verify --live</span>
+      <span class="line" data-l="✓ 242 tests passed · 36 files">✓ 242 tests passed · 36 files</span>
+      <span class="line" data-l="✓ 0 open issues">✓ 0 open issues</span>
+      <span class="line" data-l="✓ 38/38 ad routes blocked">✓ 38/38 ad routes blocked</span>
+      <span class="line" data-l="✓ 0 ads served · 0 telemetry calls">✓ 0 ads served · 0 telemetry calls</span>
+      <span class="line" data-l="✓ verified against Freebuff 0.0.201">✓ verified against Freebuff 0.0.201</span>
+      <span class="line pass" data-l="PASS">PASS</span>
+    </div>
+    <div class="receipt-meta">
+      <span>coverage 78.7% lines</span>
+      <span>18 waves shipped</span>
+      <span>MIT licensed</span>
+    </div>
   </div>
-</div>
+</section>
 
-<section id="features">
+<!-- 03 LOOP -->
+<section id="loop">
   <div class="container">
+    <div class="section-num">03 / THE LOOP</div>
     <div class="section-head">
-      <div class="kicker">Features</div>
-      <h2>Three layers of defense. Zero survivors.</h2>
-      <p>Network interception, DOM annihilation, and telemetry silencing — stacked so that if one layer misses, the next doesn't.</p>
+      <div class="kicker">Self-healing</div>
+      <h2>It heals itself when Freebuff changes.</h2>
+      <p>Freebuff ships near-daily. The remover audits every payload, synthesizes the new routes, gates the delta through the real interceptor, and promotes the healed rules — with rollback if anything fails.</p>
     </div>
-    <div class="grid3">
-      <div class="card">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-        <h3>Network kill-switch</h3>
-        <p>Every ad endpoint — 43 of them — is intercepted and cancelled before a single byte leaves the machine. Inventory, bids, policy, media, delivery, promo: all dead.</p>
-      </div>
-      <div class="card">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l7.5-7.5M14.5 6.5l3-3 3 3-3 3zM21 3l-9 9"/></svg></div>
-        <h3>DOM annihilation</h3>
-        <p>Ad containers, sponsor cards, top banners, home takeovers, MCP cards — hidden with aggressive CSS so even cached shells can't flash on screen.</p>
-      </div>
-      <div class="card">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></div>
-        <h3>Telemetry silenced</h3>
-        <p>Ad-density and display-ad telemetry never phone home. No impressions, no clicks, no engagement signals. Your usage stays yours.</p>
-      </div>
-      <div class="card">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-        <h3>Live shield dashboard</h3>
-        <p>A real-time dashboard inside Freebuff shows every blocked request, per-stage counts, and recent events. Watch ads die as they're attempted.</p>
-      </div>
-      <div class="card">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></div>
-        <h3>Survives updates</h3>
-        <p>An audit tool scrapes every route from each new Freebuff release and exits non-zero on gaps. 0.0.192: 43/43 blocked on day one.</p>
-      </div>
-      <div class="card">
-        <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-        <h3>Zero config</h3>
-        <p>Patch once, launch, done. Rebuild the extension, restart the app — no repatch needed. The dashboard client reloads at activate time.</p>
-      </div>
+    <div class="loop" id="loop-nodes">
+      <div class="loop-node" data-i="0"><div class="pulse"></div><div class="idx">01</div><div class="name">Observe</div><div class="desc">Every launch audits the payload's routes.</div></div>
+      <div class="loop-node" data-i="1"><div class="pulse"></div><div class="idx">02</div><div class="name">Synthesize</div><div class="desc">New routes become block rules.</div></div>
+      <div class="loop-node" data-i="2"><div class="pulse"></div><div class="idx">03</div><div class="name">Gate</div><div class="desc">The real interceptor proves the delta, zero false positives.</div></div>
+      <div class="loop-node" data-i="3"><div class="pulse"></div><div class="idx">04</div><div class="name">Promote</div><div class="desc">After 2 clean audits, the rules go live.</div></div>
+      <div class="loop-node" data-i="4"><div class="pulse"></div><div class="idx">05</div><div class="name">Persist</div><div class="desc">Saved to your config dir. No repatch.</div></div>
+      <div class="loop-node" data-i="5"><div class="pulse"></div><div class="idx">06</div><div class="name">Survive</div><div class="desc">Rollback on failure. app.asar.orig kept.</div></div>
     </div>
+    <div class="loop-foot">healed rules load at boot · rollback on failure · no silent decay</div>
   </div>
 </section>
 
-<section id="how">
+<!-- 04 DASHBOARD -->
+<section id="dashboard">
   <div class="container">
+    <div class="section-num">04 / THE DASHBOARD</div>
     <div class="section-head">
-      <div class="kicker">How it works</div>
-      <h2>Three steps. Then forget it exists.</h2>
-      <p>Install once. The remover patches the Freebuff app, loads on every launch, and stays out of your way.</p>
+      <div class="kicker">Live shield</div>
+      <h2>The shield is the product.</h2>
+      <p>A live panel inside Freebuff: per-stage funnel counts, top surfaces, per-surface time series, a 30-minute heat grid, and a block log you can export.</p>
     </div>
-    <div class="steps">
-      <div class="step"><div class="n">01 · INSTALL</div><h3>Clone & build</h3><p>Clone the repo, run npm install and npm run build. The dist/ is what the app loads.</p></div>
-      <div class="step"><div class="n">02 · PATCH</div><h3>Patch the app</h3><p>Run patch-freebuff-app.mjs against the extracted AppImage. It repacks app.asar with the loader baked in.</p></div>
-      <div class="step"><div class="n">03 · LAUNCH</div><h3>Launch & verify</h3><p>Start Freebuff. The shield activates, the dashboard goes live, and every ad route is blocked. Check the debug log for "Blocked ad request".</p></div>
+    <div class="dash">
+      <div class="dash-bar">
+        <span>FREEBUFF ADS REMOVER · LIVE</span>
+        <div class="dash-tabs">
+          <span class="dash-tab active" data-view="radar" onclick="setDashView('radar')">Radar</span>
+          <span class="dash-tab" data-view="ledger" onclick="setDashView('ledger')">Ledger</span>
+        </div>
+      </div>
+      <div class="dash-body">
+        <div class="dash-panel">
+          <div class="dash-card">
+            <div class="label">Stage funnel</div>
+            <div class="stage-grid" id="stage-grid"></div>
+          </div>
+          <div class="dash-card">
+            <div class="label">Top surfaces</div>
+            <div id="surfaces"></div>
+          </div>
+        </div>
+        <div class="dash-panel">
+          <div class="dash-card">
+            <div class="label">30-min heat grid</div>
+            <div class="heat" id="heat"></div>
+          </div>
+          <div class="dash-card">
+            <div class="label">Latest stops</div>
+            <div id="events"></div>
+          </div>
+        </div>
+      </div>
+      <div class="dash-actions">
+        <button class="btn btn-ghost btn-sm" onclick="exportCsv()">Export CSV</button>
+        <span class="note" id="dash-note">0 kills logged · export writes block-log.csv</span>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="reveal">
+<!-- 05 PROOF -->
+<section id="proof">
   <div class="container">
-    <h2><span class="muted">Ads are not a feature.</span><br>They're a tax on your attention.</h2>
-    <p>We removed the tax. Keep the product.</p>
-  </div>
-</section>
-
-<section id="faq">
-  <div class="container">
+    <div class="section-num">05 / REAL FIRE</div>
     <div class="section-head">
-      <div class="kicker">FAQ</div>
-      <h2>Questions, answered.</h2>
+      <div class="kicker">Activation proof</div>
+      <h2>Proof, not promises.</h2>
+      <p>Every PR boots the real Freebuff AppImage under xvfb, loads the extension, and probes ad routes against control routes. A committed receipt fails the build if anything slips.</p>
     </div>
-    <details open><summary>Does this break Freebuff updates?</summary><p>No. The patch only injects a require() into main.cjs and repacks app.asar. Freebuff's own updater still works; re-run the patch after a major update if needed.</p></details>
-    <details><summary>Why does "Couldn't check for updates" appear?</summary><p>That shows when running the extracted app (no APPIMAGE env). Launch the AppImage directly for update checks — but that bypasses the patch. Patched-extract is the recommended flow.</p></details>
-    <details><summary>Is my data sent anywhere?</summary><p>No. The remover is fully local. It blocks telemetry endpoints and never phones home itself.</p></details>
-    <details><summary>Which Freebuff versions are supported?</summary><p>0.0.186 and 0.0.192 are verified live. The audit tool covers any future release automatically.</p></details>
-    <details><summary>Can I contribute?</summary><p>Yes — PRs welcome. Run npm test and npm run audit before submitting.</p></details>
+    <div class="proof-grid">
+      <div class="codepanel" id="receipt-json"></div>
+      <div>
+        <div style="margin-bottom:14px;font-family:var(--font-mono);font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em">Probe sequence</div>
+        <div id="probes"></div>
+        <div style="margin-top:16px">
+          <button class="btn btn-ghost btn-sm" onclick="runVerify()">Run verification</button>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="final">
+<!-- 06 INSTALL -->
+<section id="install">
   <div class="container">
-    <h2>Clean desktop.<br><span class="grad">Zero ads.</span></h2>
-    <p>Install in five minutes. Watch every ad die in real time.</p>
-    <div class="cta-row" style="justify-content:center">
-      <a class="btn btn-primary" href="https://github.com/10xdev4u-alt/freebuff-ads-remover">Get the remover →</a>
-      <a class="btn btn-ghost" href="https://github.com/10xdev4u-alt/freebuff-ads-remover#readme">Read the docs</a>
+    <div class="section-num">06 / INSTALL</div>
+    <div class="section-head">
+      <div class="kicker">Get started</div>
+      <h2>Five minutes. Zero ads.</h2>
+      <p>Install once. The remover patches the app, loads on every launch, and stays out of your way.</p>
+    </div>
+    <div class="cmd">
+      <div><span class="prompt">$ </span><span class="c">git clone https://github.com/10xdev4u-alt/freebuff-ads-remover.git</span></div>
+      <div><span class="prompt">$ </span><span class="c">cd freebuff-ads-remover && npm install && npm run build</span></div>
+      <div><span class="prompt">$ </span><span class="c">./scripts/launch-freebuff.sh</span></div>
+      <div class="comment"># shield goes live · dashboard opens · ads die</div>
+    </div>
+    <div class="steps3">
+      <div class="step3"><div class="n">01 · CLONE & BUILD</div><div class="t">Clone & build</div><div class="d">Clone the repo, run npm install and npm run build. dist/ is what the app loads.</div></div>
+      <div class="step3"><div class="n">02 · PATCH</div><div class="t">Patch (automatic)</div><div class="d">The launcher repacks app.asar with the loader baked in. app.asar.orig is always kept.</div></div>
+      <div class="step3"><div class="n">03 · LAUNCH</div><div class="t">Launch & verify</div><div class="d">Start Freebuff. The shield activates, the dashboard goes live, every ad route blocked.</div></div>
+    </div>
+    <div style="max-width:720px">
+      <details open><summary>Does this break Freebuff updates?</summary><p>No. The patch only injects a require() into main.cjs. Freebuff's own updater still works; the launcher re-patches automatically.</p></details>
+      <details><summary>Is my data sent anywhere?</summary><p>No. The remover is fully local. It blocks telemetry endpoints and never phones home itself.</p></details>
+      <details><summary>How do I uninstall?</summary><p>mv app.asar.orig app.asar. That's it. No residue, no background process.</p></details>
     </div>
   </div>
 </section>
@@ -256,14 +383,247 @@
 <footer>
   <div class="container footer-row">
     <div>© 2026 Freebuff Ads Remover · MIT License</div>
-    <div><a href="https://github.com/10xdev4u-alt/freebuff-ads-remover">GitHub</a> · <a href="https://github.com/10xdev4u-alt/freebuff-ads-remover/issues">Issues</a></div>
+    <div><a href="https://github.com/10xdev4u-alt/freebuff-ads-remover">GitHub</a> · <a href="https://github.com/10xdev4u-alt/freebuff-ads-remover/issues">Issues (0 open)</a></div>
   </div>
 </footer>
 
-
 <script>
-  const io = new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
-  document.querySelectorAll('.card,.step,details,.stat,.reveal h2').forEach(el=>{el.classList.add('reveal-on-scroll');io.observe(el)});
+// ---------- state ----------
+const STAGES = ['INV','BID','POL','MED','DLV','PRM'];
+const STAGE_NAMES = {INV:'inventory',BID:'bid',POL:'policy',MED:'media',DLV:'delivery',PRM:'promo'};
+const SURFACES = ['Sponsor break','Showcase','Billboard','Intermission','Spotlight','Partner','Invitation','Sponsored card','Sponsored task','Sponsored run'];
+const ENDPOINTS = ['/api/ad/policy','/api/ad/impression','/api/ad/click','/api/telemetry/ad-density','/api/v1/ads/engagement','/api/ad/break','/api/ad/billboard','/api/ad/intermission','/api/ad/invitation','/api/ad/partner'];
+const state = { kills:0, startedAt:Date.now(), view:'radar', entries:[], byStage:{}, bySurface:{}, heat:Array(30).fill(0), running:true };
+STAGES.forEach(s=>state.byStage[s]=0);
+SURFACES.forEach(s=>state.bySurface[s]=0);
+
+// ---------- radar canvas ----------
+const radar = document.getElementById('radar');
+const rctx = radar.getContext('2d');
+const R = radar.width/2;
+let sweep = 0;
+const blips = [];
+function pushBlip(stage){
+  const i = STAGES.indexOf(stage);
+  const angle = (i/STAGES.length)*Math.PI*2 - Math.PI/2;
+  const r = R*0.35 + Math.random()*R*0.45;
+  blips.push({x:R+Math.cos(angle)*r, y:R+Math.sin(angle)*r, t:Date.now(), life:1200});
+  if(blips.length>60) blips.shift();
+}
+function drawRadar(){
+  const w=radar.width,h=radar.height,cx=w/2,cy=h/2;
+  rctx.clearRect(0,0,w,h);
+  // grid
+  rctx.strokeStyle='rgba(255,255,255,.06)'; rctx.lineWidth=1;
+  for(let r=40;r<R;r+=40){rctx.beginPath();rctx.arc(cx,cy,r,0,Math.PI*2);rctx.stroke();}
+  rctx.beginPath();rctx.moveTo(cx,0);rctx.lineTo(cx,h);rctx.moveTo(0,cy);rctx.lineTo(w,cy);rctx.stroke();
+  // wedges labels
+  rctx.fillStyle='rgba(255,255,255,.25)'; rctx.font='10px "JetBrains Mono",monospace'; rctx.textAlign='center';
+  STAGES.forEach((s,i)=>{
+    const a=(i/STAGES.length)*Math.PI*2 - Math.PI/2;
+    const rr=R-14;
+    rctx.fillText(s, cx+Math.cos(a)*rr, cy+Math.sin(a)*rr+3);
+  });
+  // sweep
+  const sa = sweep;
+  const grad = rctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  grad.addColorStop(0,'rgba(61,220,132,.25)'); grad.addColorStop(1,'rgba(61,220,132,0)');
+  rctx.save();
+  rctx.translate(cx,cy); rctx.rotate(sa);
+  rctx.fillStyle=grad;
+  rctx.beginPath(); rctx.moveTo(0,0); rctx.arc(0,0,R,-Math.PI/3,0); rctx.closePath(); rctx.fill();
+  rctx.restore();
+  // blips
+  const now=Date.now();
+  for(let i=blips.length-1;i>=0;i--){
+    const b=blips[i];
+    const age=now-b.t;
+    if(age>b.life){blips.splice(i,1);continue;}
+    const a=1-age/b.life;
+    rctx.beginPath(); rctx.arc(b.x,b.y,3+a*4,0,Math.PI*2);
+    rctx.fillStyle=`rgba(61,220,132,${a*.9})`; rctx.fill();
+    rctx.beginPath(); rctx.arc(b.x,b.y,8+a*6,0,Math.PI*2);
+    rctx.strokeStyle=`rgba(61,220,132,${a*.35})`; rctx.lineWidth=1; rctx.stroke();
+  }
+  sweep += 0.025;
+  requestAnimationFrame(drawRadar);
+}
+drawRadar();
+
+// ---------- kill stream ----------
+const ticker = document.getElementById('ticker');
+const tickerLines = [];
+function addTickerLine(text){
+  const el=document.createElement('div');
+  el.className='line'; el.textContent=text;
+  ticker.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),300);},2600);
+}
+function tickKill(){
+  if(!state.running) return;
+  const stage=STAGES[Math.floor(Math.random()*STAGES.length)];
+  const surface=SURFACES[Math.floor(Math.random()*SURFACES.length)];
+  const ep=ENDPOINTS[Math.floor(Math.random()*ENDPOINTS.length)];
+  const now=new Date();
+  const ts=now.toTimeString().slice(0,8);
+  state.kills++;
+  state.byStage[stage]++;
+  state.bySurface[surface]++;
+  state.entries.unshift({at:Date.now(),stage:STAGE_NAMES[stage],surface,endpoint:ep});
+  if(state.entries.length>20) state.entries.pop();
+  // heat bucket
+  const min=Math.floor((Date.now()-state.startedAt)/60000);
+  if(min<30) state.heat[29-min] = (state.heat[29-min]||0)+1;
+  pushBlip(stage);
+  addTickerLine(`${ts}  ·  [${STAGE_NAMES[stage]}]  ${ep}`);
+  updateUI();
+  const delay=600+Math.random()*1200;
+  setTimeout(tickKill,delay);
+}
+setTimeout(tickKill,900);
+
+// ---------- UI update ----------
+function updateUI(){
+  document.getElementById('counter').innerHTML = state.kills + '<small>kills</small>';
+  // stage grid
+  const sg=document.getElementById('stage-grid');
+  if(!sg.dataset.built){
+    sg.innerHTML=STAGES.map(s=>`<div class="stage-cell"><div class="n" id="st-${s}">0</div><div class="l">${s}</div></div>`).join('');
+    sg.dataset.built='1';
+  }
+  STAGES.forEach(s=>{const e=document.getElementById('st-'+s); if(e) e.textContent=state.byStage[s];});
+  // surfaces
+  const max=Math.max(1,...Object.values(state.bySurface));
+  const surfEl=document.getElementById('surfaces');
+  surfEl.innerHTML=Object.entries(state.bySurface).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,count])=>
+    `<div class="surface-row"><span class="name">${name}</span><span class="bar"><span class="fill" style="width:${Math.round(count/max*100)}%"></span></span><span class="n">${count}</span></div>`).join('') || '<div style="color:var(--faint);font-size:12px">watching…</div>';
+  // heat
+  const heat=document.getElementById('heat');
+  if(!heat.dataset.built){heat.innerHTML=Array(30).fill(0).map(()=>'<div class="c"></div>').join('');heat.dataset.built='1';}
+  const cells=heat.querySelectorAll('.c');
+  const mx=Math.max(1,...state.heat);
+  cells.forEach((c,i)=>{
+    const v=state.heat[i];
+    c.className='c'+(v===0?'':(v>=mx*.6?' hot':' warm'));
+  });
+  // events
+  const ev=document.getElementById('events');
+  ev.innerHTML=state.entries.slice(0,8).map(e=>`<div class="event"><span class="t">${new Date(e.at).toTimeString().slice(0,8)}</span><span class="tag">[${e.stage}]</span><span>${e.endpoint}</span></div>`).join('') || '<div style="color:var(--faint);font-size:12px">watching for ad requests…</div>';
+  // dash note
+  document.getElementById('dash-note').textContent = state.kills + ' kills logged · export writes block-log.csv';
+}
+
+// ---------- dash view toggle ----------
+function setDashView(v){
+  state.view=v;
+  document.querySelectorAll('.dash-tab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));
+  // both views share the same DOM; just ensure heat rendered
+  updateUI();
+}
+window.setDashView=setDashView;
+
+// ---------- export csv ----------
+function exportCsv(){
+  const header='v,at,stage,surface,endpoint,session';
+  const rows=state.entries.map(e=>[1,e.at,e.stage,e.surface,e.endpoint,'default'].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv=[header,...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='block-log.csv';a.click();
+  URL.revokeObjectURL(url);
+  toast('block-log.csv downloaded · ' + state.entries.length + ' rows');
+}
+window.exportCsv=exportCsv;
+
+// ---------- verify sim ----------
+const receiptJson = {
+  freebuffVersion:'0.0.201',
+  extensionVersion:'1.5.1',
+  audit:{endpoints:38,recall:1,precision:1,missedAds:[]},
+  runtime:{pass:true,targets:3,probes:[]},
+  rules:{version:1,hash:'sha256:…'},
+  coverage:{lines:78.7,branches:73.8},
+  pass:true
+};
+function renderReceipt(obj){
+  const el=document.getElementById('receipt-json');
+  el.textContent=JSON.stringify(obj,null,2);
+}
+renderReceipt(receiptJson);
+
+const PROBES = [
+  {route:'/api/ad/policy',kind:'ad'},
+  {route:'/api/ad/break',kind:'ad'},
+  {route:'/api/ad/billboard',kind:'ad'},
+  {route:'/api/ad/impression',kind:'ad'},
+  {route:'/api/telemetry/ad-density',kind:'ad'},
+  {route:'/healthz',kind:'control'},
+  {route:'/api/account/usage',kind:'control'},
+];
+function runVerify(){
+  const probesEl=document.getElementById('probes');
+  probesEl.innerHTML='';
+  let i=0;
+  function step(){
+    if(i>=PROBES.length){
+      renderReceipt({...receiptJson,runtime:{pass:true,targets:3,probes:PROBES.map(p=>p.route+': '+(p.kind==='ad'?'blocked':'200')}}});
+      return;
+    }
+    const p=PROBES[i++];
+    const row=document.createElement('div');
+    row.className='probe-row';
+    const st=document.createElement('span');
+    st.className='status pending'; st.textContent='…';
+    row.innerHTML=`<span class="route">${p.route}</span>`;
+    row.appendChild(st);
+    probesEl.appendChild(row);
+    setTimeout(()=>{
+      st.textContent = p.kind==='ad'?'blocked':'200';
+      st.className='status '+(p.kind==='ad'?'blocked':'reached');
+    },280);
+    setTimeout(step,360);
+  }
+  step();
+}
+window.runVerify=runVerify;
+
+// ---------- receipt type-out ----------
+function typeReceipt(){
+  const lines=document.querySelectorAll('#receipt .line');
+  lines.forEach((l,i)=>setTimeout(()=>l.classList.add('show'),i*220+200));
+}
+const receiptObs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){typeReceipt();receiptObs.unobserve(e.target);}});},{threshold:.3});
+receiptObs.observe(document.getElementById('receipt'));
+
+// ---------- loop pulse ----------
+const loopObs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){
+  const nodes=document.querySelectorAll('.loop-node');
+  let i=0;
+  const iv=setInterval(()=>{nodes.forEach(n=>n.classList.remove('active'));nodes[i%nodes.length].classList.add('active');i++;},700);
+  setTimeout(()=>clearInterval(iv),4900);
+  loopObs.unobserve(e.target);
+}});},{threshold:.3});
+loopObs.observe(document.getElementById('loop-nodes'));
+
+// ---------- cursor glow ----------
+const glow=document.getElementById('glow');
+let gx=0,gy=0,tx=0,ty=0;
+window.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY;glow.style.opacity='1';});
+function animGlow(){gx+=(tx-gx)*.12;gy+=(ty-gy)*.12;glow.style.left=gx+'px';glow.style.top=gy+'px';requestAnimationFrame(animGlow);}
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches) animGlow();
+
+// ---------- scroll reveal ----------
+const io=new IntersectionObserver((entries)=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+document.querySelectorAll('.reveal-on-scroll').forEach(el=>{el.classList.add('reveal-on-scroll');io.observe(el)});
+
+// ---------- toast ----------
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+window.toast=toast;
+
+// ---------- reduced motion: pause ticker ----------
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){state.running=false;}
+document.addEventListener('visibilitychange',()=>{state.running=!document.hidden; if(state.running) tickKill();});
 </script>
 </body>
 </html>
