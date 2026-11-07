@@ -1,0 +1,33 @@
+name: Audit Upstream Freebuff
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Fetch latest Freebuff AppImage
+        run: |
+          echo "Manual step: provide FREEBUFF_APPIMAGE_URL secret or download latest."
+          # Placeholder: in production, download the latest AppImage and extract.
+          echo "Skipping download in default run."
+
+      - name: Run audit
+        run: |
+          if [ -d /tmp/freebuff-extract/squashfs-root/resources ]; then
+            npm run audit -- /tmp/freebuff-extract/squashfs-root/resources
+          else
+            echo "No extracted payload; audit skipped."
+          fi
