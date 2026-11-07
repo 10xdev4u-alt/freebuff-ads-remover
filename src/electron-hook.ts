@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/consistent-type-imports */
 import type { AdInterceptor } from './interceptor.js';
 import type { CssInjector } from './css-injector.js';
 import type { Dashboard } from './dashboard.js';
 import type { Logger } from './logger.js';
 import { loadConfig } from './config.js';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
   ElectronAppLike,
   ElectronSessionLike,
@@ -97,12 +99,11 @@ export class ElectronHook {
       const appLike = electronApi?.app as { getPath?: (n: string) => string } | undefined;
       const userData = appLike?.getPath?.('userData');
       if (userData) {
-        const pattern = new RegExp(this.interceptor ? (loadConfig().network.partitionPattern) : '^freebuff-');
+        const pattern = new RegExp(loadConfig().network.partitionPattern);
         for (const name of discoverPartitions(userData, pattern)) {
           const sm = sessionObj as ElectronSessionModuleLike;
-          const fromPartition = sm?.fromPartition;
-          if (typeof fromPartition === 'function') {
-            try { this.hookSession(fromPartition(name)); } catch { /* ignore */ }
+          if (typeof sm.fromPartition === 'function') {
+            try { this.hookSession(sm.fromPartition(name)); } catch { /* ignore */ }
           }
         }
       }
@@ -216,14 +217,12 @@ export class ElectronHook {
     }
     if (typeof webRequest.onCompleted === 'function') {
       webRequest.onCompleted((details) => {
-        const d = details as { id?: number };
-        if (d.id !== undefined) tracker.complete(d.id);
+        if (details.id !== undefined) tracker.complete(details.id);
       });
     }
     if (typeof webRequest.onErrorOccurred === 'function') {
       webRequest.onErrorOccurred((details) => {
-        const d = details as { id?: number };
-        if (d.id !== undefined) tracker.complete(d.id);
+        if (details.id !== undefined) tracker.complete(details.id);
       });
     }
   }

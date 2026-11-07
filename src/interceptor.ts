@@ -4,7 +4,7 @@ import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
 import { ShadowCapture } from './shadow-capture.js';
-import { BlockLog } from './block-log.js';
+import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
 import type { RuleRegistry } from './rule-registry.js';
 
