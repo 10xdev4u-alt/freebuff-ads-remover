@@ -30,7 +30,7 @@ describe('Activation: real bootstrap path', () => {
   });
 
   it('registers a webRequest listener and blocks every ad route in the corpus', () => {
-    const ok = activate(fakeSession as unknown, undefined);
+    const ok = activate(fakeSession, undefined);
     expect(ok).toBe(true);
     expect(captured).not.toBeNull();
 
@@ -59,7 +59,7 @@ describe('Activation: real bootstrap path', () => {
     const corpusPath = path.resolve('corpus/golden.jsonl');
     const buf = fs.readFileSync(corpusPath);
     const hash = crypto.createHash('sha256').update(buf).digest('hex');
-    const manifest = JSON.parse(fs.readFileSync(path.resolve('corpus/manifest.json'), 'utf8'));
+    const manifest = JSON.parse(fs.readFileSync(path.resolve('corpus/manifest.json'), 'utf8')) as { sha256: string };
     expect(hash).toBe(manifest.sha256);
   });
 });
