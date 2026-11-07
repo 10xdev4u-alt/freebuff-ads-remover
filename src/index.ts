@@ -11,6 +11,7 @@ import type { VerifyServiceHandle } from './verify-service.js';
 import type { ElectronApi } from './electron-hook.js';
 import type { StatsSnapshot } from './types.js';
 import { getElectron } from './electron-bridge.js';
+import { createCrashGuard } from './crash-guard.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
@@ -27,6 +28,7 @@ export type { ElectronApi } from './electron-hook.js';
 export { WebContentsCssTarget } from './web-contents-css.js';
 export { WebContentsScriptTarget } from './web-contents-script.js';
 export { buildDomRemoverScript, buildDomRemoverFromSelectors } from './dom-remover.js';
+export { createCrashGuard } from './crash-guard.js';
 export { RuntimeVerifier } from './runtime-verifier.js';
 export type { VerificationReport, ProbeResult, RuntimeVerifierConfig } from './runtime-verifier.js';
 
@@ -40,9 +42,15 @@ let unwatchConfig: (() => void) | null = null;
 let runtimeVerifier: RuntimeVerifier | null = null;
 let verifyService: VerifyServiceHandle | null = null;
 let verifyTimer: ReturnType<typeof setTimeout> | null = null;
+const crashGuard = createCrashGuard();
 
 export function activate(session?: unknown, electronApi?: ElectronApi): boolean {
   try {
+    if (!crashGuard.shouldActivate()) {
+      console.warn('[freebuff-ads-remover] Crash loop detected; extension disabled. Reset crash count to retry.');
+      return false;
+    }
+    crashGuard.markRunning();
     const config = loadConfig();
     logger = new Logger(config.logLevel, config.logToFile);
     logger.info('Freebuff Ads Remover activating...');
@@ -117,6 +125,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
 
 export function deactivate(): void {
   try {
+    crashGuard.markCleanExit();
     if (verifyTimer) clearTimeout(verifyTimer);
     verifyService?.close().catch(() => {});
     runtimeVerifier?.detachAll();
