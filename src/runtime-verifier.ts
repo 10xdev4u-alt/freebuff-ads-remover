@@ -257,6 +257,7 @@ export class RuntimeVerifier {
         }
       };
 
+      // eslint-disable-next-line prefer-const
       let timer: ReturnType<typeof setTimeout> | undefined;
       const cleanup = (): void => {
         if (timer) clearTimeout(timer);

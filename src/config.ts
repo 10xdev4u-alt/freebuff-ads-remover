@@ -20,7 +20,7 @@ const configSchema = z.object({
       probeRoutes: z.array(z.string()).default(['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/impression', '/api/telemetry/ad-density']),
       controlRoutes: z.array(z.string()).default(['/healthz', '/api/account/usage']),
       concurrency: z.number().int().min(1).max(16).default(8),
-      orchestratorOrigin: z.string().url().default('http://127.0.0.1:5174'),
+      orchestratorOrigin: z.url().default('http://127.0.0.1:5174'),
     })
     .default(() => ({
       enabled: false,

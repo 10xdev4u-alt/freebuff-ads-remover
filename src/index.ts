@@ -66,6 +66,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       const attachAll = (): void => {
         try {
           const ec = getElectron();
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           const all = ec?.webContents?.getAllWebContents?.() ?? [];
           runtimeVerifier?.attachAll(all as unknown as Parameters<RuntimeVerifier['attachAll']>[0]);
         } catch (e) {
@@ -79,15 +80,17 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
           runtimeVerifier,
           logger,
           loadPackageVersion(),
+          // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
         ).then((h) => { verifyService = h; }).catch((e) => logger?.warn('Verify service failed', e));
       }
       if (config.verify.runOnBoot) {
         verifyTimer = setTimeout(() => {
+          // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
           void runtimeVerifier?.run().catch((e) => logger?.warn('Verify run failed', e));
         }, config.verify.settleMs);
       }
     } catch (e) {
-      logger?.warn('Verification subsystem failed to start', e);
+      logger.warn('Verification subsystem failed to start', e);
     }
     unwatchConfig = watchConfig((newConfig) => {
       logger?.info('Config changed, reloading...');
