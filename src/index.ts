@@ -24,6 +24,8 @@ export type { ElectronApi } from './electron-hook.js';
 export { WebContentsCssTarget } from './web-contents-css.js';
 export { WebContentsScriptTarget } from './web-contents-script.js';
 export { buildDomRemoverScript, buildDomRemoverFromSelectors } from './dom-remover.js';
+export { RuntimeVerifier } from './runtime-verifier.js';
+export type { VerificationReport, ProbeResult, RuntimeVerifierConfig } from './runtime-verifier.js';
 
 let logger: Logger | null = null;
 let interceptor: AdInterceptor | null = null;
