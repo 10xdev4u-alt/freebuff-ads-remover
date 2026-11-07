@@ -169,14 +169,14 @@ patch_resources() {
 
   if [[ ! -f "$resources_dir/app.asar" && ! -f "$resources_dir/app.asar.orig" ]]; then
     echo "No app.asar found in $resources_dir — cannot install the ads remover into this build." >&2
-    exit 1
+    return 1
   fi
 
   echo "Patching:  $resources_dir"
   if ! FREEBUFF_ADS_REMOVER_ENTRY="$EXTENSION_ENTRY" \
     "$NODE_BIN" "$EXTENSION_DIR/scripts/patch-freebuff-app.mjs" "$resources_dir"; then
-    echo "Patching failed. If the install directory is not writable, install the AppImage build instead." >&2
-    exit 1
+    echo "Patching failed. Launching unpatched (fail-open)." >&2
+    return 1
   fi
 }
 
@@ -270,9 +270,9 @@ main() {
 
     # Integrity check: confirm the loader marker survived into the repacked asar.
     # If an updater or a partial write stripped it, re-patch (idempotent).
-    if ! node -e "const a=require('@electron/asar'); process.exit(a.extractFile(process.argv[1],'electron/main.cjs').toString().includes('freebuff-ads-remover:begin')?0:1)" "$squashfs_root/resources/app.asar" 2>/dev/null; then
+    if ! "$NODE_BIN" "$EXTENSION_DIR/scripts/check-injection.mjs" "$squashfs_root/resources/app.asar" 2>/dev/null; then
       echo "Injection marker missing after patch — re-patching..." >&2
-      patch_resources "$squashfs_root/resources" || { echo "Re-patch failed; aborting." >&2; exit 1; }
+      patch_resources "$squashfs_root/resources" || echo "Re-patch failed; launching unpatched (fail-open)." >&2
     fi
 
     # Audit at patch time: catch new ad surfaces before launch.

@@ -9,7 +9,7 @@ import type { ElectronApi } from './electron-hook.js';
 import type { StatsSnapshot } from './types.js';
 import { getElectron } from './electron-bridge.js';
 
-export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, PLACEMENT_ALIASES, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
+export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
 export { loadConfig, saveConfig, getConfigPath, getConfigDir, watchConfig } from './config.js';
 export type { Config } from './config.js';
@@ -23,6 +23,7 @@ export { ElectronHook } from './electron-hook.js';
 export type { ElectronApi } from './electron-hook.js';
 export { WebContentsCssTarget } from './web-contents-css.js';
 export { WebContentsScriptTarget } from './web-contents-script.js';
+export { buildDomRemoverScript, buildDomRemoverFromSelectors } from './dom-remover.js';
 
 let logger: Logger | null = null;
 let interceptor: AdInterceptor | null = null;
@@ -41,7 +42,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     interceptor = new AdInterceptor(config, logger, statsStore);
     cssInjector = new CssInjector(config, logger);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
-    electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard);
+    electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);
     if (session) {
       electronHook.activate(session, electronApi);
     }

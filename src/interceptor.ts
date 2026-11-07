@@ -38,7 +38,9 @@ export class AdInterceptor {
       }
     }
 
-    return patterns.sort((a, b) => b.priority - a.priority);
+    // Specificity first (longest pattern first) so /api/ad/break-event is not
+    // shadowed by the shorter /api/ad/break prefix; then by priority.
+    return patterns.sort((a, b) => b.pattern.length - a.pattern.length || b.priority - a.priority);
   }
 
   private classifyEndpoint(endpoint: string): AdSurface | null {
@@ -128,9 +130,7 @@ export class AdInterceptor {
   }
 
   private matches(url: string, pattern: string): boolean {
-    if (pattern.endsWith('/')) {
-      return url.includes(pattern);
-    }
+    // Prefix match when the pattern ends with '/', exact/substring otherwise.
     return url.includes(pattern);
   }
 

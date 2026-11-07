@@ -10,6 +10,8 @@ import type {
   ElectronWebContentsLike,
 } from './electron-bridge.js';
 import { WebContentsCssTarget } from './web-contents-css.js';
+import { WebContentsScriptTarget } from './web-contents-script.js';
+import { buildDomRemoverFromSelectors } from './dom-remover.js';
 
 export interface ElectronApi {
   app: ElectronAppLike;
@@ -26,9 +28,11 @@ export class ElectronHook {
   private interceptor: AdInterceptor;
   private cssInjector: CssInjector;
   private dashboard: Dashboard | null;
+  private domRemoval: boolean;
   private logger: Logger;
   private sessions: Set<ElectronSessionLike>;
   private cssTarget: WebContentsCssTarget | null;
+  private scriptTarget: WebContentsScriptTarget | null;
   private onCreateContents: ((...args: unknown[]) => void) | null;
   private onCreateSession: ((...args: unknown[]) => void) | null;
   private app: ElectronAppLike | null;
@@ -39,13 +43,16 @@ export class ElectronHook {
     cssInjector: CssInjector,
     logger: Logger,
     dashboard?: Dashboard,
+    domRemoval: boolean = false,
   ) {
     this.interceptor = interceptor;
     this.cssInjector = cssInjector;
     this.logger = logger;
     this.dashboard = dashboard ?? null;
+    this.domRemoval = domRemoval;
     this.sessions = new Set();
     this.cssTarget = null;
+    this.scriptTarget = null;
     this.onCreateContents = null;
     this.onCreateSession = null;
     this.app = null;
@@ -94,6 +101,10 @@ export class ElectronHook {
         this.logger,
       );
       void this.cssInjector.activate(this.cssTarget);
+      this.scriptTarget = new WebContentsScriptTarget(electronApi.app, getAllWebContents, this.logger);
+      if (this.domRemoval) {
+        this.scriptTarget.injectScript(buildDomRemoverFromSelectors());
+      }
       this.dashboard?.activate(electronApi.app, getAllWebContents);
     } else {
       this.logger.info('CSS fallback skipped: Electron app API not available');
@@ -124,10 +135,16 @@ export class ElectronHook {
       void this.cssInjector.deactivate(this.cssTarget);
       this.cssTarget.dispose();
     }
+    if (this.scriptTarget) {
+      this.scriptTarget.dispose();
+      this.scriptTarget = null;
+    }
     this.dashboard?.deactivate();
     this.interceptor.deactivate();
     this.hookActive = false;
     this.cssTarget = null;
+    this.scriptTarget = null;
+    this.scriptTarget = null;
     this.onCreateContents = null;
     this.onCreateSession = null;
     this.app = null;

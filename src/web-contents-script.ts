@@ -98,7 +98,9 @@ export class WebContentsScriptTarget {
   }
 
   private execute(contents: ScriptWebContentsLike, code: string): void {
-    if (this.disposed || contents.isDestroyed()) return;
+    if (this.disposed) return;
+    if (typeof contents?.isDestroyed !== 'function' || contents.isDestroyed()) return;
+    if (typeof contents.getURL !== 'function' || typeof contents.executeJavaScript !== 'function') return;
     const url = contents.getURL();
     const type = contents.getType();
     if (type === 'devtools') return;

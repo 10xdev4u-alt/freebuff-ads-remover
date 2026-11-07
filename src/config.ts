@@ -9,6 +9,7 @@ const configSchema = z.object({
   blockTracking: z.boolean().default(true),
   cssFallback: z.boolean().default(true),
   dashboard: z.boolean().default(true),
+  domRemoval: z.boolean().default(false),
   surfaces: z
     .object({
       sponsorBreak: z.boolean().default(true),
