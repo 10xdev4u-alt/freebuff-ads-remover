@@ -193,3 +193,8 @@ Last updated: v1.5.0 (Freebuff 0.0.201).
 - **M6 (v2.0.x):** Anti-detection + privacy + docs (sections 10-12). Target: 20 issues.
 
 Total tracked items: 100+. Each item = one issue/PR. Target: 1000+ commits over the program.
+
+## Deprecated (verified against 0.0.201 bundle)
+- SSE/WebSocket renderer hooks — 0 ad usage (only LLM streaming libs).
+- Service-worker ad blocking — no service worker present.
+- Renderer fetch/XHR monkey-patching — session.webRequest already covers it.

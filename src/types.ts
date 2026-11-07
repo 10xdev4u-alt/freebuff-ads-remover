@@ -132,10 +132,12 @@ export interface ExtensionConfig {
     enabled: boolean;
     port: number;
     runOnBoot: boolean;
+    settleMs: number;
     timeoutMs: number;
-    probeRoutes?: string[];
+    probeRoutes: string[];
     controlRoutes: string[];
     concurrency: number;
+    orchestratorOrigin: string;
   };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
@@ -198,9 +200,12 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     enabled: false,
     port: 0,
     runOnBoot: false,
+    settleMs: 8000,
     timeoutMs: 30000,
+    probeRoutes: ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/impression', '/api/telemetry/ad-density'],
     controlRoutes: ['/healthz', '/api/account/usage'],
     concurrency: 8,
+    orchestratorOrigin: 'http://127.0.0.1:5174',
   },
   surfaces: {
     sponsorBreak: true,

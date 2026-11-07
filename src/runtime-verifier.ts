@@ -35,6 +35,7 @@ export interface RuntimeVerifierConfig {
   probeRoutes: string[];
   controlRoutes: string[];
   concurrency: number;
+  orchestratorOrigin: string;
 }
 
 export interface DebuggerLike {
@@ -59,9 +60,10 @@ export interface AppLike {
 
 const DEFAULT_CONFIG: RuntimeVerifierConfig = {
   timeoutMs: 30_000,
-  probeRoutes: [],
+  probeRoutes: ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/impression', '/api/telemetry/ad-density'],
   controlRoutes: ['/healthz', '/api/account/usage'],
   concurrency: 8,
+  orchestratorOrigin: 'http://127.0.0.1:5174',
 };
 
 export class RuntimeVerifier {
@@ -128,7 +130,6 @@ export class RuntimeVerifier {
    * Returns a report; never throws.
    */
   async run(): Promise<VerificationReport> {
-    const probes: ProbeResult[] = [];
     const allRoutes = [
       ...this.config.probeRoutes.map((r) => ({ route: r, kind: 'ad' as const })),
       ...this.config.controlRoutes.map((r) => ({ route: r, kind: 'control' as const })),
@@ -146,24 +147,11 @@ export class RuntimeVerifier {
       return report;
     }
 
-    const first = [...this.attached][0];
-    if (!first) {
+    if (this.attached.size === 0) {
       const report: VerificationReport = {
         pass: false,
-        reason: 'debugger-unavailable',
-        targets: this.attached.size,
-        probes: [],
-        at: Date.now(),
-      };
-      this.lastReport = report;
-      return report;
-    }
-    const dbg = first.debugger;
-    if (!dbg) {
-      const report: VerificationReport = {
-        pass: false,
-        reason: 'debugger-unavailable',
-        targets: this.attached.size,
+        reason: 'no-attached-targets',
+        targets: 0,
         probes: [],
         at: Date.now(),
       };
@@ -171,25 +159,37 @@ export class RuntimeVerifier {
       return report;
     }
 
-    // Run probes in bounded batches.
-    const results = await this.runProbes(dbg, allRoutes);
-    probes.push(...results);
+    const allProbes: ProbeResult[] = [];
+    const targetResults: { url: string; pass: boolean }[] = [];
+    for (const wc of this.attached) {
+      const dbg = wc.debugger;
+      if (!dbg) {
+        targetResults.push({ url: wc.getURL?.() ?? '', pass: false });
+        continue;
+      }
+      const results = await this.runProbes(dbg, allRoutes);
+      allProbes.push(...results);
+      const adP = results.filter((p) => p.kind === 'ad');
+      const ctrlP = results.filter((p) => p.kind === 'control');
+      const tPass = adP.length > 0 && ctrlP.length > 0 && adP.every((p) => p.outcome === 'blocked') && ctrlP.every((p) => p.outcome === 'reached');
+      targetResults.push({ url: wc.getURL?.() ?? '', pass: tPass });
+    }
 
-    const adProbes = probes.filter((p) => p.kind === 'ad');
-    const controlProbes = probes.filter((p) => p.kind === 'control');
-    const adBlocked = adProbes.every((p) => p.outcome === 'blocked');
-    const controlReached = controlProbes.every((p) => p.outcome === 'reached');
-    const pass = adProbes.length > 0 && controlProbes.length > 0 && adBlocked && controlReached;
+    const adProbes = allProbes.filter((p) => p.kind === 'ad');
+    const controlProbes = allProbes.filter((p) => p.kind === 'control');
+    const adBlocked = adProbes.length > 0 && adProbes.every((p) => p.outcome === 'blocked');
+    const controlReached = controlProbes.length > 0 && controlProbes.every((p) => p.outcome === 'reached');
+    const pass = adBlocked && controlReached && targetResults.every((t) => t.pass);
 
     const report: VerificationReport = {
       pass,
       ...(pass ? {} : { reason: this.failureReason(adProbes, controlProbes) }),
       targets: this.attached.size,
-      probes,
+      probes: allProbes,
       at: Date.now(),
     };
     this.lastReport = report;
-    this.logger.info('Runtime verification complete', { pass, targets: report.targets, probes: probes.length });
+    this.logger.info('Runtime verification complete', { pass, targets: report.targets, probes: allProbes.length });
     return report;
   }
 
@@ -225,7 +225,8 @@ export class RuntimeVerifier {
   private probeOne(dbg: DebuggerLike, route: string, kind: 'ad' | 'control'): Promise<ProbeResult> {
     return new Promise<ProbeResult>((resolve) => {
       const id = `__far_verify_${Math.random().toString(36).slice(2)}`;
-      const url = `${route}${route.includes('?') ? '&' : '?'}${id}`;
+      const origin = this.config.orchestratorOrigin.replace(/\/$/, '');
+      const url = `${origin}${route}${route.includes('?') ? '&' : '?'}${id}`;
       const requestIds = new Map<string, string>();
       const onEvent = (method: unknown, params: unknown): void => {
         const m = method as string;
@@ -256,8 +257,10 @@ export class RuntimeVerifier {
         }
       };
 
-      const handler = (_event: unknown, method: string, params: unknown): void => { onEvent(method, params); };
+      // eslint-disable-next-line prefer-const
+      let timer: ReturnType<typeof setTimeout> | undefined;
       const cleanup = (): void => {
+        if (timer) clearTimeout(timer);
         try {
           dbg.off('message', handler as (...args: unknown[]) => void);
         } catch {
@@ -265,13 +268,15 @@ export class RuntimeVerifier {
         }
       };
 
+      const handler = (_event: unknown, method: string, params: unknown): void => { onEvent(method, params); };
+
       dbg.on('message', handler as (...args: unknown[]) => void);
 
       // Trigger the fetch in the renderer.
       const evalExpr = `fetch(${JSON.stringify(url)}, { credentials: 'include', cache: 'no-store' }).catch(function(){})`;
       void dbg.sendCommand('Runtime.evaluate', { expression: evalExpr, awaitPromise: false });
 
-      setTimeout(() => {
+      timer = setTimeout(() => {
         cleanup();
         resolve({ route, kind, outcome: 'timeout' });
       }, this.config.timeoutMs);

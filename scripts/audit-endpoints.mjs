@@ -19,7 +19,8 @@ const require = createRequire(import.meta.url);
 const { AdInterceptor } = require('../dist/interceptor.js');
 const { DEFAULT_CONFIG, AD_CSS_SELECTORS } = require('../dist/types.js');
 
-const resources = process.argv[2];
+const jsonMode = process.argv.includes('--json');
+const resources = process.argv.find((a) => !a.startsWith('--') && a !== process.argv[0] && a !== process.argv[1]);
 if (!resources || !existsSync(resources)) {
   console.error('usage: audit-endpoints.mjs <resources-dir>');
   process.exit(1);
@@ -179,5 +180,15 @@ if (domGaps.length > 0) {
   console.error(`\nDOM gaps — add selectors for these to AD_CSS_SELECTORS in src/types.ts:`);
   for (const r of domGaps) console.error(`  ${r}`);
 }
-console.log(`\n${results.length - missing.length}/${results.length} ad routes blocked; ${selectorLiterals.size - domGaps.length}/${selectorLiterals.size} app ad selectors covered`);
+const summary = {
+  routes: { total: results.length, blocked: results.length - missing.length, missing },
+  dom: { total: selectorLiterals.size, covered: selectorLiterals.size - domGaps.length, gaps: domGaps },
+  css: { total: cssAdClasses.size, covered: cssAdClasses.size - cssGaps.length, gaps: cssGaps },
+  pass: missing.length === 0 && domGaps.length === 0,
+};
+if (jsonMode) {
+  process.stdout.write(JSON.stringify(summary) + '\n');
+} else {
+  console.log(`\n${results.length - missing.length}/${results.length} ad routes blocked; ${selectorLiterals.size - domGaps.length}/${selectorLiterals.size} app ad selectors covered`);
+}
 if (missing.length > 0 || domGaps.length > 0) process.exit(1);

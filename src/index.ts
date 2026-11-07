@@ -1,10 +1,13 @@
-import { loadConfig, watchConfig } from './config.js';
+import { loadConfig, watchConfig, getConfigDir } from './config.js';
 import { Logger } from './logger.js';
 import { AdInterceptor } from './interceptor.js';
 import { CssInjector } from './css-injector.js';
-import { Dashboard } from './dashboard.js';
+import { Dashboard, loadPackageVersion } from './dashboard.js';
 import { StatsStore } from './stats-store.js';
 import { ElectronHook } from './electron-hook.js';
+import { RuntimeVerifier } from './runtime-verifier.js';
+import { startVerifyService } from './verify-service.js';
+import type { VerifyServiceHandle } from './verify-service.js';
 import type { ElectronApi } from './electron-hook.js';
 import type { StatsSnapshot } from './types.js';
 import { getElectron } from './electron-bridge.js';
@@ -34,6 +37,9 @@ let statsStore: StatsStore | null = null;
 let dashboard: Dashboard | null = null;
 let electronHook: ElectronHook | null = null;
 let unwatchConfig: (() => void) | null = null;
+let runtimeVerifier: RuntimeVerifier | null = null;
+let verifyService: VerifyServiceHandle | null = null;
+let verifyTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function activate(session?: unknown, electronApi?: ElectronApi): boolean {
   try {
@@ -48,11 +54,56 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     if (session) {
       electronHook.activate(session, electronApi);
     }
+    // Verification subsystem (fail-open).
+    try {
+      runtimeVerifier = new RuntimeVerifier(logger, {
+        timeoutMs: config.verify.timeoutMs,
+        probeRoutes: config.verify.probeRoutes,
+        controlRoutes: config.verify.controlRoutes,
+        concurrency: config.verify.concurrency,
+        orchestratorOrigin: config.verify.orchestratorOrigin,
+      });
+      const attachAll = (): void => {
+        try {
+          const ec = getElectron();
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          const all = ec?.webContents?.getAllWebContents?.() ?? [];
+          runtimeVerifier?.attachAll(all as unknown as Parameters<RuntimeVerifier['attachAll']>[0]);
+        } catch (e) {
+          logger?.warn('Verifier attach failed', e);
+        }
+      };
+      attachAll();
+      if (config.verify.enabled) {
+        void startVerifyService(
+          { enabled: true, port: config.verify.port, tokenPath: (getConfigDir() + '/verify.json') },
+          runtimeVerifier,
+          logger,
+          loadPackageVersion(),
+          // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
+        ).then((h) => { verifyService = h; }).catch((e) => logger?.warn('Verify service failed', e));
+      }
+      if (config.verify.runOnBoot) {
+        verifyTimer = setTimeout(() => {
+          // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
+          void runtimeVerifier?.run().catch((e) => logger?.warn('Verify run failed', e));
+        }, config.verify.settleMs);
+      }
+    } catch (e) {
+      logger.warn('Verification subsystem failed to start', e);
+    }
     unwatchConfig = watchConfig((newConfig) => {
       logger?.info('Config changed, reloading...');
       interceptor?.updateConfig(newConfig);
       cssInjector?.updateConfig(newConfig);
       dashboard?.setEnabled(newConfig.dashboard);
+      runtimeVerifier?.updateConfig({
+        timeoutMs: newConfig.verify.timeoutMs,
+        probeRoutes: newConfig.verify.probeRoutes,
+        controlRoutes: newConfig.verify.controlRoutes,
+        concurrency: newConfig.verify.concurrency,
+        orchestratorOrigin: newConfig.verify.orchestratorOrigin,
+      });
       logger?.setLevel(newConfig.logLevel);
       logger?.setLogToFile(newConfig.logToFile);
     });
@@ -66,6 +117,9 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
 
 export function deactivate(): void {
   try {
+    if (verifyTimer) clearTimeout(verifyTimer);
+    verifyService?.close().catch(() => {});
+    runtimeVerifier?.detachAll();
     electronHook?.deactivate();
     unwatchConfig?.();
     logger?.info('Freebuff Ads Remover deactivated');
@@ -73,6 +127,9 @@ export function deactivate(): void {
     console.error('[freebuff-ads-remover] Deactivation failed:', err);
   } finally {
     electronHook = null;
+    runtimeVerifier = null;
+    verifyService = null;
+    verifyTimer = null;
     interceptor = null;
     cssInjector = null;
     statsStore = null;
