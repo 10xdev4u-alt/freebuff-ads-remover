@@ -1,5 +1,6 @@
 import type { AdSurface } from './types.js';
 import { AD_CSS_SELECTORS, HIDE_ALL_ADS_CSS } from './types.js';
+import type { RuleRegistry } from './rule-registry.js';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 
@@ -13,12 +14,14 @@ export class CssInjector {
   private logger: Logger;
   private injectedKeys: Map<string, string>;
   private active: boolean;
+  private registry: RuleRegistry | null;
 
-  constructor(config: Config, logger: Logger) {
+  constructor(config: Config, logger: Logger, registry: RuleRegistry | null = null) {
     this.config = config;
     this.logger = logger;
     this.injectedKeys = new Map();
     this.active = false;
+    this.registry = registry;
   }
 
   updateConfig(config: Config): void {
@@ -59,7 +62,8 @@ export class CssInjector {
       return;
     }
 
-    if (enabledSurfaces.length === Object.keys(AD_CSS_SELECTORS).length) {
+    const reg = this.registry ? this.registry.current().selectors : AD_CSS_SELECTORS;
+    if (enabledSurfaces.length === Object.keys(reg).length) {
       await this.injectSurface('all', HIDE_ALL_ADS_CSS, target);
       return;
     }
@@ -93,7 +97,8 @@ export class CssInjector {
   }
 
   private buildSurfaceCss(surface: AdSurface): string {
-    const selectors = AD_CSS_SELECTORS[surface];
+    const reg = this.registry ? this.registry.current().selectors : AD_CSS_SELECTORS;
+    const selectors = reg[surface];
     if (selectors.length === 0) return '';
 
     return `${selectors.join(',\n')} {\n  display: none !important;\n  visibility: hidden !important;\n  opacity: 0 !important;\n  pointer-events: none !important;\n  position: absolute !important;\n  z-index: -9999 !important;\n}\n`;

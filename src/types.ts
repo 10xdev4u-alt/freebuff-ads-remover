@@ -156,6 +156,12 @@ export interface ExtensionConfig {
     enabled: boolean;
     preset: 'standard' | 'aggressive' | 'paranoid';
   };
+  shield: {
+    autoHeal: boolean;
+    promoteAfter: number;
+    rollbackOnFailure: boolean;
+    maxPromotedRules: number;
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -240,6 +246,12 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   ghost: {
     enabled: false,
     preset: 'standard',
+  },
+  shield: {
+    autoHeal: false,
+    promoteAfter: 3,
+    rollbackOnFailure: true,
+    maxPromotedRules: 25,
   },
   surfaces: {
     sponsorBreak: true,
