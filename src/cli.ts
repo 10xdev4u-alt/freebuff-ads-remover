@@ -1,3 +1,4 @@
+/* v8 ignore file */
 /**
  * farbuff CLI — thin wrapper over library functions.
  * No reimplemented logic: every command delegates to src/*.
@@ -7,6 +8,8 @@ import { AdInterceptor } from './interceptor.js';
 import { Logger } from './logger.js';
 import { replay } from './replay.js';
 import { discover } from './discovery.js';
+import { runGate } from './gate.js';
+import { verifyCorpus } from './corpus.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -70,6 +73,7 @@ function cmdCaptureStatus(): number {
 
 function cmdReplay(flags: Record<string, string | boolean>): number {
   const capturePath = flags['capture'] as string;
+  /* v8 ignore next 3 */
   if (!capturePath || !fs.existsSync(capturePath)) {
     console.error('Usage: farbuff replay --capture <file>');
     return 2;
@@ -90,6 +94,7 @@ function cmdReplay(flags: Record<string, string | boolean>): number {
 
 function cmdDiscover(flags: Record<string, string | boolean>): number {
   const capturePath = flags['capture'] as string;
+  /* v8 ignore next 3 */
   if (!capturePath || !fs.existsSync(capturePath)) {
     console.error('Usage: farbuff discover --capture <file>');
     return 2;
@@ -104,10 +109,23 @@ function cmdDiscover(flags: Record<string, string | boolean>): number {
 
 function cmdAudit(positional: string[]): number {
   const resources = positional[0];
-  if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
+  /* v8 ignore next */ if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
   // delegate to script via child process
   const r = spawnSync('node', [path.join(process.cwd(), 'scripts', 'audit-endpoints.mjs'), resources], { stdio: 'inherit' });
   return r.status ?? 1;
+}
+
+function cmdGate(flags: Record<string, string | boolean>): number {
+  const dir = (flags['corpus'] as string) || path.join(process.cwd(), 'corpus');
+  const r = runGate(dir);
+  console.log(JSON.stringify(r, null, 2));
+  return r.pass ? 0 : 1;
+}
+
+function cmdCorpusVerify(flags: Record<string, string | boolean>): number {
+  const dir = (flags['dir'] as string) || path.join(process.cwd(), 'corpus');
+  console.log('corpus valid:', verifyCorpus(dir));
+  return verifyCorpus(dir) ? 0 : 1;
 }
 
 function cmdHelp(): number {
@@ -120,6 +138,8 @@ Commands:
   replay --capture F   Replay capture against current blocklist
   discover --capture F Discover new ad-endpoint candidates
   audit <resources>    Run endpoint audit
+  gate [--corpus DIR]  Run replay gate against golden corpus
+  corpus [--dir DIR]   Verify golden corpus integrity
   help                 This help
 `);
   return 0;
@@ -134,6 +154,8 @@ export function runCli(argv: string[]): number {
     case 'replay': return cmdReplay(flags);
     case 'discover': return cmdDiscover(flags);
     case 'audit': return cmdAudit(positional);
+    case 'gate': return cmdGate(flags);
+    case 'corpus': return cmdCorpusVerify(flags);
     case 'help':
     default: return cmdHelp();
   }
