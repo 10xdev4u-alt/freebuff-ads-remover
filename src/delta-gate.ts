@@ -1,6 +1,9 @@
 import { loadCorpus } from './corpus.js';
 import type { RuleDelta } from './rule-registry.js';
-import type { RuleRegistry } from './rule-registry.js';
+import { RuleRegistry } from './rule-registry.js';
+import { AdInterceptor } from './interceptor.js';
+import { Logger } from './logger.js';
+import { DEFAULT_CONFIG } from './types.js';
 
 export interface DeltaGateFloors { recall: number; precision: number }
 
@@ -11,9 +14,14 @@ export function verifyDelta(
   floors: DeltaGateFloors = { recall: 0.99, precision: 1.0 },
 ): { pass: boolean; reason: string | undefined; recall: number; precision: number } {
   const { entries } = loadCorpus(corpusDir);
-  const base = new Set(registry.current().endpoints);
-  const candidateEndpoints = new Set(base);
-  for (const e of delta.addEndpoints) candidateEndpoints.add(e);
+
+  // Apply delta to a candidate registry (clone).
+  const candidate = new RuleRegistry(registry.current());
+  candidate.apply(delta);
+
+  const logger = new Logger('error', false);
+  const interceptor = new AdInterceptor(DEFAULT_CONFIG, logger, undefined, undefined, candidate);
+  interceptor.activate();
 
   const goldenAds = entries.filter((e) => e.label === 'ad');
   const goldenControls = entries.filter((e) => e.label === 'control');
@@ -21,16 +29,16 @@ export function verifyDelta(
   let adsBlocked = 0;
   const missed: string[] = [];
   for (const e of goldenAds) {
-    const path = e.path;
-    const blocked = [...candidateEndpoints].some((p) => path.includes(p) || p.includes(path));
-    if (blocked) adsBlocked++; else missed.push(path);
+    const url = 'https://freebuff.com' + e.path;
+    const res = interceptor.intercept(url, 'GET');
+    if (res.blocked) adsBlocked++; else missed.push(e.path);
   }
   let controlsAllowed = 0;
   const fps: string[] = [];
   for (const e of goldenControls) {
-    const path = e.path;
-    const blocked = [...candidateEndpoints].some((p) => path.includes(p) || p.includes(path));
-    if (blocked) fps.push(path); else controlsAllowed++;
+    const url = 'https://freebuff.com' + e.path;
+    const res = interceptor.intercept(url, 'GET');
+    if (res.blocked) fps.push(e.path); else controlsAllowed++;
   }
 
   const recall = goldenAds.length > 0 ? adsBlocked / goldenAds.length : 1;
