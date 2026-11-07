@@ -31,6 +31,7 @@ export { WebContentsCssTarget } from './web-contents-css.js';
 export { WebContentsScriptTarget } from './web-contents-script.js';
 export { buildDomRemoverScript, buildDomRemoverFromSelectors } from './dom-remover.js';
 export { createCrashGuard } from './crash-guard.js';
+export { runCli } from './cli.js';
 export { RuntimeVerifier } from './runtime-verifier.js';
 export type { VerificationReport, ProbeResult, RuntimeVerifierConfig } from './runtime-verifier.js';
 
