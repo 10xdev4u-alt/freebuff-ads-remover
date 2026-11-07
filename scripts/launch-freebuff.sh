@@ -207,7 +207,7 @@ main() {
     exit 1
   fi
 
-  EXTENSION_ENTRY="$EXTENSION_DIR/dist/index.js"
+  EXTENSION_ENTRY="$EXTENSION_DIR/dist/bootstrap.js"
   if [[ ! -f "$EXTENSION_ENTRY" ]]; then
     echo "Extension not built. Run: npm install && npm run build" >&2
     exit 1

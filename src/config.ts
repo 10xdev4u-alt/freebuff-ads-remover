@@ -166,8 +166,8 @@ export function saveConfig(config: Config, profileId?: string): void {
   writeFileSync(getConfigPath(profileId), JSON.stringify(config, null, 2), 'utf-8');
 }
 
-export function watchConfig(onChange: (config: Config) => void): () => void {
-  const configDir = getConfigDir();
+export function watchConfig(onChange: (config: Config) => void, profileId?: string): () => void {
+  const configDir = getConfigDir(profileId);
   if (!existsSync(configDir)) {
     mkdirSync(configDir, { recursive: true });
   }
