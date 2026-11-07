@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/consistent-type-imports */
 import type { AdInterceptor } from './interceptor.js';
 import type { CssInjector } from './css-injector.js';
 import type { Dashboard } from './dashboard.js';
 import type { Logger } from './logger.js';
+import { loadConfig } from './config.js';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
   ElectronAppLike,
   ElectronSessionLike,
@@ -12,6 +15,8 @@ import type {
 import { WebContentsCssTarget } from './web-contents-css.js';
 import { WebContentsScriptTarget } from './web-contents-script.js';
 import { buildDomRemoverFromSelectors } from './dom-remover.js';
+import { discoverPartitions } from './partition-scanner.js';
+import { createChainTracker } from './redirect-chain.js';
 
 export interface ElectronApi {
   app: ElectronAppLike;
@@ -31,6 +36,7 @@ export class ElectronHook {
   private domRemoval: boolean;
   private logger: Logger;
   private sessions: Set<ElectronSessionLike>;
+  private chainTrackers: Map<ElectronSessionLike, ReturnType<typeof createChainTracker>>;
   private cssTarget: WebContentsCssTarget | null;
   private scriptTarget: WebContentsScriptTarget | null;
   private onCreateContents: ((...args: unknown[]) => void) | null;
@@ -51,6 +57,7 @@ export class ElectronHook {
     this.dashboard = dashboard ?? null;
     this.domRemoval = domRemoval;
     this.sessions = new Set();
+    this.chainTrackers = new Map();
     this.cssTarget = null;
     this.scriptTarget = null;
     this.onCreateContents = null;
@@ -86,6 +93,21 @@ export class ElectronHook {
         this.hookContentsSession(contents);
       }
     }
+
+    // Partition discovery (feature-detected).
+    try {
+      const appLike = electronApi?.app as { getPath?: (n: string) => string } | undefined;
+      const userData = appLike?.getPath?.('userData');
+      if (userData) {
+        const pattern = new RegExp(loadConfig().network.partitionPattern);
+        for (const name of discoverPartitions(userData, pattern)) {
+          const sm = sessionObj as ElectronSessionModuleLike;
+          if (typeof sm.fromPartition === 'function') {
+            try { this.hookSession(sm.fromPartition(name)); } catch { /* ignore */ }
+          }
+        }
+      }
+    } catch { /* fail open */ }
 
     this.hookActive = true;
     this.interceptor.activate();
@@ -174,10 +196,34 @@ export class ElectronHook {
     if (!webRequest) return;
     this.sessions.add(session);
     this.logger.debug('Session hooked', { sessions: this.sessions.size });
+    const tracker = createChainTracker((u) => this.interceptor.isAdUrl(u));
+    this.chainTrackers.set(session, tracker);
     const attach = webRequest.onBeforeRequest.bind(webRequest);
     attach({ urls: ['*://*/*'] }, (details, callback) => {
-      const result = this.interceptor.intercept(details.url, details.method);
+      const d = details as { id?: number; url: string; method?: string };
+      if (d.id !== undefined && tracker.isAdChain(d.id)) {
+        callback({ cancel: true });
+        return;
+      }
+      const result = this.interceptor.intercept(d.url, d.method ?? 'GET');
+      if (d.id !== undefined) tracker.record(d.id, d.url);
       callback(result.blocked ? { cancel: true } : {});
     });
+    if (typeof webRequest.onBeforeRedirect === 'function') {
+      webRequest.onBeforeRedirect((details) => {
+        const d = details as { id?: number; redirectURL?: string };
+        if (d.id !== undefined && d.redirectURL) tracker.redirect(d.id, d.redirectURL);
+      });
+    }
+    if (typeof webRequest.onCompleted === 'function') {
+      webRequest.onCompleted((details) => {
+        if (details.id !== undefined) tracker.complete(details.id);
+      });
+    }
+    if (typeof webRequest.onErrorOccurred === 'function') {
+      webRequest.onErrorOccurred((details) => {
+        if (details.id !== undefined) tracker.complete(details.id);
+      });
+    }
   }
 }

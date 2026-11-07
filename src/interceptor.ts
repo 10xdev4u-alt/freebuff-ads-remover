@@ -4,6 +4,7 @@ import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
 import { ShadowCapture } from './shadow-capture.js';
+import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
 import type { RuleRegistry } from './rule-registry.js';
 
@@ -13,17 +14,19 @@ export class AdInterceptor {
   private patterns: AdPattern[];
   private stats: StatsStore | null;
   private shadow: ShadowCapture | null;
+  private blockLog: BlockLog | null;
   private registry: RuleRegistry | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null) {
     this.config = config;
     this.logger = logger;
     this.stats = stats ?? null;
     this.shadow = shadow ?? null;
     this.registry = registry ?? null;
+    this.blockLog = blockLog ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -157,6 +160,9 @@ export class AdInterceptor {
           const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
           (shadow as ShadowCapture).record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: !dryRun, surface: pattern.surface, stage: pattern.stage, endpoint: pattern.pattern }, ms: Date.now() - captureStart });
         }
+        if (this.blockLog) {
+          this.blockLog.append({ v: 1, at: Date.now(), stage: pattern.stage, surface: pattern.surface, endpoint: pattern.pattern, session: 'default' });
+        }
         if (dryRun) return { blocked: false };
         return result;
       }
@@ -171,6 +177,10 @@ export class AdInterceptor {
 
   private matches(url: string, pattern: string): boolean {
     return matchRoute(url, pattern);
+  }
+
+  isAdUrl(url: string): boolean {
+    return this.patterns.some((p) => this.matches(url, p.pattern));
   }
 
   private isTracking(url: string): boolean {
