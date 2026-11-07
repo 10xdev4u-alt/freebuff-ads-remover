@@ -12,7 +12,7 @@ describe('block-log', () => {
     log.append({ v: 1, at: 1, stage: 's', surface: 'x', endpoint: '/e', session: 'd' });
     const entries = log.read();
     expect(entries).toHaveLength(1);
-    expect(entries[0].endpoint).toBe('/e');
+    expect(entries[0]?.endpoint).toBe('/e');
   });
   it('no url field in entry type', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'bl2-'));
