@@ -95,13 +95,15 @@ const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>;
 
-export function getConfigDir(): string {
-  if (process.env.FREEBUFF_CONFIG_DIR) return process.env.FREEBUFF_CONFIG_DIR;
-  return join(homedir(), '.config', 'freebuff-ads-remover');
+export function getConfigDir(profileId?: string): string {
+  const base = process.env.FREEBUFF_CONFIG_DIR || join(homedir(), '.config', 'freebuff-ads-remover');
+  const profile = profileId || process.env.FREEBUFF_PROFILE;
+  if (profile && profile !== 'default') return join(base, 'profiles', profile);
+  return base;
 }
 
-export function getConfigPath(): string {
-  return join(getConfigDir(), 'config.json');
+export function getConfigPath(profileId?: string): string {
+  return join(getConfigDir(profileId), 'config.json');
 }
 
 export type Preset = 'strict' | 'balanced' | 'minimal';
@@ -128,8 +130,8 @@ export const PRESETS: Record<Preset, Partial<ExtensionConfig>> = {
   },
 };
 
-export function loadConfig(): Config {
-  const configPath = getConfigPath();
+export function loadConfig(profileId?: string): Config {
+  const configPath = getConfigPath(profileId);
 
   if (!existsSync(configPath)) {
     saveConfig(DEFAULT_CONFIG);
@@ -156,12 +158,12 @@ export function loadConfig(): Config {
   }
 }
 
-export function saveConfig(config: Config): void {
-  const configDir = getConfigDir();
+export function saveConfig(config: Config, profileId?: string): void {
+  const configDir = getConfigDir(profileId);
   if (!existsSync(configDir)) {
     mkdirSync(configDir, { recursive: true });
   }
-  writeFileSync(getConfigPath(), JSON.stringify(config, null, 2), 'utf-8');
+  writeFileSync(getConfigPath(profileId), JSON.stringify(config, null, 2), 'utf-8');
 }
 
 export function watchConfig(onChange: (config: Config) => void): () => void {

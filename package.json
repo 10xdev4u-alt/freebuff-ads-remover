@@ -24,7 +24,8 @@
     "lint": "eslint src/ tests/",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json",
     "prepare": "husky",
-    "audit": "node scripts/audit-endpoints.mjs"
+    "audit": "node scripts/audit-endpoints.mjs",
+    "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md"
   },
   "keywords": [
     "freebuff",
