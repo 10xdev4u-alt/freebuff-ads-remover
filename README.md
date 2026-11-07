@@ -188,10 +188,10 @@ AppImage builds. Verified live on `0.0.169`, `0.0.170` and `0.0.186`; the launch
 ```bash
 npm install
 npm run build
-npm test            # vitest, 184 tests
+npm test            # vitest, 240 tests
 npm run lint
 npm run typecheck
-npm run test:coverage  # 80% threshold enforced
+npm run test:coverage  # 72/77/74 threshold enforced
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, and the [landing page](index.html) regen notes after dashboard changes.
