@@ -1,9 +1,9 @@
 import ts from 'typescript';
 import fs from 'node:fs';
 
-const program = ts.createProgram(['src/index.ts'], { noEmit: true, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler, strict: true });
+const program = ts.createProgram(['src/bootstrap.ts'], { noEmit: true, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, moduleResolution: ts.ModuleResolutionKind.Bundler, strict: true });
 const checker = program.getTypeChecker();
-const sourceFile = program.getSourceFile('src/index.ts');
+const sourceFile = program.getSourceFile('src/bootstrap.ts');
 const lines = [];
 lines.push('# API\n');
 if (sourceFile) {
