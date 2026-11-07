@@ -26,19 +26,31 @@ if (!resources || !existsSync(resources)) {
 }
 
 const sources = [];
-const orch = join(resources, 'orchestrator', 'orchestrator.js');
-if (existsSync(orch)) sources.push(readFileSync(orch, 'utf8'));
-
-const uiDir = join(resources, 'orchestrator', 'ui', 'assets');
-if (existsSync(uiDir)) {
-  for (const file of readdirSync(uiDir)) {
-    if (file.endsWith('.js') && file.startsWith('index-')) {
-      sources.push(readFileSync(join(uiDir, file), 'utf8'));
-    }
+// Deep scan: every JS/CSS bundle under resources, plus electron modules in app.asar.
+function collectFiles(dir) {
+  if (!existsSync(dir)) return;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) collectFiles(full);
+    else if (/\.(js|cjs|mjs|css)$/.test(entry.name)) sources.push(readFileSync(full, 'utf8'));
   }
 }
+collectFiles(join(resources, 'orchestrator'));
+// Also extract electron modules from app.asar if present (best-effort).
+const asarPath = join(resources, 'app.asar');
+if (existsSync(asarPath)) {
+  try {
+    const asar = require('@electron/asar');
+    const list = asar.listPackage(asarPath);
+    for (const f of list) {
+      if (/\.(js|cjs|mjs|css)$/.test(f) && /electron\//.test(f)) {
+        try { sources.push(asar.extractFile(asarPath, f).toString('utf8')); } catch { /* skip */ }
+      }
+    }
+  } catch { /* asar unavailable; continue */ }
+}
 if (sources.length === 0) {
-  console.error(`no orchestrator/ui sources found under ${resources}`);
+  console.error(`no sources found under ${resources}`);
   process.exit(1);
 }
 
@@ -137,6 +149,7 @@ if (selectorLiterals.size === 0) {
 // CSS-only review list (informational): ad classes present in the UI stylesheet
 // that no AD_CSS_SELECTORS entry mentions. Many are children of a hidden root,
 // but a new root here is a candidate for coverage.
+const uiDir = join(resources, 'orchestrator', 'ui', 'assets');
 const cssSources = [];
 if (existsSync(uiDir)) {
   for (const file of readdirSync(uiDir)) {
