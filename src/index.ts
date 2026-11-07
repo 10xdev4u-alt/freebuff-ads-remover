@@ -32,6 +32,7 @@ export type { ElectronApi } from './electron-hook.js';
 export { WebContentsCssTarget } from './web-contents-css.js';
 export { WebContentsScriptTarget } from './web-contents-script.js';
 export { buildDomRemoverScript, buildDomRemoverFromSelectors } from './dom-remover.js';
+export { buildDomProbeScript } from './dom-probe.js';
 export { createCrashGuard } from './crash-guard.js';
 export { RuleRegistry, baseRuleSet } from './rule-registry.js';
 export { synthesizeDelta } from './rule-synthesis.js';
