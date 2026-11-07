@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import { AD_ENDPOINTS, AD_CSS_SELECTORS } from './types.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface RuleSet {
   version: number;
@@ -63,5 +65,19 @@ export class RuleRegistry {
     if (!prev) return null;
     this.currentSet = prev;
     return prev;
+  }
+
+  save(dir: string): void {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'rules.json'), JSON.stringify(this.currentSet, null, 2));
+  }
+
+  static load(dir: string): RuleRegistry | null {
+    const p = path.join(dir, 'rules.json');
+    if (!fs.existsSync(p)) return null;
+    try {
+      const rs = JSON.parse(fs.readFileSync(p, 'utf8')) as RuleSet;
+      return new RuleRegistry(rs);
+    } catch { return null; }
   }
 }

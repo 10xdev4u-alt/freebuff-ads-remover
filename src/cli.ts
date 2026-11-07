@@ -13,6 +13,7 @@ import { verifyCorpus } from './corpus.js';
 import { synthesizeDelta } from './rule-synthesis.js';
 import { buildTrustReport } from './trust-report.js';
 import { RuleRegistry } from './rule-registry.js';
+import { runAutopilot } from './autopilot.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -148,6 +149,17 @@ function cmdTrust(): number {
   return 0;
 }
 
+function cmdAutopilot(flags: Record<string, string | boolean>): number {
+  const auditPath = flags['audit'] as string;
+  if (!auditPath) { console.error('Usage: farbuff autopilot --audit <file> [--dry-run]'); return 2; }
+  const audit = JSON.parse(fs.readFileSync(auditPath, 'utf8')) as { routes?: { missing?: string[] } };
+  const corpusDir = (flags['corpus'] as string) || (process.cwd() + '/corpus');
+  const dryRun = Boolean(flags['dry-run']);
+  const r = runAutopilot(audit, corpusDir, dryRun);
+  console.log(JSON.stringify(r, null, 2));
+  return r.gate.pass ? 0 : 1;
+}
+
 function cmdHelp(): number {
   console.log(`farbuff — Freebuff Ads Remover CLI
 
@@ -178,6 +190,7 @@ export function runCli(argv: string[]): number {
     case 'corpus': return cmdCorpusVerify(flags);
     case 'synthesize': return cmdSynthesize(flags);
     case 'trust': return cmdTrust();
+    case 'autopilot': return cmdAutopilot(flags);
     case 'help':
     default: return cmdHelp();
   }

@@ -4,6 +4,7 @@ import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
 import { ShadowCapture } from './shadow-capture.js';
+import { matchRoute } from './url-match.js';
 import type { RuleRegistry } from './rule-registry.js';
 
 export class AdInterceptor {
@@ -169,8 +170,7 @@ export class AdInterceptor {
   }
 
   private matches(url: string, pattern: string): boolean {
-    // Prefix match when the pattern ends with '/', exact/substring otherwise.
-    return url.includes(pattern);
+    return matchRoute(url, pattern);
   }
 
   private isTracking(url: string): boolean {

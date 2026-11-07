@@ -76,7 +76,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     logger.info('Freebuff Ads Remover activating...');
     statsStore = new StatsStore();
     const shadowCapture = new ShadowCapture(config.shadow);
-    const registry = new RuleRegistry();
+    const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
     if (GENERATED_RULES) registry.apply(GENERATED_RULES);
     interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry);
     cssInjector = new CssInjector(config, logger, registry);
