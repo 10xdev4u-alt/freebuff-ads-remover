@@ -15,7 +15,7 @@ describe('discovery', () => {
     ];
     const c = discover(entries, 3);
     expect(c).toHaveLength(1);
-    expect(c[0].path).toBe('/api/ad/newthing');
+    expect(c[0]!.path).toBe('/api/ad/newthing');
   });
   it('ignores already-blocked', () => {
     const entries = [entry('/api/ad/policy', true), entry('/api/ad/policy', true), entry('/api/ad/policy', true)];
