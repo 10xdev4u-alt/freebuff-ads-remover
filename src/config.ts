@@ -10,6 +10,24 @@ const configSchema = z.object({
   cssFallback: z.boolean().default(true),
   dashboard: z.boolean().default(true),
   domRemoval: z.boolean().default(false),
+  verify: z
+    .object({
+      enabled: z.boolean().default(false),
+      port: z.number().int().min(0).max(65535).default(0),
+      runOnBoot: z.boolean().default(false),
+      timeoutMs: z.number().int().positive().default(30000),
+      probeRoutes: z.array(z.string()).optional(),
+      controlRoutes: z.array(z.string()).default(['/healthz', '/api/account/usage']),
+      concurrency: z.number().int().min(1).max(16).default(8),
+    })
+    .default(() => ({
+      enabled: false,
+      port: 0,
+      runOnBoot: false,
+      timeoutMs: 30000,
+      controlRoutes: ['/healthz', '/api/account/usage'],
+      concurrency: 8,
+    })),
   surfaces: z
     .object({
       sponsorBreak: z.boolean().default(true),

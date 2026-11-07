@@ -128,6 +128,15 @@ export interface ExtensionConfig {
   cssFallback: boolean;
   dashboard: boolean;
   domRemoval: boolean;
+  verify: {
+    enabled: boolean;
+    port: number;
+    runOnBoot: boolean;
+    timeoutMs: number;
+    probeRoutes?: string[];
+    controlRoutes: string[];
+    concurrency: number;
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -185,6 +194,14 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   cssFallback: true,
   dashboard: true,
   domRemoval: false,
+  verify: {
+    enabled: false,
+    port: 0,
+    runOnBoot: false,
+    timeoutMs: 30000,
+    controlRoutes: ['/healthz', '/api/account/usage'],
+    concurrency: 8,
+  },
   surfaces: {
     sponsorBreak: true,
     billboard: true,
