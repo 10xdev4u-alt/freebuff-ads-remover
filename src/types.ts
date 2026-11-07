@@ -126,6 +126,7 @@ export interface ExtensionConfig {
   preset: 'strict' | 'balanced' | 'minimal' | null;
   enabled: boolean;
   blockTracking: boolean;
+  network: { partitionPattern: string };
   cssFallback: boolean;
   dashboard: boolean;
   domRemoval: boolean;
@@ -217,6 +218,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   preset: null,
   enabled: true,
   blockTracking: true,
+  network: { partitionPattern: '^freebuff-' },
   cssFallback: true,
   dashboard: true,
   domRemoval: false,

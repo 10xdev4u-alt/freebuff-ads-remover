@@ -5,6 +5,9 @@ export type WebRequestListener = (
 
 export interface ElectronWebRequestLike {
   onBeforeRequest(filter: { urls: string[] } | null, listener: WebRequestListener | null): void;
+  onBeforeRedirect?(listener: (details: { id?: number; url: string; redirectURL?: string }) => void): void;
+  onCompleted?(listener: (details: { id?: number }) => void): void;
+  onErrorOccurred?(listener: (details: { id?: number }) => void): void;
 }
 
 export interface ElectronSessionLike {
@@ -13,6 +16,7 @@ export interface ElectronSessionLike {
 
 export interface ElectronSessionModuleLike {
   defaultSession?: ElectronSessionLike;
+  fromPartition?(name: string): ElectronSessionLike;
 }
 
 /**

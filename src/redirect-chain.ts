@@ -1,12 +1,12 @@
 export interface ChainTracker {
-  record(requestId: string, url: string): void;
-  redirect(requestId: string, url: string): void;
-  complete(requestId: string): boolean; // returns true if chain was ad
-  isAdChain(requestId: string): boolean;
+  record(requestId: string | number, url: string): void;
+  redirect(requestId: string | number, url: string): void;
+  complete(requestId: string | number): boolean; // returns true if chain was ad
+  isAdChain(requestId: string | number): boolean;
 }
 
 export function createChainTracker(isAd: (url: string) => boolean): ChainTracker {
-  const chains = new Map<string, { urls: string[]; ad: boolean }>();
+  const chains = new Map<string | number, { urls: string[]; ad: boolean }>();
   return {
     record(requestId, url) {
       chains.set(requestId, { urls: [url], ad: isAd(url) });
