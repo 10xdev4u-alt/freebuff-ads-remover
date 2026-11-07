@@ -232,8 +232,8 @@ export class RuntimeVerifier {
         const p = params as Record<string, unknown>;
         if (m === 'Network.requestWillBeSent') {
           const req = p.request as { url?: string } | undefined;
-          if (req?.url === url) {
-            requestIds.set(p.requestId as string, url);
+          if (typeof req?.url === 'string' && req.url.includes(id)) {
+            requestIds.set(p.requestId as string, req.url);
           }
         } else if (m === 'Network.loadingFailed') {
           const rid = p.requestId as string;
@@ -256,7 +256,7 @@ export class RuntimeVerifier {
         }
       };
 
-      const handler = (event: string, params: unknown): void => { onEvent(event, params); };
+      const handler = (_event: unknown, method: string, params: unknown): void => { onEvent(method, params); };
       const cleanup = (): void => {
         try {
           dbg.off('message', handler as (...args: unknown[]) => void);
