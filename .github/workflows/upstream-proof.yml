@@ -1,0 +1,79 @@
+name: upstream-proof
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Pin a Freebuff version (optional)'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - name: Resolve latest version
+        id: ver
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            node scripts/fetch-latest-appimage.mjs --check > /tmp/ver.json
+            node -e "const d=require('/tmp/ver.json'); console.log('version='+d.version.replace(/^v/,''))" >> $GITHUB_OUTPUT
+          fi
+      - name: Cache AppImage
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: freebuff-*.AppImage
+          key: freebuff-${{ steps.ver.outputs.version }}
+      - name: Fetch AppImage
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: node scripts/fetch-latest-appimage.mjs --version ${{ steps.ver.outputs.version }} --out freebuff-${{ steps.ver.outputs.version }}.AppImage
+      - name: Extract AppImage
+        run: |
+          chmod +x freebuff-*.AppImage
+          ./freebuff-*.AppImage --appimage-extract
+      - name: Audit endpoints
+        run: |
+          node scripts/audit-endpoints.mjs squashfs-root/resources --json > /tmp/audit.json
+          cat /tmp/audit.json
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-audit-${{ steps.ver.outputs.version }}
+          path: /tmp/audit.json
+      - name: Open drift PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ci/upstream-audit-${{ steps.ver.outputs.version }}
+          title: "chore: upstream audit for Freebuff ${{ steps.ver.outputs.version }}"
+          body-path: /tmp/audit.json
+          commit-message: "chore: upstream audit ${{ steps.ver.outputs.version }}"
+
+  e2e:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    needs: audit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: sudo apt-get update && sudo apt-get install -y xvfb
+      - run: npm ci && npm run build
+      - name: Fetch AppImage
+        run: node scripts/fetch-latest-appimage.mjs --version ${{ github.event.inputs.version || '0.0.201' }} --out /tmp/freebuff.AppImage
+      - name: Run headless E2E
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --timeout 180000

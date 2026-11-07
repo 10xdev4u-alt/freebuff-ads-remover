@@ -1,55 +1,113 @@
 #!/usr/bin/env node
 /**
- * Resolve and download the latest Freebuff AppImage from the upstream update feed.
- * Exits non-zero (and prints a clear error) on any failure — never silently skips.
+ * Resolve and download the latest Freebuff AppImage from the upstream GitHub
+ * release (CodebuffAI/codebuff-community). Exits non-zero (and prints a clear
+ * error) on any failure — never silently skips.
  *
- * Usage: node scripts/fetch-latest-appimage.mjs [--out <path>]
+ * Usage:
+ *   node scripts/fetch-latest-appimage.mjs [--check] [--version <v>] [--out <path>]
+ *
+ *   --check     print the latest version and exit without downloading
+ *   --version   pin a specific version (e.g. 0.0.201)
+ *   --out       output path (default: ./freebuff-<version>.AppImage)
  */
-import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 
-const out = resolve(process.argv.includes('--out') ? process.argv[process.argv.indexOf('--out') + 1] : join(process.cwd(), 'freebuff-latest.AppImage'));
+const args = process.argv.slice(2);
+function getFlag(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; }
+const checkOnly = args.includes('--check');
+const pinned = getFlag('--version');
+const outArg = getFlag('--out');
 
-const FEED = 'https://freebuff.com/api/desktop/updates/linux-x64/';
-const res = await fetch(FEED);
-if (!res.ok) {
-  console.error(`Update feed returned ${res.status}: ${FEED}`);
+const REPO = 'CodebuffAI/codebuff-community';
+const TAG_PREFIX = 'freebuff-desktop-';
+
+function latestTag() {
+  if (pinned) return `${TAG_PREFIX}${pinned}`;
+  const out = execFileSync('git', ['ls-remote', '--tags', '--refs', `https://github.com/${REPO}.git`, `refs/tags/${TAG_PREFIX}*`], { encoding: 'utf8' });
+  const tags = out.trim().split('\n').filter(Boolean).map((l) => l.split(/\s+/)[1].replace('refs/tags/', ''));
+  if (tags.length === 0) throw new Error('no freebuff-desktop tags found');
+  // semver sort
+  tags.sort((a, b) => {
+    const va = a.replace(TAG_PREFIX, '').split('.').map(Number);
+    const vb = b.replace(TAG_PREFIX, '').split('.').map(Number);
+    for (let i = 0; i < Math.max(va.length, vb.length); i++) {
+      const x = va[i] || 0, y = vb[i] || 0;
+      if (x !== y) return x - y;
+    }
+    return 0;
+  });
+  return tags[tags.length - 1];
+}
+
+const tag = latestTag();
+const version = tag.replace(TAG_PREFIX, '');
+console.log('Latest version:', version);
+
+// Fetch release metadata via GitHub API (unauthenticated, 60 req/hr).
+const apiRes = await fetch(`https://api.github.com/repos/${REPO}/releases/tags/${tag}`);
+if (!apiRes.ok) {
+  console.error(`GitHub API returned ${apiRes.status} for ${tag}`);
   process.exit(1);
 }
-const meta = await res.json();
-const url = meta?.url || meta?.downloadUrl || meta?.path;
-if (!url) {
-  console.error('Update feed did not include a download URL. Feed shape changed?');
-  console.error(JSON.stringify(meta));
+const release = await apiRes.json();
+
+// Find the .yml update manifest and the AppImage asset.
+const ymlAsset = release.assets.find((a) => a.name.endsWith('-linux-x64.yml'));
+const appImageAsset = release.assets.find((a) => a.name.endsWith('.AppImage') && /x86_64|x64/.test(a.name)) || release.assets.find((a) => a.name.endsWith('.AppImage'));
+if (!appImageAsset) {
+  console.error('No AppImage asset in release');
   process.exit(1);
 }
-const fullUrl = url.startsWith('http') ? url : new URL(url, FEED).href;
-console.log('Latest version:', meta?.version ?? 'unknown');
-console.log('Downloading:', fullUrl);
 
+let expectedSha512 = null;
+let manifestPath = null;
+if (ymlAsset) {
+  const ymlRes = await fetch(ymlAsset.browser_download_url);
+  const yml = await ymlRes.text();
+  const m = yml.match(/sha512:\s*(.+)/);
+  if (m) expectedSha512 = m[1].trim();
+  const p = yml.match(/path:\s*(.+)/);
+  if (p) manifestPath = p[1].trim();
+  console.log('Manifest path:', manifestPath);
+}
+
+console.log('Downloading:', appImageAsset.browser_download_url);
+console.log('Size:', appImageAsset.size);
+
+if (checkOnly) {
+  console.log(JSON.stringify({ version, tag, url: appImageAsset.browser_download_url, size: appImageAsset.size, sha512: expectedSha512 }));
+  process.exit(0);
+}
+
+const out = resolve(outArg || `freebuff-${version}.AppImage`);
 mkdirSync(dirname(out), { recursive: true });
-const dl = await fetch(fullUrl);
+
+const dl = await fetch(appImageAsset.browser_download_url);
 if (!dl.ok) {
   console.error(`Download failed: ${dl.status}`);
   process.exit(1);
 }
 await pipeline(dl.body, createWriteStream(out));
 
-// Verify sha256 if provided
-if (meta?.sha256 || meta?.sha256Hash) {
-  const hash = createHash('sha256');
-  const { readFileSync } = await import('node:fs');
+// Verify sha512 if available.
+if (expectedSha512) {
+  const hash = createHash('sha512');
   hash.update(readFileSync(out));
-  const actual = hash.digest('hex');
-  const expected = meta.sha256 || meta.sha256Hash;
-  if (actual !== expected) {
-    console.error(`SHA256 mismatch: expected ${expected}, got ${actual}`);
+  const actual = hash.digest('base64');
+  if (actual !== expectedSha512) {
+    console.error(`SHA512 mismatch: expected ${expectedSha512}, got ${actual}`);
     process.exit(1);
   }
-  console.log('SHA256 verified:', actual);
+  console.log('SHA512 verified:', actual);
+} else {
+  console.warn('No sha512 in manifest; skipping verification');
 }
+
 console.log('Saved to:', out);
 process.exit(0);

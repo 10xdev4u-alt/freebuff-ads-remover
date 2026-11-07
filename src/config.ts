@@ -54,6 +54,7 @@ const configSchema = z.object({
 export type Config = z.infer<typeof configSchema>;
 
 export function getConfigDir(): string {
+  if (process.env.FREEBUFF_CONFIG_DIR) return process.env.FREEBUFF_CONFIG_DIR;
   return join(homedir(), '.config', 'freebuff-ads-remover');
 }
 
