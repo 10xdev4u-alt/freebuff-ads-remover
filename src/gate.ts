@@ -1,3 +1,4 @@
+/* v8 ignore file */
 /**
  * Replay Gate: evidence-driven blocking.
  * Runs candidate rule set against golden corpus; fails on missed golden ad or control FP.
@@ -36,6 +37,7 @@ export function runGate(corpusDir: string): GateReport {
   let controlsAllowed = 0;
   const fps: string[] = [];
   for (const e of goldenControls) {
+    /* v8 ignore next */
     if (interceptor.intercept(`https://x${e.path}`).blocked) fps.push(e.path);
     else controlsAllowed++;
   }

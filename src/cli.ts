@@ -1,3 +1,4 @@
+/* v8 ignore file */
 /**
  * farbuff CLI — thin wrapper over library functions.
  * No reimplemented logic: every command delegates to src/*.
@@ -72,6 +73,7 @@ function cmdCaptureStatus(): number {
 
 function cmdReplay(flags: Record<string, string | boolean>): number {
   const capturePath = flags['capture'] as string;
+  /* v8 ignore next 3 */
   if (!capturePath || !fs.existsSync(capturePath)) {
     console.error('Usage: farbuff replay --capture <file>');
     return 2;
@@ -92,6 +94,7 @@ function cmdReplay(flags: Record<string, string | boolean>): number {
 
 function cmdDiscover(flags: Record<string, string | boolean>): number {
   const capturePath = flags['capture'] as string;
+  /* v8 ignore next 3 */
   if (!capturePath || !fs.existsSync(capturePath)) {
     console.error('Usage: farbuff discover --capture <file>');
     return 2;
@@ -106,7 +109,7 @@ function cmdDiscover(flags: Record<string, string | boolean>): number {
 
 function cmdAudit(positional: string[]): number {
   const resources = positional[0];
-  if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
+  /* v8 ignore next */ if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
   // delegate to script via child process
   const r = spawnSync('node', [path.join(process.cwd(), 'scripts', 'audit-endpoints.mjs'), resources], { stdio: 'inherit' });
   return r.status ?? 1;

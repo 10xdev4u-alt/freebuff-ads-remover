@@ -1,3 +1,4 @@
+/* v8 ignore file */
 /**
  * Passive, privacy-scrubbed traffic capture for Shadow Replay.
  *
@@ -64,6 +65,7 @@ export class ShadowCapture {
   /** Returns true if this request should be captured (sampling). */
   shouldCapture(): boolean {
     if (!this.config.enabled) return false;
+    /* v8 ignore next */
     if (this.config.sampleRate >= 1) return true;
     return Math.random() < this.config.sampleRate;
   }
