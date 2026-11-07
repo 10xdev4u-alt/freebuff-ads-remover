@@ -1,36 +1,21 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.2.x   | :white_check_mark: |
-| < 1.2.0 | :x:                |
+| Version | Supported |
+|---------|-----------|
+| 1.5.x   | Yes       |
+| 1.4.x   | Yes       |
+| < 1.4   | No        |
 
-Only the latest minor release receives security fixes. Freebuff Desktop
-moves fast — older extension releases may not patch newer app payloads.
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Open a private issue via GitHub's security advisory feature, or email
+10xdev4u@gmail.com. Do not open public issues for security bugs.
 
-Open a **private** report via
-[GitHub Security Advisories](https://github.com/10xdev4u-alt/freebuff-ads-remover/security/advisories/new)
-— please do not file public issues for security problems.
+## Scope
 
-Include:
-
-- What you did (steps to reproduce, no exploit needed beyond a PoC)
-- What you expected vs. what happened
-- Extension version (`dist` build date or git SHA) and Freebuff version
-- `~/.config/freebuff-ads-remover/extension.log` excerpt if relevant
-  (scrub tokens first — it can contain request URLs)
-
-You will get an acknowledgement within 72 hours and a fix timeline
-once the issue is confirmed.
-
-## Scope Notes
-
-This extension runs with the same privileges as Freebuff Desktop itself
-(it executes inside the app's Electron main process by design). It makes
-**no network calls of its own** — all logic is local request filtering,
-CSS hiding, and file logging. Treat `~/.config/freebuff-ads-remover/`
-as sensitive: it can contain ad request URLs from your sessions.
+- The extension must never crash the host Freebuff app (fail-open).
+- No data leaves the machine; all stats are local.
+- The launcher must not weaken file permissions.
+- Patching must keep a pristine `app.asar.orig` for rollback.
