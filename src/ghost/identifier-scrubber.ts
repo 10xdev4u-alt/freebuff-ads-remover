@@ -34,7 +34,7 @@ export function scrubPayload(payload: unknown, fields: string[]): unknown {
 }
 
 export function installScrubber(signatures: string[], fields: string[], host: { postMessage: (m: unknown, t?: string, tr?: Transferable[]) => void } = (globalThis as unknown as { window: { postMessage: (m: unknown, t?: string, tr?: Transferable[]) => void } }).window): { uninstall: () => void } {
-  const origPostMessage = host.postMessage.bind(host);
+  const origPostMessage = host.postMessage;
   if ((origPostMessage as unknown as Record<symbol, boolean>)[WRAPPED]) {
     return { uninstall: () => {} };
   }

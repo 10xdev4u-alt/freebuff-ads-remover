@@ -33,7 +33,7 @@ describe('identifier scrubber', () => {
   it('installScrubber chains and restores', () => {
     const host = { postMessage: (m: unknown) => m };
     const orig = host.postMessage;
-    const handle = installScrubber(['slotId'], ['slotId'], host as never);
+    const handle = installScrubber(['slotId'], ['slotId'], host);
     expect(host.postMessage).not.toBe(orig);
     handle.uninstall();
     expect(host.postMessage).toBe(orig);
@@ -43,7 +43,7 @@ describe('identifier scrubber', () => {
     const calls: unknown[] = [];
     const orig = (m: unknown) => { calls.push(m); return m; };
     host.postMessage = orig;
-    const handle = installScrubber(['slotId'], ['slotId'], host as never);
+    const handle = installScrubber(['slotId'], ['slotId'], host);
     host.postMessage({ foo: 'bar' });
     handle.uninstall();
     expect(calls[0]).toEqual({ foo: 'bar' });
@@ -81,5 +81,3 @@ describe('stealth verifier', () => {
     expect(r.delta).toContain('marker:m1');
   });
 });
-EOF
-npm run lint 2>&1 | tail -2 && npx vitest run tests/ghost.test.ts 2>&1 | tail -3
