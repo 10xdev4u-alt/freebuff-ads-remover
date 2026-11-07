@@ -12,7 +12,7 @@ function makeDebugger(): DebuggerLike & { listeners: Map<string, Set<(...a: unkn
     sendCommand: vi.fn().mockResolvedValue({}),
     on: (e, l) => { if (!listeners.has(e)) listeners.set(e, new Set()); listeners.get(e)!.add(l); },
     off: (e, l) => { listeners.get(e)?.delete(l); },
-    emit(method, params) { listeners.get('message')?.forEach((l) => { (l as (e: unknown, m: unknown, p: unknown) => void)({}, method, params); }); },
+    emit(method, params) { listeners.get('message')?.forEach((l) => { l({}, method, params); }); },
   };
   return dbg;
 }
