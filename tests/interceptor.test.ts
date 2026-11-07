@@ -96,6 +96,12 @@ describe('AdInterceptor', () => {
     expect(result.blocked).toBe(true);
   });
 
+  it('classifies /api/ad/break-event as delivery (not inventory)', () => {
+    const result = interceptor.intercept('http://127.0.0.1:5174/api/ad/break-event', 'POST');
+    expect(result.stage).toBe('delivery');
+    expect(result.endpoint).toBe('/api/ad/break-event');
+  });
+
   it('blocks remote agentic offer', () => {
     const result = interceptor.intercept('https://freebuff.com/api/v1/ads/agentic/offer', 'POST');
     expect(result.blocked).toBe(true);
