@@ -20,6 +20,8 @@ const { AdInterceptor } = require('../dist/interceptor.js');
 const { DEFAULT_CONFIG, AD_CSS_SELECTORS } = require('../dist/types.js');
 
 const jsonMode = process.argv.includes('--json');
+const configDirArg = process.argv.find((a) => a.startsWith('--config-dir='));
+const configDir = configDirArg ? configDirArg.split('=')[1] : null;
 const resources = process.argv.find((a) => !a.startsWith('--') && a !== process.argv[0] && a !== process.argv[1]);
 if (!resources || !existsSync(resources)) {
   if(!jsonMode) console.error('usage: audit-endpoints.mjs <resources-dir>');
@@ -70,9 +72,16 @@ const adRoutes = [...routes]
   .filter((r) => (AD_ROUTE.test(r) || AD_EXTRA.test(r)) && !NOT_AD.test(r) && !IGNORE.has(r))
   .sort();
 
+let registry = null;
+if (configDir) {
+  try {
+    const { RuleRegistry } = require('../dist/rule-registry.js');
+    registry = RuleRegistry.load(configDir);
+  } catch { registry = null; }
+}
 const interceptor = new AdInterceptor(DEFAULT_CONFIG, {
   debug() {}, info() {}, warn() {}, error() {},
-});
+}, undefined, undefined, registry || undefined);
 const results = adRoutes.map((route) => ({
   route,
   blocked: interceptor.intercept(`http://127.0.0.1:5174${route}`, 'POST').blocked,
