@@ -60,6 +60,12 @@ const configSchema = z.object({
       recallFloor: 0.99,
       precisionFloor: 1.0,
     })),
+  ghost: z
+    .object({
+      enabled: z.boolean().default(false),
+      preset: z.enum(['standard','aggressive','paranoid']).default('standard'),
+    })
+    .default(() => ({ enabled: false, preset: 'standard' as const })),
   surfaces: z
     .object({
       sponsorBreak: z.boolean().default(true),

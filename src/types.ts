@@ -152,6 +152,10 @@ export interface ExtensionConfig {
     recallFloor: number;
     precisionFloor: number;
   };
+  ghost: {
+    enabled: boolean;
+    preset: 'standard' | 'aggressive' | 'paranoid';
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -232,6 +236,10 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     captureControls: true,
     recallFloor: 0.99,
     precisionFloor: 1.0,
+  },
+  ghost: {
+    enabled: false,
+    preset: 'standard',
   },
   surfaces: {
     sponsorBreak: true,
