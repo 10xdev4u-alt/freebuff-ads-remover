@@ -181,6 +181,15 @@ patch_resources() {
 }
 
 main() {
+  # Freebuff's Electron main process (and its bun orchestrator child) write to
+  # stdout/stderr. When launched from a .desktop entry (Terminal=false) those
+  # descriptors can end up on a pipe whose read end closes, producing an
+  # uncaught "write EPIPE" that Electron surfaces as a "JS Uncaught Exception"
+  # dialog. Keep a writable sink so writes never fail.
+  FREEBUFF_LOG="${FREEBUFF_LOG:-$HOME/.config/freebuff-desktop/launch.log}"
+  mkdir -p "$(dirname "$FREEBUFF_LOG")"
+  : >>"$FREEBUFF_LOG"
+
   local app_path
   if ! app_path=$(find_appimage); then
     echo "Freebuff Desktop not found. Install it first: https://freebuff.com/desktop" >&2
@@ -251,7 +260,7 @@ main() {
     echo "Electron:  $electron_bin"
     echo ""
 
-    exec "$electron_bin" --no-sandbox "$@"
+    exec "$electron_bin" --no-sandbox "$@" >>"$FREEBUFF_LOG" 2>&1
   fi
 
   # Non-AppImage install: look for the app payload next to the binary.
@@ -276,7 +285,7 @@ main() {
   fi
 
   patch_resources "$resources_dir"
-  exec "$FREEBUFF_CMD" "$@"
+  exec "$FREEBUFF_CMD" "$@" >>"$FREEBUFF_LOG" 2>&1
 }
 
 main "$@"

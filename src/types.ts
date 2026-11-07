@@ -121,6 +121,32 @@ export const PLACEMENT_IDS = {
   billboardPanel: 'Desktop-Billboard-Panel',
 } as const;
 
+/**
+ * 0.0.201 introduced placement-alias canonicalization: legacy/retired placement
+ * IDs are mapped to new canonical IDs. Both forms can appear in ad requests, so
+ * any logic keying off placement IDs must treat the alias pairs as equivalent.
+ * (Blocking is endpoint-based, so this is informational/audit data; kept here so
+ * the dashboard and audit tooling can report on both forms.)
+ */
+export const PLACEMENT_ALIASES: Readonly<Record<string, string>> = {
+  'Chat-AboveComposer-Rotating-Desktop': 'Above-Input-Desktop',
+  'Chat-AboveInput-Rotating-CLI': 'Above-Input-CLI',
+  'Chat-Transcript-Inline-CLI': 'Inline-After-Agent-CLI',
+  'Chat-Transcript-Inline-Desktop': 'Inline-After-Agent-Desktop',
+  'Workspace-AboveComposer-Rotating-Web': 'Above-Input-Web',
+  'Workspace-Transcript-Inline-Web': 'Inline-After-Agent-Web',
+  'AgentChat-AfterUserMsg-Inline-Web': 'Inline-After-Agent-Web',
+  'AgentChat-AfterAnswer-Inline-Web': 'Inline-After-Agent-Web',
+  'Coding-AfterAnswer-Inline-Android': 'Inline-After-Agent-Android',
+  'Coding-AfterAnswer-Inline-iOS': 'Inline-After-Agent-iOS',
+  'Project-AbovePreview-Banner-Web': 'Legacy-Above-Preview-Web',
+  'Chat-AboveInput-Mobile-Web': 'Above-Input-Mobile',
+  'WaitingRoom-Slot1-CLI': 'Waiting-Room-1-CLI',
+  'WaitingRoom-Slot2-CLI': 'Waiting-Room-2-CLI',
+  'WaitingRoom-Slot3-CLI': 'Waiting-Room-3-CLI',
+  'WaitingRoom-Slot4-CLI': 'Waiting-Room-4-CLI',
+};
+
 export interface ExtensionConfig {
   enabled: boolean;
   blockTracking: boolean;
@@ -269,6 +295,20 @@ export const AD_CSS_SELECTORS: Record<AdSurface, string[]> = {
     '[class*="ad-reward"]',
     '[class*="ad-greptile"]',
     '[class*="ad-posthog"]',
+    // 0.0.201: child nodes of sponsored-card / ad-banner roots. These are
+    // normally hidden by the parent rule, but an explicit rule makes the
+    // hide robust against re-parenting or partial renders.
+    '.ad-advertiser-link',
+    '.ad-content',
+    '.ad-copy',
+    '.ad-destination',
+    '.ad-detail',
+    '.ad-disclosure',
+    '.ad-favicon',
+    '.ad-head',
+    '.ad-heading',
+    '.ad-image',
+    '.ad-title',
   ],
 };
 

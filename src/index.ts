@@ -9,7 +9,7 @@ import type { ElectronApi } from './electron-hook.js';
 import type { StatsSnapshot } from './types.js';
 import { getElectron } from './electron-bridge.js';
 
-export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
+export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, PLACEMENT_ALIASES, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
 export { loadConfig, saveConfig, getConfigPath, getConfigDir, watchConfig } from './config.js';
 export type { Config } from './config.js';
