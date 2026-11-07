@@ -3,20 +3,23 @@ import { AD_ENDPOINTS, PLACEMENT_IDS, TRACKING_ENDPOINTS, stageForEndpoint } fro
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
+import { ShadowCapture } from './shadow-capture.js';
 
 export class AdInterceptor {
   private config: Config;
   private logger: Logger;
   private patterns: AdPattern[];
   private stats: StatsStore | null;
+  private shadow: ShadowCapture | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger, stats?: StatsStore) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null) {
     this.config = config;
     this.logger = logger;
     this.stats = stats ?? null;
+    this.shadow = shadow ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -85,14 +88,32 @@ export class AdInterceptor {
 
   updateConfig(config: Config): void {
     this.config = config;
+    if (this.shadow) this.shadow.updateConfig(config.shadow);
     this.patterns = this.buildPatterns();
     this.logger.debug('Interceptor config updated', { surfaces: config.surfaces });
   }
 
-  intercept(url: string, _method?: string): InterceptResult {
+  intercept(url: string, method: string = 'GET'): InterceptResult {
     this.requestCount++;
 
+    const shadow = this.shadow;
+    const captureEnabled = shadow?.isEnabled() ?? false;
+    const captureStart = captureEnabled ? Date.now() : 0;
+    const dryRun = shadow?.isDryRun() ?? false;
+
     if (!this.config.enabled) {
+      if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
+        const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
+        (shadow as ShadowCapture).record({
+          at: Date.now(),
+          method,
+          path: p,
+          originHash: ShadowCapture.hashOrigin(origin),
+          session: 'default',
+          decision: { blocked: false },
+          ms: 0,
+        });
+      }
       return { blocked: false };
     }
 
@@ -100,6 +121,10 @@ export class AdInterceptor {
     // and creative routes below stay blocked either way.
     if (!this.config.blockTracking && this.isTracking(url)) {
       this.logger.debug(`Allowed tracking request: ${url}`);
+      if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
+        const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
+        (shadow as ShadowCapture).record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: false, stage: 'tracking' }, ms: Date.now() - captureStart });
+      }
       return { blocked: false };
     }
 
@@ -116,16 +141,26 @@ export class AdInterceptor {
           endpoint: pattern.pattern,
           stage: pattern.stage,
         });
-        return {
+        const result = {
           blocked: true,
           reason: `Ad surface: ${pattern.surface}`,
           surface: pattern.surface,
           endpoint: pattern.pattern,
           stage: pattern.stage,
         };
+        if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
+          const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
+          (shadow as ShadowCapture).record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: !dryRun, surface: pattern.surface, stage: pattern.stage, endpoint: pattern.pattern }, ms: Date.now() - captureStart });
+        }
+        if (dryRun) return { blocked: false };
+        return result;
       }
     }
 
+    if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
+      const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
+      (shadow as ShadowCapture).record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: false }, ms: Date.now() - captureStart });
+    }
     return { blocked: false };
   }
 

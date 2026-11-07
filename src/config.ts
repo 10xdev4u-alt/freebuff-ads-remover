@@ -35,6 +35,31 @@ const configSchema = z.object({
       concurrency: 8,
       orchestratorOrigin: 'http://127.0.0.1:5174',
     })),
+  shadow: z
+    .object({
+      enabled: z.boolean().default(false),
+      dryRun: z.boolean().default(false),
+      captureDir: z.string().default(''),
+      maxFileBytes: z.number().int().positive().default(8388608),
+      maxFiles: z.number().int().min(1).max(20).default(5),
+      sampleRate: z.number().min(0).max(1).default(1.0),
+      scrubQuery: z.boolean().default(true),
+      captureControls: z.boolean().default(true),
+      recallFloor: z.number().min(0).max(1).default(0.99),
+      precisionFloor: z.number().min(0).max(1).default(1.0),
+    })
+    .default(() => ({
+      enabled: false,
+      dryRun: false,
+      captureDir: '',
+      maxFileBytes: 8388608,
+      maxFiles: 5,
+      sampleRate: 1.0,
+      scrubQuery: true,
+      captureControls: true,
+      recallFloor: 0.99,
+      precisionFloor: 1.0,
+    })),
   surfaces: z
     .object({
       sponsorBreak: z.boolean().default(true),

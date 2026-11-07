@@ -140,6 +140,18 @@ export interface ExtensionConfig {
     concurrency: number;
     orchestratorOrigin: string;
   };
+  shadow: {
+    enabled: boolean;
+    dryRun: boolean;
+    captureDir: string;
+    maxFileBytes: number;
+    maxFiles: number;
+    sampleRate: number;
+    scrubQuery: boolean;
+    captureControls: boolean;
+    recallFloor: number;
+    precisionFloor: number;
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -208,6 +220,18 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     controlRoutes: ['/healthz', '/api/account/usage'],
     concurrency: 8,
     orchestratorOrigin: 'http://127.0.0.1:5174',
+  },
+  shadow: {
+    enabled: false,
+    dryRun: false,
+    captureDir: '',
+    maxFileBytes: 8388608,
+    maxFiles: 5,
+    sampleRate: 1.0,
+    scrubQuery: true,
+    captureControls: true,
+    recallFloor: 0.99,
+    precisionFloor: 1.0,
   },
   surfaces: {
     sponsorBreak: true,
