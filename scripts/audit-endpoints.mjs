@@ -22,7 +22,7 @@ const { DEFAULT_CONFIG, AD_CSS_SELECTORS } = require('../dist/types.js');
 const jsonMode = process.argv.includes('--json');
 const resources = process.argv.find((a) => !a.startsWith('--') && a !== process.argv[0] && a !== process.argv[1]);
 if (!resources || !existsSync(resources)) {
-  console.error('usage: audit-endpoints.mjs <resources-dir>');
+  if(!jsonMode) console.error('usage: audit-endpoints.mjs <resources-dir>');
   process.exit(1);
 }
 
@@ -51,7 +51,7 @@ if (existsSync(asarPath)) {
   } catch { /* asar unavailable; continue */ }
 }
 if (sources.length === 0) {
-  console.error(`no sources found under ${resources}`);
+  if(!jsonMode) console.error(`no sources found under ${resources}`);
   process.exit(1);
 }
 
@@ -80,9 +80,9 @@ const results = adRoutes.map((route) => ({
 
 const missing = results.filter((r) => !r.blocked);
 for (const r of results) {
-  console.log(`${r.blocked ? 'blocked' : 'MISSED '}  ${r.route}`);
+  if(!jsonMode) console.log(`${r.blocked ? 'blocked' : 'MISSED '}  ${r.route}`);
 }
-console.log(`\n${results.length - missing.length}/${results.length} ad routes blocked`);
+if(!jsonMode) console.log(`\n${results.length - missing.length}/${results.length} ad routes blocked`);
 
 // ---- DOM surface audit ----
 const AD_TOKEN = /^(?:ad|ads|sponsor|sponsored|billboard|intermission|spotlight|showcase|partner|invitation)(?:[-_].*)?$|^.*[-_](?:ad|ads|sponsor|sponsored|billboard|intermission|spotlight|showcase|partner|invitation)(?:[-_].*)?$/i;
@@ -129,7 +129,7 @@ function coveredClass(cls) {
 }
 
 const domGaps = [];
-console.log('\n--- DOM surfaces (selector literals the app uses) ---');
+if(!jsonMode) console.log('\n--- DOM surfaces (selector literals the app uses) ---');
 for (const sel of [...selectorLiterals].sort()) {
   const compounds = sel.split(',').map((s) => s.trim()).filter(Boolean);
   const uncovered = compounds.filter((compound) => {
@@ -137,14 +137,14 @@ for (const sel of [...selectorLiterals].sort()) {
     return !classes.some((c) => coveredClass(c));
   });
   if (uncovered.length === 0) {
-    console.log(`covered   ${sel}`);
+    if(!jsonMode) console.log(`covered   ${sel}`);
   } else {
-    console.log(`MISSED   ${sel}  (uncovered: ${uncovered.join(' ')})`);
+    if(!jsonMode) console.log(`MISSED   ${sel}  (uncovered: ${uncovered.join(' ')})`);
     domGaps.push(sel);
   }
 }
 if (selectorLiterals.size === 0) {
-  console.log('(no ad selector literals found)');
+  if(!jsonMode) console.log('(no ad selector literals found)');
 }
 
 // CSS-only review list (informational): ad classes present in the UI stylesheet
@@ -165,20 +165,20 @@ for (const src of cssSources) {
   }
 }
 const cssGaps = [...cssAdClasses].filter((cls) => !coveredClass(cls)).sort();
-console.log(`\n--- DOM surfaces (CSS-only ad classes, review) ---`);
-console.log(`${cssAdClasses.size - cssGaps.length}/${cssAdClasses.size} CSS ad classes covered`);
+if(!jsonMode) console.log(`\n--- DOM surfaces (CSS-only ad classes, review) ---`);
+if(!jsonMode) console.log(`${cssAdClasses.size - cssGaps.length}/${cssAdClasses.size} CSS ad classes covered`);
 if (cssGaps.length > 0) {
-  console.log('Not directly matched (likely children of a hidden root, or new surfaces):');
-  for (const cls of cssGaps) console.log(`  .${cls}`);
+  if(!jsonMode) console.log('Not directly matched (likely children of a hidden root, or new surfaces):');
+  for (const cls of cssGaps) if(!jsonMode) console.log(`  .${cls}`);
 }
 
 if (missing.length > 0) {
-  console.error(`\nGaps — add these to AD_ENDPOINTS in src/types.ts:`);
-  for (const r of missing) console.error(`  ${r.route}`);
+  if(!jsonMode) console.error(`\nGaps — add these to AD_ENDPOINTS in src/types.ts:`);
+  for (const r of missing) if(!jsonMode) console.error(`  ${r.route}`);
 }
 if (domGaps.length > 0) {
-  console.error(`\nDOM gaps — add selectors for these to AD_CSS_SELECTORS in src/types.ts:`);
-  for (const r of domGaps) console.error(`  ${r}`);
+  if(!jsonMode) console.error(`\nDOM gaps — add selectors for these to AD_CSS_SELECTORS in src/types.ts:`);
+  for (const r of domGaps) if(!jsonMode) console.error(`  ${r}`);
 }
 const summary = {
   routes: { total: results.length, blocked: results.length - missing.length, missing },
@@ -189,6 +189,6 @@ const summary = {
 if (jsonMode) {
   process.stdout.write(JSON.stringify(summary) + '\n');
 } else {
-  console.log(`\n${results.length - missing.length}/${results.length} ad routes blocked; ${selectorLiterals.size - domGaps.length}/${selectorLiterals.size} app ad selectors covered`);
+  if(!jsonMode) console.log(`\n${results.length - missing.length}/${results.length} ad routes blocked; ${selectorLiterals.size - domGaps.length}/${selectorLiterals.size} app ad selectors covered`);
 }
 if (missing.length > 0 || domGaps.length > 0) process.exit(1);
