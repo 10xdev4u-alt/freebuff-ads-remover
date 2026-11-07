@@ -110,7 +110,7 @@ export async function startVerifyService(
         token,
         close: () =>
           new Promise<void>((r) => {
-            server.close(() => r());
+            server.close(() => { r(); });
           }),
       });
     });

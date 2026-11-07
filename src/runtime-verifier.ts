@@ -146,8 +146,19 @@ export class RuntimeVerifier {
       return report;
     }
 
-    const target = [...this.attached][0]!;
-    const dbg = target.debugger;
+    const first = [...this.attached][0];
+    if (!first) {
+      const report: VerificationReport = {
+        pass: false,
+        reason: 'debugger-unavailable',
+        targets: this.attached.size,
+        probes: [],
+        at: Date.now(),
+      };
+      this.lastReport = report;
+      return report;
+    }
+    const dbg = first.debugger;
     if (!dbg) {
       const report: VerificationReport = {
         pass: false,
@@ -221,13 +232,13 @@ export class RuntimeVerifier {
         const p = params as Record<string, unknown>;
         if (m === 'Network.requestWillBeSent') {
           const req = p.request as { url?: string } | undefined;
-          if (req?.url === url) {
-            requestIds.set(p.requestId as string, url);
+          if (typeof req?.url === 'string' && req.url.includes(id)) {
+            requestIds.set(p.requestId as string, req.url);
           }
         } else if (m === 'Network.loadingFailed') {
           const rid = p.requestId as string;
           if (requestIds.has(rid)) {
-            const errorText = String(p.errorText ?? '');
+            const errorText = typeof p.errorText === 'string' ? p.errorText : '';
             if (errorText.includes('ERR_BLOCKED_BY_CLIENT')) {
               cleanup();
               resolve({ route, kind, outcome: 'blocked' });
@@ -245,7 +256,7 @@ export class RuntimeVerifier {
         }
       };
 
-      const handler = (event: string, params: unknown): void => onEvent(event, params);
+      const handler = (_event: unknown, method: string, params: unknown): void => { onEvent(method, params); };
       const cleanup = (): void => {
         try {
           dbg.off('message', handler as (...args: unknown[]) => void);
