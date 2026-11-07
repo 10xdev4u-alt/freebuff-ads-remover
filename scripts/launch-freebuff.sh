@@ -190,6 +190,17 @@ main() {
   mkdir -p "$(dirname "$FREEBUFF_LOG")"
   : >>"$FREEBUFF_LOG"
 
+  # --repair: force a clean re-extract + re-patch (use after a bad update).
+  local repair=0
+  if [[ "${1:-}" == "--repair" ]]; then
+    repair=1
+    shift
+  fi
+  if (( repair )) && [[ -d "$EXTRACT_ROOT" ]]; then
+    echo "Repair mode: clearing extract dir $EXTRACT_ROOT" >&2
+    rm -rf "$EXTRACT_ROOT"
+  fi
+
   local app_path
   if ! app_path=$(find_appimage); then
     echo "Freebuff Desktop not found. Install it first: https://freebuff.com/desktop" >&2
@@ -256,6 +267,20 @@ main() {
     fi
 
     patch_resources "$squashfs_root/resources"
+
+    # Integrity check: confirm the loader marker survived into the repacked asar.
+    # If an updater or a partial write stripped it, re-patch (idempotent).
+    if ! node -e "const a=require('@electron/asar'); process.exit(a.extractFile(process.argv[1],'electron/main.cjs').toString().includes('freebuff-ads-remover:begin')?0:1)" "$squashfs_root/resources/app.asar" 2>/dev/null; then
+      echo "Injection marker missing after patch — re-patching..." >&2
+      patch_resources "$squashfs_root/resources" || { echo "Re-patch failed; aborting." >&2; exit 1; }
+    fi
+
+    # Audit at patch time: catch new ad surfaces before launch.
+    if [[ -x "$NODE_BIN" && -f "$EXTENSION_DIR/scripts/audit-endpoints.mjs" ]]; then
+      if ! "$NODE_BIN" "$EXTENSION_DIR/scripts/audit-endpoints.mjs" "$squashfs_root/resources" >>"$FREEBUFF_LOG" 2>&1; then
+        echo "WARNING: audit found gaps in the patched payload — see $FREEBUFF_LOG" >&2
+      fi
+    fi
 
     echo "Electron:  $electron_bin"
     echo ""
