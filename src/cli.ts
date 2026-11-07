@@ -10,6 +10,9 @@ import { replay } from './replay.js';
 import { discover } from './discovery.js';
 import { runGate } from './gate.js';
 import { verifyCorpus } from './corpus.js';
+import { synthesizeDelta } from './rule-synthesis.js';
+import { buildTrustReport } from './trust-report.js';
+import { RuleRegistry } from './rule-registry.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -128,6 +131,23 @@ function cmdCorpusVerify(flags: Record<string, string | boolean>): number {
   return verifyCorpus(dir) ? 0 : 1;
 }
 
+function cmdSynthesize(flags: Record<string, string | boolean>): number {
+  const auditPath = flags['audit'] as string;
+  if (!auditPath) { console.error('Usage: farbuff synthesize --audit <file>'); return 2; }
+  const audit = JSON.parse(fs.readFileSync(auditPath, 'utf8')) as { routes?: { missing?: string[] } };
+  const gaps = (audit.routes?.missing ?? []).map((r: string) => ({ route: r }));
+  const delta = synthesizeDelta(gaps, 'audit');
+  console.log(JSON.stringify(delta, null, 2));
+  return delta ? 0 : 1;
+}
+
+function cmdTrust(): number {
+  const reg = new RuleRegistry();
+  const report = buildTrustReport(reg, 0);
+  console.log(JSON.stringify(report, null, 2));
+  return 0;
+}
+
 function cmdHelp(): number {
   console.log(`farbuff — Freebuff Ads Remover CLI
 
@@ -156,6 +176,8 @@ export function runCli(argv: string[]): number {
     case 'audit': return cmdAudit(positional);
     case 'gate': return cmdGate(flags);
     case 'corpus': return cmdCorpusVerify(flags);
+    case 'synthesize': return cmdSynthesize(flags);
+    case 'trust': return cmdTrust();
     case 'help':
     default: return cmdHelp();
   }

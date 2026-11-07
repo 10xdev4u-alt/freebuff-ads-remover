@@ -60,6 +60,14 @@ const configSchema = z.object({
       recallFloor: 0.99,
       precisionFloor: 1.0,
     })),
+  shield: z
+    .object({
+      autoHeal: z.boolean().default(false),
+      promoteAfter: z.number().default(3),
+      rollbackOnFailure: z.boolean().default(true),
+      maxPromotedRules: z.number().default(25),
+    })
+    .default(() => ({ autoHeal: false, promoteAfter: 3, rollbackOnFailure: true, maxPromotedRules: 25 })),
   ghost: z
     .object({
       enabled: z.boolean().default(false),

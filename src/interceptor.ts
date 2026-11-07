@@ -4,6 +4,7 @@ import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
 import { ShadowCapture } from './shadow-capture.js';
+import type { RuleRegistry } from './rule-registry.js';
 
 export class AdInterceptor {
   private config: Config;
@@ -11,15 +12,17 @@ export class AdInterceptor {
   private patterns: AdPattern[];
   private stats: StatsStore | null;
   private shadow: ShadowCapture | null;
+  private registry: RuleRegistry | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null) {
     this.config = config;
     this.logger = logger;
     this.stats = stats ?? null;
     this.shadow = shadow ?? null;
+    this.registry = registry ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -29,7 +32,8 @@ export class AdInterceptor {
   private buildPatterns(): AdPattern[] {
     const patterns: AdPattern[] = [];
 
-    for (const endpoint of AD_ENDPOINTS) {
+    const endpoints = this.registry ? this.registry.current().endpoints : AD_ENDPOINTS;
+    for (const endpoint of endpoints) {
       const surface = this.classifyEndpoint(endpoint);
       if (surface && this.config.surfaces[surface]) {
         patterns.push({

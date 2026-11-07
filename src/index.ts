@@ -13,6 +13,8 @@ import type { StatsSnapshot } from './types.js';
 import { getElectron } from './electron-bridge.js';
 import { createCrashGuard } from './crash-guard.js';
 import { ShadowCapture } from './shadow-capture.js';
+import { RuleRegistry } from './rule-registry.js';
+import { GENERATED_RULES } from './generated-rules.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
@@ -31,6 +33,11 @@ export { WebContentsCssTarget } from './web-contents-css.js';
 export { WebContentsScriptTarget } from './web-contents-script.js';
 export { buildDomRemoverScript, buildDomRemoverFromSelectors } from './dom-remover.js';
 export { createCrashGuard } from './crash-guard.js';
+export { RuleRegistry, baseRuleSet } from './rule-registry.js';
+export { synthesizeDelta } from './rule-synthesis.js';
+export { verifyDelta } from './delta-gate.js';
+export { PromotionEngine } from './promotion.js';
+export { buildTrustReport } from './trust-report.js';
 export { rulesForPreset, loadRules } from './ghost/rules.js';
 export { installScrubber, isAdContext, scrubPayload } from './ghost/identifier-scrubber.js';
 export { neutralizeMarkers, DEFAULT_MARKERS } from './ghost/dom-marker-neutralizer.js';
@@ -66,8 +73,10 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     logger.info('Freebuff Ads Remover activating...');
     statsStore = new StatsStore();
     const shadowCapture = new ShadowCapture(config.shadow);
-    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture);
-    cssInjector = new CssInjector(config, logger);
+    const registry = new RuleRegistry();
+    if (GENERATED_RULES) registry.apply(GENERATED_RULES);
+    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry);
+    cssInjector = new CssInjector(config, logger, registry);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
     electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);
     if (session) {
