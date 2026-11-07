@@ -8,10 +8,6 @@ describe('cli', () => {
   it('unknown returns 0 (help)', () => { expect(runCli([])).toBe(0); });
 });
 
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 describe('cli extra', () => {
   it('capture status', () => { expect(runCli(['capture'])).toBe(0); });
   it('replay missing file returns 2', () => { expect(runCli(['replay', '--capture', '/nope.jsonl'])).toBe(2); });
