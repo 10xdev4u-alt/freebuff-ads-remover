@@ -123,6 +123,7 @@ export const PLACEMENT_IDS = {
 
 
 export interface ExtensionConfig {
+  preset: 'strict' | 'balanced' | 'minimal' | null;
   enabled: boolean;
   blockTracking: boolean;
   cssFallback: boolean;
@@ -191,6 +192,7 @@ export interface FarBuffShieldApi {
 }
 
 export const DEFAULT_CONFIG: ExtensionConfig = {
+  preset: null,
   enabled: true,
   blockTracking: true,
   cssFallback: true,

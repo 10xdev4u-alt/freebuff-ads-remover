@@ -3,9 +3,11 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { z } from 'zod';
 import { DEFAULT_CONFIG } from './types.js';
+import type { ExtensionConfig } from './types.js';
 
 const configSchema = z.object({
   enabled: z.boolean().default(true),
+  preset: z.enum(['strict','balanced','minimal']).nullable().default(null),
   blockTracking: z.boolean().default(true),
   cssFallback: z.boolean().default(true),
   dashboard: z.boolean().default(true),
@@ -62,6 +64,30 @@ export function getConfigPath(): string {
   return join(getConfigDir(), 'config.json');
 }
 
+export type Preset = 'strict' | 'balanced' | 'minimal';
+
+export const PRESETS: Record<Preset, Partial<ExtensionConfig>> = {
+  strict: {
+    blockTracking: true,
+    cssFallback: true,
+    domRemoval: true,
+    surfaces: {
+      sponsorBreak: true, billboard: true, intermission: true, spotlight: true,
+      showcase: true, sponsoredTask: true, sponsoredRun: true, partner: true, invitation: true, sponsoredCard: true,
+    },
+  },
+  balanced: {},
+  minimal: {
+    blockTracking: false,
+    cssFallback: false,
+    domRemoval: false,
+    surfaces: {
+      sponsorBreak: true, billboard: true, intermission: false, spotlight: false,
+      showcase: false, sponsoredTask: false, sponsoredRun: false, partner: false, invitation: false, sponsoredCard: false,
+    },
+  },
+};
+
 export function loadConfig(): Config {
   const configPath = getConfigPath();
 
@@ -78,6 +104,12 @@ export function loadConfig(): Config {
       ...parsed,
       surfaces: { ...DEFAULT_CONFIG.surfaces, ...parsed.surfaces },
     };
+    if (merged.preset !== null) {
+      Object.assign(merged, PRESETS[merged.preset]);
+      if (PRESETS[merged.preset].surfaces) {
+        merged.surfaces = { ...merged.surfaces, ...PRESETS[merged.preset].surfaces };
+      }
+    }
     return configSchema.parse(merged);
   } catch {
     return { ...DEFAULT_CONFIG };

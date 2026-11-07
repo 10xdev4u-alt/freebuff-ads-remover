@@ -15,7 +15,8 @@ import { createCrashGuard } from './crash-guard.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
 export type { AdSurface, AdEndpoint, AdStage, ExtensionConfig, InterceptResult, AdPattern, BlockEvent, StatsSnapshot, FarBuffShieldApi } from './types.js';
-export { loadConfig, saveConfig, getConfigPath, getConfigDir, watchConfig } from './config.js';
+export { loadConfig, saveConfig, getConfigPath, getConfigDir, watchConfig, PRESETS } from './config.js';
+export type { Preset } from './config.js';
 export type { Config } from './config.js';
 export { Logger } from './logger.js';
 export { AdInterceptor } from './interceptor.js';
