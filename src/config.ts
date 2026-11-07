@@ -15,18 +15,23 @@ const configSchema = z.object({
       enabled: z.boolean().default(false),
       port: z.number().int().min(0).max(65535).default(0),
       runOnBoot: z.boolean().default(false),
+      settleMs: z.number().int().positive().default(8000),
       timeoutMs: z.number().int().positive().default(30000),
-      probeRoutes: z.array(z.string()).optional(),
+      probeRoutes: z.array(z.string()).default(['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/impression', '/api/telemetry/ad-density']),
       controlRoutes: z.array(z.string()).default(['/healthz', '/api/account/usage']),
       concurrency: z.number().int().min(1).max(16).default(8),
+      orchestratorOrigin: z.string().url().default('http://127.0.0.1:5174'),
     })
     .default(() => ({
       enabled: false,
       port: 0,
       runOnBoot: false,
+      settleMs: 8000,
       timeoutMs: 30000,
+      probeRoutes: ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/impression', '/api/telemetry/ad-density'],
       controlRoutes: ['/healthz', '/api/account/usage'],
       concurrency: 8,
+      orchestratorOrigin: 'http://127.0.0.1:5174',
     })),
   surfaces: z
     .object({

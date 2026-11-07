@@ -58,7 +58,7 @@ export async function startVerifyService(
 
     if (req.url === '/health' && req.method === 'GET') {
       res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify({ ok: true, version: '1.5.1', appVersion }));
+      res.end(JSON.stringify({ ok: true, version: appVersion, appVersion }));
       return;
     }
 
