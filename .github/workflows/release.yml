@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   release:
+    needs: verify-artifact
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -56,6 +57,7 @@ jobs:
           cp -r bin release/bin
           cp -r config release/config
           cp -r corpus release/corpus 2>/dev/null || true
+          cp -r receipts release/receipts 2>/dev/null || true
           cp -r docs release/docs 2>/dev/null || true
           cp package.json release/package.json
           cp package-lock.json release/package-lock.json
@@ -108,7 +110,23 @@ jobs:
           cache: 'npm'
       - run: sudo apt-get update && sudo apt-get install -y xvfb
       - run: npm ci && npm run build
+      - name: Resolve payload version from receipt
+        id: payload
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            function walk(d){if(!fs.existsSync(d))return[];const o=[];for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())o.push(...walk(f));else if(e.name.endsWith('.json'))o.push(f);}return o;}
+            let v='';for(const f of walk('receipts')){try{const r=JSON.parse(fs.readFileSync(f,'utf8'));if(r.payloadVersion){v=r.payloadVersion;break;}}catch{}}
+            if(!v)v='latest';fs.appendFileSync(process.env.GITHUB_OUTPUT,'version='+v+'\n');console.log('payloadVersion='+v);
+          "
       - name: Fetch AppImage
-        run: node scripts/fetch-latest-appimage.mjs --out /tmp/freebuff.AppImage
+        run: |
+          if [ "${{ steps.payload.outputs.version }}" = "latest" ]; then
+            node scripts/fetch-latest-appimage.mjs --out /tmp/freebuff.AppImage
+          else
+            node scripts/fetch-latest-appimage.mjs --version ${{ steps.payload.outputs.version }} --out /tmp/freebuff.AppImage
+          fi
+          chmod +x /tmp/freebuff.AppImage
       - name: Run headless E2E with healed artifact
-        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --timeout 240000
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --timeout 240000
