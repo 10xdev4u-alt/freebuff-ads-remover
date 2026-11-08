@@ -213,21 +213,21 @@ main() {
     exit 1
   fi
 
-  NODE_BIN="$(command -v node || true)"
-  if [[ -z "$NODE_BIN" ]]; then
-    # GUI sessions often miss mise/nvm shim dirs from PATH
-    for candidate in \
-      "$HOME/.local/share/mise/shims/node" \
-      "$HOME/.local/bin/node" \
-      "$HOME/.nvm/versions/node"/*/bin/node \
-      /usr/bin/node \
-      /usr/local/bin/node; do
-      if [[ -x "$candidate" ]]; then
-        NODE_BIN="$candidate"
-        break
-      fi
-    done
-  fi
+  # Prefer a working node binary: GUI sessions often expose a broken
+  # wrapper (e.g. DeepSeek harness) ahead of the real runtime.
+  NODE_BIN=""
+  for candidate in \
+    /usr/bin/node \
+    /usr/local/bin/node \
+    "$HOME/.local/share/mise/shims/node" \
+    "$HOME/.nvm/versions/node"/*/bin/node \
+    "$(command -v node 2>/dev/null || true)"; do
+    [[ -x "$candidate" ]] || continue
+    if "$candidate" --version >/dev/null 2>&1; then
+      NODE_BIN="$candidate"
+      break
+    fi
+  done
   if [[ -z "$NODE_BIN" ]]; then
     echo "node is required to patch the app. Install Node.js >= 20 first." >&2
     exit 1
