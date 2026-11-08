@@ -12,6 +12,8 @@ const receiptPath = get('--receipt');
 const dryRun = args.includes('--dry-run');
 const jsonMode = args.includes('--json');
 const genRulesExisting = get('--existing') || (out && fs.existsSync(out) ? out : null);
+const maxPromoted = parseInt(get('--max-promoted-rules') || '25', 10);
+const controlRoutes = (get('--control-routes') || '/healthz,/api/account/usage').split(',').map((x) => x.trim()).filter(Boolean);
 
 if (!resources || !out) {
   console.error('usage: self-heal.mjs --resources <dir> --out <artifact> [--receipt <path>] [--existing <artifact>] [--dry-run] [--json]');
@@ -33,7 +35,7 @@ try {
   try { auditJson = JSON.parse(raw); } catch { console.error('audit failed:', e.message); process.exit(1); }
 }
 
-const missing = (auditJson.routes?.missing ?? []).map((r) => ({ route: r }));
+const missing = (auditJson.routes?.missing ?? []).map((r) => (typeof r === 'string' ? r : r.route)).filter(Boolean);
 
 // 2. Load existing artifact for cumulative merge.
 let existing = null;
@@ -53,7 +55,7 @@ if (existing) {
   fs.writeFileSync(path.join(configDir, 'rules.json'), JSON.stringify(r.current(), null, 2));
 }
 
-const result = runAutopilot({ routes: { missing: missing.map((m) => m.route) } }, corpusDir, true, configDir);
+const result = runAutopilot({ routes: { missing } }, corpusDir, true, configDir);
 
 // 4. Build cumulative delta.
 const newDelta = result.delta || { addEndpoints: [], addSelectors: {}, source: 'ci-healed' };
@@ -63,10 +65,13 @@ const merged = {
   source: `ci-healed:${auditJson.freebuffVersion ?? 'unknown'}`,
 };
 
+// 4b. control-route rejection.
+for (const r of merged.addEndpoints) {
+  if (controlRoutes.includes(r)) { console.error('control route in delta:', r); process.exit(1); }
+}
 // 5. maxPromotedRules guard.
-const max = 25;
-if (merged.addEndpoints.length > max) {
-  console.error(`maxPromotedRules exceeded: ${merged.addEndpoints.length} > ${max}`);
+if (merged.addEndpoints.length > maxPromoted) {
+  console.error(`maxPromotedRules exceeded: ${merged.addEndpoints.length} > ${maxPromoted}`);
   process.exit(1);
 }
 
@@ -75,10 +80,11 @@ const gate = result.gate;
 const pass = gate.pass && (gate.recall ?? 1) >= 0.99 && (gate.precision ?? 1) === 1;
 
 const corpusHash = 'sha256:' + createHash('sha256').update(fs.readFileSync(path.join(corpusDir, 'golden.jsonl'))).digest('hex');
-const artifactHash = 'sha256:' + createHash('sha256').update(JSON.stringify(merged)).digest('hex');
+const artifactText = JSON.stringify(merged, null, 2);
+const artifactHash = 'sha256:' + createHash('sha256').update(artifactText).digest('hex');
 
 const receipt = {
-  version: '1.5.2',
+  version: JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')).version,
   payloadVersion: auditJson.freebuffVersion ?? null,
   corpusHash,
   artifactHash,
@@ -99,7 +105,7 @@ if (!pass) {
 
 if (!dryRun) {
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  fs.writeFileSync(out, JSON.stringify(merged, null, 2));
+  fs.writeFileSync(out, artifactText);
   if (receiptPath) {
     fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
     fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2));

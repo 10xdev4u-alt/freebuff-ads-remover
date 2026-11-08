@@ -29,7 +29,7 @@ jobs:
           if [ -n "${{ github.event.inputs.version }}" ]; then
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
-            node scripts/fetch-latest-appimage.mjs --check > /tmp/ver.json
+            node scripts/fetch-latest-appimage.mjs --check --json > /tmp/ver.json
             node -e "const d=require('/tmp/ver.json'); console.log('version='+d.version.replace(/^v/,''))" >> $GITHUB_OUTPUT
           fi
       - name: Cache AppImage
@@ -49,18 +49,25 @@ jobs:
         run: |
           node scripts/audit-endpoints.mjs squashfs-root/resources --json > /tmp/audit.json
           cat /tmp/audit.json
+      - name: Self-heal
+        id: heal
+        continue-on-error: true
+        run: |
+          node scripts/self-heal.mjs --resources squashfs-root/resources --out config/generated-rules.json --receipt receipts/heal-${{ steps.ver.outputs.version }}.json --json > /tmp/heal.json
+          cat /tmp/heal.json
+          echo "exit=$?" >> $GITHUB_OUTPUT
       - name: Upload audit artifact
         uses: actions/upload-artifact@v4
         with:
           name: upstream-audit-${{ steps.ver.outputs.version }}
           path: /tmp/audit.json
-      - name: Open drift PR
+      - name: Open heal PR
         uses: peter-evans/create-pull-request@v6
         with:
-          branch: ci/upstream-audit-${{ steps.ver.outputs.version }}
-          title: "chore: upstream audit for Freebuff ${{ steps.ver.outputs.version }}"
-          body-path: /tmp/audit.json
-          commit-message: "chore: upstream audit ${{ steps.ver.outputs.version }}"
+          branch: ci/upstream-heal-${{ steps.ver.outputs.version }}
+          title: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}"
+          body-path: /tmp/heal.json
+          commit-message: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}" 
 
   e2e:
     runs-on: ubuntu-latest
