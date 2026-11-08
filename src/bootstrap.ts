@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { loadConfig, watchConfig, getConfigDir } from './config.js';
 import { Logger } from './logger.js';
 import { AdInterceptor } from './interceptor.js';
@@ -84,7 +85,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
     // Shipped (CI-healed) artifact: <pkgroot>/config/generated-rules.json
     try {
-      const shippedPath = new (require('node:path').join)(__dirname, '..', 'config', 'generated-rules.json');
+      const shippedPath = path.join(__dirname, '..', 'config', 'generated-rules.json');
       const shipped = loadGeneratedRules(shippedPath);
       if (shipped) registry.apply(shipped);
     } catch { /* fail open */ }
