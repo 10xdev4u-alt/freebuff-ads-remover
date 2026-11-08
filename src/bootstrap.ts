@@ -14,8 +14,10 @@ import { getElectron } from './electron-bridge.js';
 import { createCrashGuard } from './crash-guard.js';
 import { ShadowCapture } from './shadow-capture.js';
 import { BlockLog } from './block-log.js';
+import { MissLog } from './miss-log.js';
 import { RuleRegistry } from './rule-registry.js';
-import { GENERATED_RULES } from './generated-rules.js';
+import { PromotionEngine } from './promotion.js';
+import { loadGeneratedRules } from './generated-rules.js';
 import { GhostRuntime } from './ghost/runtime.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
@@ -78,9 +80,13 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     statsStore = new StatsStore();
     const shadowCapture = new ShadowCapture(config.shadow);
     const blockLog = new BlockLog(getConfigDir() + '/block-log.jsonl');
+    const missLog = new MissLog(getConfigDir() + '/miss-log.jsonl');
     const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
-    if (GENERATED_RULES) registry.apply(GENERATED_RULES);
-    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog);
+    const generated = loadGeneratedRules(getConfigDir() + '/generated-rules.json');
+    if (generated) registry.apply(generated);
+    // Promotion engine (opt-in via shield.autoHeal).
+    new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry });
+    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog);
     cssInjector = new CssInjector(config, logger, registry);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
     electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);
@@ -123,8 +129,13 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       }
       if (config.verify.runOnBoot) {
         verifyTimer = setTimeout(() => {
-          // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
-          void runtimeVerifier?.run().catch((e) => logger?.warn('Verify run failed', e));
+          if (!runtimeVerifier) return;
+          void runtimeVerifier.run().then((report) => {
+            if (report.reason === 'control-not-reached') {
+              const rolled = registry.rollbackFromDisk(getConfigDir());
+              if (rolled) logger?.warn('shield: rolled back promoted rules due to control-not-reached');
+            }
+          }).catch((e: unknown) => logger?.warn('Verify run failed', e));
         }, config.verify.settleMs);
       }
     } catch (e) {
