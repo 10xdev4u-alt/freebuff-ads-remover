@@ -1,0 +1,20 @@
+{
+  "version": "1.5.1",
+  "payloadVersion": null,
+  "corpusHash": "sha256:2227bdd9eb44381a6587937b6835a7db24976a186a0906751c8af912341bcb7f",
+  "artifactHash": "sha256:d515b148b42164060ada110b1d0a90a3679f57ab22ade6a019da1c5ebef12e45",
+  "addedEndpoints": [
+    "/api/ad/wave29-proof"
+  ],
+  "addedSelectors": {},
+  "gate": {
+    "pass": true,
+    "recall": 1,
+    "precision": 1,
+    "missed": [],
+    "fps": []
+  },
+  "domGaps": [],
+  "at": "2026-11-08T16:11:50.617Z",
+  "source": "fixture"
+}
