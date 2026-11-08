@@ -13,7 +13,8 @@
     "dist",
     "config",
     "scripts",
-    "bin"
+    "bin",
+    "corpus"
   ],
   "scripts": {
     "build": "tsc && node scripts/finalize-dist.mjs",
