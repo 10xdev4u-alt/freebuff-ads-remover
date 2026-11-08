@@ -156,10 +156,11 @@ export class RuntimeVerifier {
    * Run a full verification pass against the (already-attached) webContents.
    * Returns a report; never throws.
    */
-  async run(): Promise<VerificationReport> {
+  async run(extraProbeRoutes: string[] = []): Promise<VerificationReport> {
     if (this.getAll) { try { this.attachAll(this.getAll()); } catch { /* ignore */ } }
+    const adRoutes = [...new Set([...this.config.probeRoutes, ...extraProbeRoutes])];
     const allRoutes = [
-      ...this.config.probeRoutes.map((r) => ({ route: r, kind: 'ad' as const })),
+      ...adRoutes.map((r) => ({ route: r, kind: 'ad' as const })),
       ...this.config.controlRoutes.map((r) => ({ route: r, kind: 'control' as const })),
     ];
 

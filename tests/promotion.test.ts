@@ -185,6 +185,30 @@ describe('runtime promotion branches', () => {
     expect(saved.endpoints).toContain('/api/ad/wave29-proof');
   });
 
+  it('the live gate receives the promoted route', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const seen: string[] = [];
+    const verifier = {
+      run: async (extra: string[] = []) => {
+        seen.push(...extra);
+        return { pass: true, reason: undefined, targets: 1, probes: [], at: Date.now() } as VerificationReport;
+      },
+    } as unknown as RuntimeVerifier;
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: true,
+      registry: new RuleRegistry(),
+      statePath: path.join(tmp, 'shield-state.json'),
+      corpusDir,
+      configDir: tmp,
+      runtimeVerifier: verifier,
+    });
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/wave29-proof');
+    await engine.tick();
+    expect(seen).toContain('/api/ad/wave29-proof');
+  });
+
   it('promotes without a verifier and uses setLiveGate', async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
     const engine = new PromotionEngine({

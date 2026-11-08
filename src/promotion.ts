@@ -26,7 +26,7 @@ export class PromotionEngine {
   private configDir: string;
   private interceptor: AdInterceptor | null;
   private runtimeVerifier: RuntimeVerifier | null;
-  private liveGate: ((verifier: RuntimeVerifier) => Promise<VerificationReport>) | null = null;
+  private liveGate: ((verifier: RuntimeVerifier, route: string) => Promise<VerificationReport>) | null = null;
 
   constructor(opts: {
     promoteAfter: number;
@@ -54,7 +54,7 @@ export class PromotionEngine {
 
   setInterceptor(interceptor: AdInterceptor | null): void { this.interceptor = interceptor; }
   setRuntimeVerifier(verifier: RuntimeVerifier | null): void { this.runtimeVerifier = verifier; }
-  setLiveGate(fn: ((verifier: RuntimeVerifier) => Promise<VerificationReport>) | null): void { this.liveGate = fn; }
+  setLiveGate(fn: ((verifier: RuntimeVerifier, route: string) => Promise<VerificationReport>) | null): void { this.liveGate = fn; }
 
   beginLaunch(): string { return this.state.beginLaunch(); }
 
@@ -97,8 +97,8 @@ export class PromotionEngine {
       if (this.runtimeVerifier) {
         try {
           const report: VerificationReport = this.liveGate
-            ? await this.liveGate(this.runtimeVerifier)
-            : await this.runtimeVerifier.run();
+            ? await this.liveGate(this.runtimeVerifier, route)
+            : await this.runtimeVerifier.run([route]);
           livePass = report.pass;
           liveReason = report.reason;
         } catch {
