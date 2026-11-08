@@ -1,0 +1,7 @@
+{
+  "addEndpoints": [
+    "/api/ad/wave29-proof"
+  ],
+  "addSelectors": {},
+  "source": "ci-healed:unknown"
+}

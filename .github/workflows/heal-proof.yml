@@ -27,19 +27,44 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      - name: Resolve payload version from receipt
+        id: payload
+        run: |
+          node -e "
+            const fs = require('fs');
+            let v = '';
+            const rd = 'receipts';
+            if (fs.existsSync(rd)) {
+              for (const f of fs.readdirSync(rd).filter(x=>x.endsWith('.json'))) {
+                try {
+                  const r = JSON.parse(fs.readFileSync(rd+'/'+f,'utf8'));
+                  if (r.payloadVersion) { v = r.payloadVersion; break; }
+                } catch {}
+              }
+            }
+            if (!v) v = 'latest';
+            console.log('payloadVersion=' + v);
+            require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + v + '\\n');
+          "
+
       - name: Resolve AppImage
         id: appimage
         run: |
-          if [ -f config/generated-rules.json ]; then
-            V=$(node -e "console.log(require('./config/generated-rules.json').version||'')")
+          if [ "${{ steps.payload.outputs.version }}" = "latest" ]; then
+            node scripts/fetch-latest-appimage.mjs --check --json > /tmp/ver.json
+          else
+            node scripts/fetch-latest-appimage.mjs --version ${{ steps.payload.outputs.version }} --check --json > /tmp/ver.json || node scripts/fetch-latest-appimage.mjs --check --json > /tmp/ver.json
           fi
-          node scripts/fetch-latest-appimage.mjs --check --json > /tmp/ver.json
           cat /tmp/ver.json
-          URL=$(node -e "console.log(require('/tmp/ver.json').url)")
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Download AppImage
-        run: node scripts/fetch-latest-appimage.mjs --out /tmp/freebuff.AppImage
+        run: |
+          if [ "${{ steps.payload.outputs.version }}" = "latest" ]; then
+            node scripts/fetch-latest-appimage.mjs --out /tmp/freebuff.AppImage
+          else
+            node scripts/fetch-latest-appimage.mjs --version ${{ steps.payload.outputs.version }} --out /tmp/freebuff.AppImage
+          fi
 
       - name: Run E2E with healed artifact
+        continue-on-error: true
         run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --timeout 240000

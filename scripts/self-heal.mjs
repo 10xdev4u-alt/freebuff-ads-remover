@@ -9,6 +9,7 @@ function get(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i+1] : n
 const resources = get('--resources');
 const out = get('--out');
 const receiptPath = get('--receipt');
+const markdownPath = get('--markdown');
 const dryRun = args.includes('--dry-run');
 const jsonMode = args.includes('--json');
 const genRulesExisting = get('--existing') || (out && fs.existsSync(out) ? out : null);
@@ -103,6 +104,18 @@ if (!pass) {
   process.exit(1);
 }
 
+const markdown = `# Heal receipt
+
+- **version:** ${receipt.version}
+- **payloadVersion:** ${receipt.payloadVersion}
+- **corpusHash:** ${receipt.corpusHash}
+- **artifactHash:** ${receipt.artifactHash}
+- **gate:** pass=${receipt.gate.pass} recall=${receipt.gate.recall} precision=${receipt.gate.precision} missed=${receipt.gate.missed.length} fps=${receipt.gate.fps.length}
+- **addedEndpoints:** ${receipt.addedEndpoints.join(', ') || '(none)'}
+- **addedSelectors:** ${Object.keys(receipt.addedSelectors).length}
+- **domGaps:** ${receipt.domGaps.join(', ') || '(none)'}
+- **at:** ${receipt.at}
+`;
 if (!dryRun) {
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, artifactText);
@@ -110,7 +123,17 @@ if (!dryRun) {
     fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
     fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2));
   }
+  if (markdownPath) {
+    fs.mkdirSync(path.dirname(markdownPath), { recursive: true });
+    fs.writeFileSync(markdownPath, markdown);
+  }
 }
+// always write markdown if requested (even dry-run) for CI body
+if (dryRun && markdownPath) {
+  fs.mkdirSync(path.dirname(markdownPath), { recursive: true });
+  fs.writeFileSync(markdownPath, markdown);
+}
+
 
 // cleanup
 try { fs.rmSync(configDir, { recursive: true, force: true }); } catch {}
