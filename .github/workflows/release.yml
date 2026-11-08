@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      - name: Pack release bundle
+        run: |
+          mkdir -p release
+          cp -r dist release/dist
+          cp -r scripts release/scripts
+          cp -r bin release/bin
+          cp -r config release/config
+          cp package.json release/package.json
+          cp README.md release/README.md
+          cp LICENSE release/LICENSE 2>/dev/null || true
+          cd release && tar -czf ../freebuff-ads-remover-${GITHUB_REF_NAME}.tar.gz . && cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            freebuff-ads-remover-${{ github.ref_name }}.tar.gz
+          body: |
+            ## Install
+
+            ```bash
+            git clone https://github.com/10xdev4u-alt/freebuff-ads-remover.git
+            cd freebuff-ads-remover && npm install && npm run build
+            ./scripts/launch-freebuff.sh
+            ```
+
+            Or download the release bundle above and extract.
+
+      - name: Publish to npm (optional)
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
