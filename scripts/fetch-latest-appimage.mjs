@@ -21,6 +21,7 @@ import { execFileSync } from 'node:child_process';
 const args = process.argv.slice(2);
 function getFlag(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; }
 const checkOnly = args.includes('--check');
+const jsonMode = args.includes('--json');
 const pinned = getFlag('--version');
 const outArg = getFlag('--out');
 
@@ -47,7 +48,7 @@ function latestTag() {
 
 const tag = latestTag();
 const version = tag.replace(TAG_PREFIX, '');
-console.log('Latest version:', version);
+if (!jsonMode) console.log('Latest version:', version);
 
 // Fetch release metadata via GitHub API (unauthenticated, 60 req/hr).
 const apiRes = await fetch(`https://api.github.com/repos/${REPO}/releases/tags/${tag}`);
@@ -74,11 +75,11 @@ if (ymlAsset) {
   if (m) expectedSha512 = m[1].trim();
   const p = yml.match(/path:\s*(.+)/);
   if (p) manifestPath = p[1].trim();
-  console.log('Manifest path:', manifestPath);
+  if (!jsonMode) console.log('Manifest path:', manifestPath);
 }
 
-console.log('Downloading:', appImageAsset.browser_download_url);
-console.log('Size:', appImageAsset.size);
+if (!jsonMode) console.log('Downloading:', appImageAsset.browser_download_url);
+if (!jsonMode) console.log('Size:', appImageAsset.size);
 
 if (checkOnly) {
   console.log(JSON.stringify({ version, tag, url: appImageAsset.browser_download_url, size: appImageAsset.size, sha512: expectedSha512 }));

@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { spawn, execSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
+import { copyFileSync, readFileSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 function get(flag) {
@@ -23,6 +24,7 @@ function get(flag) {
 const appimage = get('--appimage');
 const extractDir = resolve(get('--extract-dir') || join(tmpdir(), 'far-e2e-extract'));
 const timeout = Number(get('--timeout') || 120000);
+const genRules = get('--generated-rules');
 
 if (!appimage) {
   console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
@@ -72,6 +74,13 @@ const cfg = {
   logToFile: true,
 };
 writeFileSync(join(configDir, 'config.json'), JSON.stringify(cfg, null, 2));
+if (genRules && existsSync(genRules)) {
+  const g = JSON.parse(readFileSync(genRules, 'utf8'));
+  copyFileSync(genRules, join(configDir, 'generated-rules.json'));
+  const extra = Array.isArray(g.addEndpoints) ? g.addEndpoints : [];
+  cfg.verify.probeRoutes = [...new Set([...cfg.verify.probeRoutes, ...extra])];
+  writeFileSync(join(configDir, 'config.json'), JSON.stringify(cfg, null, 2));
+}
 
 // Patch
 const { execFileSync } = await import('node:child_process');

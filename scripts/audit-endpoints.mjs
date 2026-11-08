@@ -80,17 +80,15 @@ try {
 const adRoutes = [...routes].filter((r) => isAdRoute(r)).sort();
 
 let registry = null;
-if (configDir) {
-  try {
-    const { RuleRegistry } = require('../dist/rule-registry.js');
-    registry = RuleRegistry.load(configDir) ?? new RuleRegistry();
-    if (genRulesPath) {
-      const { loadGeneratedRules } = require('../dist/generated-rules.js');
-      const g = loadGeneratedRules(genRulesPath);
-      if (g) registry.apply(g);
-    }
-  } catch { registry = null; }
-}
+try {
+  const { RuleRegistry } = require('../dist/rule-registry.js');
+  registry = configDir ? (RuleRegistry.load(configDir) ?? new RuleRegistry()) : new RuleRegistry();
+  if (genRulesPath) {
+    const { loadGeneratedRules } = require('../dist/generated-rules.js');
+    const g = loadGeneratedRules(genRulesPath);
+    if (g) registry.apply(g);
+  }
+} catch { registry = null; }
 const interceptor = new AdInterceptor(DEFAULT_CONFIG, {
   debug() {}, info() {}, warn() {}, error() {},
 }, undefined, undefined, registry || undefined);
@@ -202,7 +200,7 @@ if (domGaps.length > 0) {
   for (const r of domGaps) if(!jsonMode) console.error(`  ${r}`);
 }
 const summary = {
-  routes: { total: results.length, blocked: results.length - missing.length, missing },
+  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing },
   dom: { total: selectorLiterals.size, covered: selectorLiterals.size - domGaps.length, gaps: domGaps },
   css: { total: cssAdClasses.size, covered: cssAdClasses.size - cssGaps.length, gaps: cssGaps },
   pass: missing.length === 0 && domGaps.length === 0,

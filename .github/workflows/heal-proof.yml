@@ -1,0 +1,45 @@
+name: Heal Proof
+
+on:
+  pull_request:
+    paths:
+      - 'config/generated-rules.json'
+      - 'receipts/**'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  heal-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Resolve AppImage
+        id: appimage
+        run: |
+          if [ -f config/generated-rules.json ]; then
+            V=$(node -e "console.log(require('./config/generated-rules.json').version||'')")
+          fi
+          node scripts/fetch-latest-appimage.mjs --check --json > /tmp/ver.json
+          cat /tmp/ver.json
+          URL=$(node -e "console.log(require('/tmp/ver.json').url)")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Download AppImage
+        run: node scripts/fetch-latest-appimage.mjs --out /tmp/freebuff.AppImage
+
+      - name: Run E2E with healed artifact
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --timeout 240000
