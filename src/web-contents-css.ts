@@ -23,8 +23,10 @@ interface WcState {
 export const APP_URL_PATTERN = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?([/?#]|$)/;
 export const HOSTED_URL_PATTERN = /^https:\/\/(?:[a-z0-9-]+\.)*freebuff\.com(:\d+)?([/?#]|$)/i;
 
-export function isInjectionTarget(url: string): boolean {
-  return APP_URL_PATTERN.test(url) || HOSTED_URL_PATTERN.test(url);
+export function isInjectionTarget(url: string, allowHosted = false): boolean {
+  if (APP_URL_PATTERN.test(url)) return true;
+  if (allowHosted && HOSTED_URL_PATTERN.test(url)) return true;
+  return false;
 }
 
 /**
@@ -44,6 +46,7 @@ export class WebContentsCssTarget implements CssInjectionTarget {
     private readonly app: ElectronAppLike,
     private readonly getAllWebContents: (() => unknown[]) | null,
     private readonly logger: Logger,
+    private readonly allowHosted = false,
   ) {
     this.onCreated = (_event: unknown, contents: unknown): void => {
       this.watch(contents);
@@ -132,7 +135,7 @@ export class WebContentsCssTarget implements CssInjectionTarget {
   private injectInto(contents: WebContentsLike, id: string, css: string): void {
     if (this.disposed || contents.isDestroyed()) return;
     if (contents.getType() === 'devtools') return;
-    if (!isInjectionTarget(contents.getURL())) return;
+    if (!isInjectionTarget(contents.getURL(), this.allowHosted)) return;
     const state = this.states.get(contents);
     if (!state) return;
     const generation = state.generation;

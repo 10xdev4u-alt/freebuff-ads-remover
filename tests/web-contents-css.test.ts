@@ -109,7 +109,7 @@ describe('WebContentsCssTarget', () => {
     const app = makeApp();
     const wc = makeWebContents('https://freebuff.com/?thread=abc');
     const logger = new Logger('error', false);
-    const target = new WebContentsCssTarget(app, () => [wc], logger);
+    const target = new WebContentsCssTarget(app, () => [wc], logger, true);
 
     await target.insertCSS('.ad {}');
     await flush();
