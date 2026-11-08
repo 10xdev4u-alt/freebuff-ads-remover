@@ -58,7 +58,7 @@ jobs:
         id: heal
         run: |
           set +e
-          node scripts/self-heal.mjs --resources squashfs-root/resources --out config/generated-rules.json --receipt receipts/heal-${{ steps.ver.outputs.version }}.json --markdown /tmp/heal.md --json > /tmp/heal.json
+          node scripts/self-heal.mjs --resources squashfs-root/resources --out config/generated-rules.json --receipt receipts/heal-${{ steps.ver.outputs.version }}.json --payload-version ${{ steps.ver.outputs.version }} --markdown /tmp/heal.md --json > /tmp/heal.json
           HEAL_EXIT=$?
           set -e
           cat /tmp/heal.json

@@ -15,6 +15,7 @@ const jsonMode = args.includes('--json');
 const genRulesExisting = get('--existing') || (out && fs.existsSync(out) ? out : null);
 const maxPromoted = parseInt(get('--max-promoted-rules') || '25', 10);
 const controlRoutes = (get('--control-routes') || '/healthz,/api/account/usage').split(',').map((x) => x.trim()).filter(Boolean);
+const payloadVersionOverride = get('--payload-version');
 
 if (!resources || !out) {
   console.error('usage: self-heal.mjs --resources <dir> --out <artifact> [--receipt <path>] [--existing <artifact>] [--dry-run] [--json]');
@@ -86,7 +87,7 @@ const artifactHash = 'sha256:' + createHash('sha256').update(artifactText).diges
 
 const receipt = {
   version: JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')).version,
-  payloadVersion: auditJson.freebuffVersion ?? null,
+  payloadVersion: payloadVersionOverride || auditJson.freebuffVersion || null,
   corpusHash,
   artifactHash,
   addedEndpoints: newDelta.addEndpoints ?? [],
