@@ -26,7 +26,8 @@
     "prepare": "husky",
     "audit": "node scripts/audit-endpoints.mjs",
     "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md",
-    "ledger:check": "node scripts/check-ledger.mjs"
+    "ledger:check": "node scripts/check-ledger.mjs",
+    "release:check": "npm run lint && npm run typecheck && npm test && npm run build && npm run ledger:check"
   },
   "keywords": [
     "freebuff",
