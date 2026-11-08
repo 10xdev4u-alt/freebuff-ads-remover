@@ -21,6 +21,8 @@ const { DEFAULT_CONFIG, AD_CSS_SELECTORS } = require('../dist/types.js');
 
 const jsonMode = process.argv.includes('--json');
 const configDirArg = process.argv.find((a) => a.startsWith('--config-dir='));
+const genRulesArg = process.argv.find((a) => a.startsWith('--generated-rules='));
+const genRulesPath = genRulesArg ? genRulesArg.split('=').slice(1).join('=') : null;
 const configDir = configDirArg ? configDirArg.split('=')[1] : null;
 const resources = process.argv.find((a) => !a.startsWith('--') && a !== process.argv[0] && a !== process.argv[1]);
 if (!resources || !existsSync(resources)) {
@@ -81,7 +83,12 @@ let registry = null;
 if (configDir) {
   try {
     const { RuleRegistry } = require('../dist/rule-registry.js');
-    registry = RuleRegistry.load(configDir);
+    registry = RuleRegistry.load(configDir) ?? new RuleRegistry();
+    if (genRulesPath) {
+      const { loadGeneratedRules } = require('../dist/generated-rules.js');
+      const g = loadGeneratedRules(genRulesPath);
+      if (g) registry.apply(g);
+    }
   } catch { registry = null; }
 }
 const interceptor = new AdInterceptor(DEFAULT_CONFIG, {

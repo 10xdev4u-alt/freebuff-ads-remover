@@ -3,7 +3,7 @@ import { verifyDelta } from './delta-gate.js';
 import { RuleRegistry } from './rule-registry.js';
 import { getConfigDir } from './config.js';
 
-export interface AutopilotResult { delta: unknown; gate: { pass: boolean; recall: number; precision: number }; promoted: boolean }
+export interface AutopilotResult { delta: unknown; gate: { pass: boolean; recall: number; precision: number; missed?: string[]; fps?: string[]; reason?: string | undefined }; promoted: boolean }
 
 export function runAutopilot(
   audit: { routes?: { missing?: string[] } },
@@ -15,12 +15,12 @@ export function runAutopilot(
   const gaps = (audit.routes?.missing ?? []).map((r: string) => ({ route: r }));
   const delta = synthesizeDelta(gaps, 'audit');
   const registry = RuleRegistry.load(dir) ?? new RuleRegistry();
-  const gate = delta ? verifyDelta(delta, registry, corpusDir) : { pass: true, reason: undefined, recall: 1, precision: 1 };
+  const gate = delta ? verifyDelta(delta, registry, corpusDir) : { pass: true, reason: undefined, recall: 1, precision: 1, missed: [], fps: [] };
   let promoted = false;
   if (delta && gate.pass && !dryRun) {
     registry.apply(delta);
     registry.save(dir);
     promoted = true;
   }
-  return { delta, gate: { pass: gate.pass, recall: gate.recall, precision: gate.precision }, promoted };
+  return { delta, gate: { pass: gate.pass, recall: gate.recall, precision: gate.precision, missed: gate.missed, fps: gate.fps, reason: gate.reason }, promoted };
 }

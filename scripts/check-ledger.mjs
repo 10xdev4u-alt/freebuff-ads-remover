@@ -29,5 +29,30 @@ const hash = crypto.createHash('sha256').update(corpus).digest('hex');
 const manifest = JSON.parse(fs.readFileSync('corpus/manifest.json', 'utf8'));
 if (hash !== manifest.sha256) fail('corpus manifest hash mismatch');
 
+
+
+// Heal receipt verification (optional: only if receipts/ exists)
+import { readdirSync } from 'node:fs';
+const receiptsDir = 'receipts';
+if (fs.existsSync(receiptsDir)) {
+  const files = readdirSync(receiptsDir).filter((f) => f.endsWith('.json'));
+  if (files.length > 0) {
+    // find receipt matching artifact
+    const artifact = fs.readFileSync('config/generated-rules.json');
+    const artifactHash = 'sha256:' + crypto.createHash('sha256').update(artifact).digest('hex');
+    let matched = false;
+    for (const f of files) {
+      const r = JSON.parse(fs.readFileSync(receiptsDir + '/' + f, 'utf8'));
+      if (r.artifactHash === artifactHash) {
+        matched = true;
+        if (!r.gate?.pass) { fail('heal receipt gate not pass'); }
+        const corpusHash = crypto.createHash('sha256').update(fs.readFileSync('corpus/golden.jsonl')).digest('hex');
+        if (r.corpusHash !== 'sha256:' + corpusHash) { fail('heal receipt corpus hash mismatch'); }
+      }
+    }
+    if (!matched) fail('no heal receipt matching current artifact');
+  }
+}
+
 console.log(ok ? 'LEDGER OK' : 'LEDGER FAILED');
 process.exit(ok ? 0 : 1);

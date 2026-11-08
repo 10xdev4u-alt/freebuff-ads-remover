@@ -247,7 +247,7 @@
     </div>
     <div class="receipt" id="receipt">
       <span class="prompt">$ farbuff verify --live</span>
-      <span class="line" data-l="✓ 242 tests passed · 36 files">✓ 242 tests passed · 36 files</span>
+      <span class="line" data-l="✓ 248 tests passed · 38 files">✓ 248 tests passed · 38 files</span>
       <span class="line" data-l="✓ 0 open issues">✓ 0 open issues</span>
       <span class="line" data-l="✓ 38/38 ad routes blocked">✓ 38/38 ad routes blocked</span>
       <span class="line" data-l="✓ 0 ads served · 0 telemetry calls">✓ 0 ads served · 0 telemetry calls</span>
@@ -256,7 +256,7 @@
     </div>
     <div class="receipt-meta">
       <span>coverage 78.7% lines</span>
-      <span>18 waves shipped</span>
+      <span>25 waves shipped</span>
       <span>MIT licensed</span>
     </div>
   </div>
@@ -275,8 +275,8 @@
       <div class="loop-node" data-i="0"><div class="pulse"></div><div class="idx">01</div><div class="name">Observe</div><div class="desc">Every launch audits the payload's routes.</div></div>
       <div class="loop-node" data-i="1"><div class="pulse"></div><div class="idx">02</div><div class="name">Synthesize</div><div class="desc">New routes become block rules.</div></div>
       <div class="loop-node" data-i="2"><div class="pulse"></div><div class="idx">03</div><div class="name">Gate</div><div class="desc">The real interceptor proves the delta, zero false positives.</div></div>
-      <div class="loop-node" data-i="3"><div class="pulse"></div><div class="idx">04</div><div class="name">Promote</div><div class="desc">After 2 clean audits, the rules go live.</div></div>
-      <div class="loop-node" data-i="4"><div class="pulse"></div><div class="idx">05</div><div class="name">Persist</div><div class="desc">Saved to your config dir. No repatch.</div></div>
+      <div class="loop-node" data-i="3"><div class="pulse"></div><div class="idx">04</div><div class="name">Promote</div><div class="desc">CI gates every heal through the real app; the artifact ships in the package.</div></div>
+      <div class="loop-node" data-i="4"><div class="pulse"></div><div class="idx">05</div><div class="name">Persist</div><div class="desc">Shipped in the package; local overrides in your config dir.</div></div>
       <div class="loop-node" data-i="5"><div class="pulse"></div><div class="idx">06</div><div class="name">Survive</div><div class="desc">Rollback on failure. app.asar.orig kept.</div></div>
     </div>
     <div class="loop-foot">healed rules load at boot · rollback on failure · no silent decay</div>
