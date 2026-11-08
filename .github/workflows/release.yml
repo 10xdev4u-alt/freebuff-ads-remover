@@ -4,13 +4,23 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.5.2)'
+        required: true
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +28,25 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Assert tag matches package.json version
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          TAGV="${{ steps.tag.outputs.version }}"
+          if [ "$PKG" != "$TAGV" ]; then
+            echo "tag version $TAGV != package.json version $PKG" >&2
+            exit 1
+          fi
 
       - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+      - run: npm run release:check
 
       - name: Pack release bundle
         run: |
@@ -33,33 +55,43 @@ jobs:
           cp -r scripts release/scripts
           cp -r bin release/bin
           cp -r config release/config
+          cp -r docs release/docs 2>/dev/null || true
           cp package.json release/package.json
+          cp package-lock.json release/package-lock.json
           cp README.md release/README.md
           cp LICENSE release/LICENSE 2>/dev/null || true
-          cd release && tar -czf ../freebuff-ads-remover-${GITHUB_REF_NAME}.tar.gz . && cd ..
+          cp CHANGELOG.md release/CHANGELOG.md 2>/dev/null || true
+          cd release && tar -czf ../freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz . && cd ..
+
+      - name: Generate checksums
+        run: |
+          sha256sum freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(steps.tag.outputs.tag, '-') }}
           generate_release_notes: true
           files: |
-            freebuff-ads-remover-${{ github.ref_name }}.tar.gz
+            freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz
+            SHA256SUMS
           body: |
             ## Install
 
+            ```bash
+            tar -xzf freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz
+            cd release && npm ci && ./scripts/launch-freebuff.sh
+            ```
+
+            Or clone + build:
             ```bash
             git clone https://github.com/10xdev4u-alt/freebuff-ads-remover.git
             cd freebuff-ads-remover && npm install && npm run build
             ./scripts/launch-freebuff.sh
             ```
 
-            Or download the release bundle above and extract.
-
-      - name: Publish to npm (optional)
-        if: ${{ secrets.NPM_TOKEN != '' }}
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+            Verify the tarball: `sha256sum -c SHA256SUMS`

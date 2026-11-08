@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-11-08
+
+19 waves of hardening: self-healing loop primitives, real activation proof,
+per-profile config, block-log export, per-surface time series, live kill-board
+landing page, and a tag-triggered release system.
+
+### Added
+
+- Deterministic activation test replaying the 40-entry golden corpus through the
+  real bootstrap path (38/38 ad routes blocked, 2/2 controls pass).
+- Ledger check (README test count + corpus hash) wired into CI.
+- Live kill-board landing page with radar hero, typed receipt, loop, dashboard,
+  proof panel, and CSV export.
+- Tag-triggered release workflow with SHA256SUMS and workflow_dispatch escape hatch.
+
+### Fixed
+
+- Delta gate now uses the real AdInterceptor instead of substring matching.
+- Audit tool loads persisted rules (convergent observer).
+- Runtime verifier derives orchestrator origin from webContents and watches new
+  windows.
+- Autopilot saves to the config dir instead of process.cwd().
+
 ## [1.4.0] - 2026-11-02
 
 Freebuff `0.0.196` moved threads into a hosted workspace on `https://freebuff.com`

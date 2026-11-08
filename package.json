@@ -23,11 +23,11 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ tests/",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "audit": "node scripts/audit-endpoints.mjs",
     "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md",
     "ledger:check": "node scripts/check-ledger.mjs",
-    "release:check": "npm run lint && npm run typecheck && npm test && npm run build && npm run ledger:check"
+    "release:check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run ledger:check && npm run docs:check"
   },
   "keywords": [
     "freebuff",
