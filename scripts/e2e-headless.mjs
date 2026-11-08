@@ -25,6 +25,7 @@ const appimage = get('--appimage');
 const extractDir = resolve(get('--extract-dir') || join(tmpdir(), 'far-e2e-extract'));
 const timeout = Number(get('--timeout') || 120000);
 const genRules = get('--generated-rules');
+const promote = args.includes('--promote');
 
 if (!appimage) {
   console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
@@ -58,13 +59,14 @@ const cfg = {
   cssFallback: true,
   dashboard: true,
   domRemoval: false,
+  shield: { autoHeal: promote, promoteAfter: 1, rollbackOnFailure: true, maxPromotedRules: 25 },
   verify: {
     enabled: true,
     port: 0,
     runOnBoot: true,
     settleMs: 5000,
     timeoutMs: 20000,
-    probeRoutes: ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard'],
+    probeRoutes: promote ? ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/wave31-proof'] : ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard'],
     controlRoutes: ['/healthz', '/api/account/usage'],
     concurrency: 4,
     orchestratorOrigin: 'http://127.0.0.1:5174',
@@ -156,5 +158,19 @@ if (!report || !report.pass) {
   console.error(JSON.stringify(report, null, 2));
   process.exit(1);
 }
-console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length }, null, 2));
+if (promote) {
+  let promoted = false;
+  for (let i = 0; i < 20; i++) {
+    try {
+      const st = JSON.parse(readFileSync(join(configDir, 'shield-state.json'), 'utf8'));
+      if (Array.isArray(st.promoted) && st.promoted.some((p) => String(p.route).includes('wave31-proof'))) { promoted = true; break; }
+    } catch {}
+    await wait(1000);
+  }
+  if (!promoted) {
+    console.error('PROMOTION FAILED: route not promoted');
+    process.exit(1);
+  }
+}
+console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote }, null, 2));
 process.exit(0);
