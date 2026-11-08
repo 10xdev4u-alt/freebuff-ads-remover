@@ -55,6 +55,7 @@ jobs:
           cp -r scripts release/scripts
           cp -r bin release/bin
           cp -r config release/config
+          cp -r corpus release/corpus 2>/dev/null || true
           cp -r docs release/docs 2>/dev/null || true
           cp package.json release/package.json
           cp package-lock.json release/package-lock.json

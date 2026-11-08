@@ -82,6 +82,12 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     const blockLog = new BlockLog(getConfigDir() + '/block-log.jsonl');
     const missLog = new MissLog(getConfigDir() + '/miss-log.jsonl');
     const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
+    // Shipped (CI-healed) artifact: <pkgroot>/config/generated-rules.json
+    try {
+      const shippedPath = new (require('node:path').join)(__dirname, '..', 'config', 'generated-rules.json');
+      const shipped = loadGeneratedRules(shippedPath);
+      if (shipped) registry.apply(shipped);
+    } catch { /* fail open */ }
     const generated = loadGeneratedRules(getConfigDir() + '/generated-rules.json');
     if (generated) registry.apply(generated);
     // Promotion engine (opt-in via shield.autoHeal).
