@@ -64,13 +64,18 @@ for (const src of sources) {
     routes.add(m[1].replace(/\$\{[^}]*\}/g, ':param'));
   }
 }
-const AD_ROUTE = /(^|\/)ad(s)?\//i;
-const AD_EXTRA = /ad-density|display-ad|sponsored-survey|creative-image/i;
-const NOT_AD = /admission|adapter|address|admin/i;
-const IGNORE = new Set(['/api/ad/']);
-const adRoutes = [...routes]
-  .filter((r) => (AD_ROUTE.test(r) || AD_EXTRA.test(r)) && !NOT_AD.test(r) && !IGNORE.has(r))
-  .sort();
+let isAdRoute;
+try {
+  isAdRoute = require('../dist/ad-heuristics.js').isAdRoute;
+} catch {
+  // Fallback (keep in sync with src/ad-heuristics.ts) when dist is not built.
+  const AD_ROUTE = /(^|\/)ad(s)?\//i;
+  const AD_EXTRA = /ad-density|display-ad|sponsored-survey|creative-image/i;
+  const NOT_AD = /admission|adapter|address|admin/i;
+  const IGNORE = new Set(['/api/ad/']);
+  isAdRoute = (r) => !IGNORE.has(r) && !NOT_AD.test(r) && (AD_ROUTE.test(r) || AD_EXTRA.test(r));
+}
+const adRoutes = [...routes].filter((r) => isAdRoute(r)).sort();
 
 let registry = null;
 if (configDir) {

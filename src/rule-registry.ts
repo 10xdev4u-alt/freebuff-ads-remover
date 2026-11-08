@@ -69,7 +69,22 @@ export class RuleRegistry {
 
   save(dir: string): void {
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'rules.json'), JSON.stringify(this.currentSet, null, 2));
+    const currentPath = path.join(dir, 'rules.json');
+    const prevPath = path.join(dir, 'rules.prev.json');
+    if (fs.existsSync(currentPath)) {
+      try { fs.copyFileSync(currentPath, prevPath); } catch { /* ignore */ }
+    }
+    fs.writeFileSync(currentPath, JSON.stringify(this.currentSet, null, 2));
+  }
+
+  rollbackFromDisk(dir: string): RuleSet | null {
+    const prevPath = path.join(dir, 'rules.prev.json');
+    if (!fs.existsSync(prevPath)) return null;
+    try {
+      const rs = JSON.parse(fs.readFileSync(prevPath, 'utf8')) as RuleSet;
+      this.currentSet = rs;
+      return rs;
+    } catch { return null; }
   }
 
   static load(dir: string): RuleRegistry | null {

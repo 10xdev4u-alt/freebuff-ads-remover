@@ -6,6 +6,8 @@ import type { StatsStore } from './stats-store.js';
 import { ShadowCapture } from './shadow-capture.js';
 import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
+import { isAdRoute, normalizeRoute } from './ad-heuristics.js';
+import type { MissLog } from './miss-log.js';
 import type { RuleRegistry } from './rule-registry.js';
 
 export class AdInterceptor {
@@ -15,18 +17,20 @@ export class AdInterceptor {
   private stats: StatsStore | null;
   private shadow: ShadowCapture | null;
   private blockLog: BlockLog | null;
+  private missLog: MissLog | null;
   private registry: RuleRegistry | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null, missLog?: MissLog | null) {
     this.config = config;
     this.logger = logger;
     this.stats = stats ?? null;
     this.shadow = shadow ?? null;
     this.registry = registry ?? null;
     this.blockLog = blockLog ?? null;
+    this.missLog = missLog ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -179,6 +183,14 @@ export class AdInterceptor {
       }
     }
 
+    // Observe misses: ad-shaped routes that slipped through (candidate only).
+    try {
+      const u = new URL(url);
+      const path = normalizeRoute(u.pathname);
+      if (isAdRoute(path) && this.missLog) {
+        this.missLog.append({ v: 1, at: Date.now(), route: path });
+      }
+    } catch { /* ignore */ }
     if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
       const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
       (shadow as ShadowCapture).record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: false }, ms: Date.now() - captureStart });
