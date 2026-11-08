@@ -2,12 +2,18 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 
 const repo = path.resolve(__dirname, '..');
 const fixture = path.join(repo, 'tests', 'fixtures', 'payload-gap', 'resources');
 
 describe('loop fires for real', () => {
+  beforeAll(() => {
+    const interceptor = path.join(repo, 'dist', 'interceptor.js');
+    if (!fs.existsSync(interceptor)) {
+      execSync('npm run build', { cwd: repo, stdio: 'inherit' });
+    }
+  });
   it('audits the fixture and reports the wave29 gap', () => {
     let out = '';
     try {
