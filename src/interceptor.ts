@@ -118,6 +118,10 @@ export class AdInterceptor {
     this.logger.debug('Interceptor config updated', { surfaces: config.surfaces });
   }
 
+  syncPatterns(): void {
+    this.patterns = this.buildPatterns();
+  }
+
   intercept(url: string, method: string = 'GET'): InterceptResult {
     this.requestCount++;
 

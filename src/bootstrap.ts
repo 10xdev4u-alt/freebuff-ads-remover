@@ -83,7 +83,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     const blockLog = new BlockLog(getConfigDir() + '/block-log.jsonl');
     const missLog = new MissLog(getConfigDir() + '/miss-log.jsonl');
     const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
-    const promotionEngine = new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry, statePath: getConfigDir() + '/shield-state.json', maxPromotedRules: config.shield.maxPromotedRules, rollbackOnFailure: config.shield.rollbackOnFailure });
+    const promotionEngine = new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry, statePath: getConfigDir() + '/shield-state.json', maxPromotedRules: config.shield.maxPromotedRules, rollbackOnFailure: config.shield.rollbackOnFailure, corpusDir: path.join(__dirname, '..', 'corpus'), configDir: getConfigDir() });
     promotionEngine.beginLaunch();
     // Shipped (CI-healed) artifact: <pkgroot>/config/generated-rules.json
     try {
@@ -97,7 +97,8 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       if (userGen) registry.apply(userGen);
     } catch { /* fail open */ }
     // Promotion engine (opt-in via shield.autoHeal).
-    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); });
+    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); void promotionEngine.tick(); });
+    promotionEngine.setInterceptor(interceptor);
     cssInjector = new CssInjector(config, logger, registry);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
     electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);
@@ -116,6 +117,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
         concurrency: config.verify.concurrency,
         orchestratorOrigin: config.verify.orchestratorOrigin,
       });
+      promotionEngine.setRuntimeVerifier(runtimeVerifier);
       const attachAll = (): void => {
         try {
           const ec = getElectron();
