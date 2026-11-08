@@ -15,7 +15,7 @@ describe('loop fires for real', () => {
     } catch (e) {
       out = (e as { stdout?: string }).stdout?.toString() ?? '';
     }
-    const audit = JSON.parse(out);
+    const audit = JSON.parse(out) as { routes: { missing: string[] }; pass: boolean };
     expect(audit.routes.missing).toContain('/api/ad/wave29-proof');
     expect(audit.pass).toBe(false);
   });
@@ -28,13 +28,13 @@ describe('loop fires for real', () => {
       `node scripts/self-heal.mjs --resources ${JSON.stringify(fixture)} --out ${JSON.stringify(outPath)} --receipt ${JSON.stringify(receiptPath)} --json`,
       { cwd: repo, encoding: 'utf8' },
     );
-    const res = JSON.parse(raw);
+    const res = JSON.parse(raw) as { pass: boolean; addedEndpoints: string[] };
     expect(res.pass).toBe(true);
     expect(res.addedEndpoints).toContain('/api/ad/wave29-proof');
-    const artifact = JSON.parse(fs.readFileSync(outPath, 'utf8'));
-    const expected = JSON.parse(fs.readFileSync(path.join(repo, 'tests', 'fixtures', 'payload-gap', 'expected-rules.json'), 'utf8'));
+    const artifact = JSON.parse(fs.readFileSync(outPath, 'utf8')) as Record<string, unknown>;
+    const expected = JSON.parse(fs.readFileSync(path.join(repo, 'tests', 'fixtures', 'payload-gap', 'expected-rules.json'), 'utf8')) as Record<string, unknown>;
     expect(artifact).toEqual(expected);
-    const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+    const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as { gate: { pass: boolean } };
     expect(receipt.gate.pass).toBe(true);
   });
 });
