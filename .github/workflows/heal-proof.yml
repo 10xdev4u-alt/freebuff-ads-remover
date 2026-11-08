@@ -32,19 +32,27 @@ jobs:
         run: |
           node -e "
             const fs = require('fs');
-            let v = '';
-            const rd = 'receipts';
-            if (fs.existsSync(rd)) {
-              for (const f of fs.readdirSync(rd).filter(x=>x.endsWith('.json'))) {
-                try {
-                  const r = JSON.parse(fs.readFileSync(rd+'/'+f,'utf8'));
-                  if (r.payloadVersion) { v = r.payloadVersion; break; }
-                } catch {}
+            const path = require('path');
+            function walk(d) {
+              if (!fs.existsSync(d)) return [];
+              const out = [];
+              for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+                const f = path.join(d, e.name);
+                if (e.isDirectory()) out.push(...walk(f));
+                else if (e.name.endsWith('.json')) out.push(f);
               }
+              return out;
+            }
+            let v = '';
+            for (const f of walk('receipts')) {
+              try {
+                const r = JSON.parse(fs.readFileSync(f, 'utf8'));
+                if (r.payloadVersion) { v = r.payloadVersion; break; }
+              } catch {}
             }
             if (!v) v = 'latest';
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + v + '\\n');
             console.log('payloadVersion=' + v);
-            require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + v + '\\n');
           "
 
       - name: Resolve AppImage
@@ -67,5 +75,4 @@ jobs:
           chmod +x /tmp/freebuff.AppImage
 
       - name: Run E2E with healed artifact
-        continue-on-error: true
         run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --timeout 240000
