@@ -117,3 +117,10 @@ Config changes are detected automatically. Edit the config file and save — no 
   "cssFallback": false
 }
 ```
+
+## shield
+
+- `autoHeal` (boolean, default false): allow the runtime to promote observed ad-shaped misses into the block list after the static and live gates pass.
+- `promoteAfter` (number, default 3): number of launches an observed route must survive before promotion.
+- `maxPromotedRules` (number, default 25): hard cap on promoted routes.
+- `rollbackOnFailure` (boolean, default true): roll back a promoted rule when the live gate fails.
