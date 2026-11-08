@@ -12,7 +12,7 @@ export function verifyDelta(
   registry: RuleRegistry,
   corpusDir: string,
   floors: DeltaGateFloors = { recall: 0.99, precision: 1.0 },
-): { pass: boolean; reason: string | undefined; recall: number; precision: number } {
+): { pass: boolean; reason: string | undefined; recall: number; precision: number; missed: string[]; fps: string[] } {
   const { entries } = loadCorpus(corpusDir);
 
   // Apply delta to a candidate registry (clone).
@@ -49,5 +49,5 @@ export function verifyDelta(
   if (missed.length > 0) reason = 'missed-golden-ads';
   else if (fps.length > 0) reason = 'control-false-positive';
 
-  return { pass, reason, recall, precision };
+  return { pass, reason, recall, precision, missed, fps };
 }
