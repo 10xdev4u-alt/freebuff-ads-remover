@@ -94,11 +94,12 @@ try {
 // Launch
 const electronBin = join(extractDir, 'squashfs-root', 'freebuff'); // best-effort
 const child = spawn('xvfb-run', ['-a', electronBin, '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'], {
-  env: { ...process.env, FREEBUFF_CONFIG_DIR: configDir },
+  env: { ...process.env, FREEBUFF_CONFIG_DIR: configDir, ELECTRON_RUN_AS_NODE: '' },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 let exited = false;
 child.on('exit', () => { exited = true; });
+child.on('error', (e) => { console.error('Launch failed:', e.message); exited = true; });
 
 // Read token file
 const tokenPath = join(configDir, 'verify.json');
@@ -108,7 +109,7 @@ const deadline = Date.now() + timeout;
 while (Date.now() < deadline && !exited) {
   if (existsSync(tokenPath)) {
     try {
-      const t = JSON.parse(require('node:fs').readFileSync(tokenPath, 'utf8'));
+      const t = JSON.parse(readFileSync(tokenPath, 'utf8'));
       if (t.port && t.token) { port = t.port; token = t.token; break; }
     } catch { /* retry */ }
   }
@@ -135,13 +136,18 @@ if (!healthy) {
   process.exit(1);
 }
 
-// Run verification
+// Run verification (retry until pass or timeout)
 let report = null;
-try {
-  const r = await fetch(`http://127.0.0.1:${port}/verify`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
-  report = await r.json();
-} catch (e) {
-  console.error('Verify call failed:', e.message);
+const verifyDeadline = Date.now() + Math.min(timeout, 30000);
+while (Date.now() < verifyDeadline && !exited) {
+  try {
+    const r = await fetch(`http://127.0.0.1:${port}/verify`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+    report = await r.json();
+    if (report?.pass) break;
+  } catch (e) {
+    console.error('Verify call failed:', e.message);
+  }
+  await wait(1000);
 }
 try { child.kill('SIGKILL'); } catch {}
 
