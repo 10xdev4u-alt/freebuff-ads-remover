@@ -27,6 +27,7 @@ export class PromotionEngine {
   private interceptor: AdInterceptor | null;
   private runtimeVerifier: RuntimeVerifier | null;
   private liveGate: ((verifier: RuntimeVerifier, route: string) => Promise<VerificationReport>) | null = null;
+  private tickPromise: Promise<PromotionResult[]> | null = null;
 
   constructor(opts: {
     promoteAfter: number;
@@ -73,8 +74,10 @@ export class PromotionEngine {
 
   async tick(): Promise<PromotionResult[]> {
     if (!this.enabled) return [];
-    const results: PromotionResult[] = [];
-    for (const id of this.eligible()) {
+    if (this.tickPromise) return this.tickPromise;
+    this.tickPromise = (async () => {
+      const results: PromotionResult[] = [];
+      for (const id of this.eligible()) {
       if (!this.canPromote()) break;
       const route = id.replace(/^route:/, '');
       const delta = synthesizeDelta([{ route }], 'runtime-promoted');
@@ -121,7 +124,9 @@ export class PromotionEngine {
         else results.push({ id, status: 'rolled-back' });
       }
     }
-    return results;
+      return results;
+    })().finally(() => { this.tickPromise = null; });
+    return this.tickPromise;
   }
 
   promote(id: string, delta: RuleDelta): boolean {

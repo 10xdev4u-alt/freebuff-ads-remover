@@ -35,6 +35,8 @@ export type ShieldState = z.infer<typeof ShieldStateSchema>;
 export class ShieldStateStore {
   private filePath: string;
   private state: ShieldState;
+  private dirty = false;
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(filePath: string) {
     this.filePath = filePath;
@@ -51,12 +53,31 @@ export class ShieldStateStore {
     return ShieldStateSchema.parse({});
   }
 
-  save(): void {
+  private writeNow(): void {
     try {
       const dir = path.dirname(this.filePath);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(this.filePath, JSON.stringify(this.state, null, 2));
     } catch { /* fail open */ }
+  }
+
+  private scheduleSave(): void {
+    if (this.saveTimer) return;
+    this.saveTimer = setTimeout(() => {
+      this.saveTimer = null;
+      if (this.dirty) { this.dirty = false; this.writeNow(); }
+    }, 200);
+  }
+
+  flush(): void {
+    if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
+    if (this.dirty) { this.dirty = false; this.writeNow(); }
+  }
+
+  save(): void {
+    if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; }
+    this.dirty = false;
+    this.writeNow();
   }
 
   beginLaunch(): string {
@@ -80,7 +101,8 @@ export class ShieldStateStore {
       o.lastLaunchId = lid;
     }
     this.state.observations[id] = o;
-    this.save();
+    this.dirty = true;
+    this.scheduleSave();
   }
 
   launches(id: string): number {
