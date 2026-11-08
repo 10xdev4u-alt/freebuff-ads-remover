@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isWallText, WALL_MARKERS } from '../src/wall-detector.js';
+import { isWallText } from '../src/wall-detector.js';
 
 describe('wall-detector', () => {
   it('detects wall text', () => {
