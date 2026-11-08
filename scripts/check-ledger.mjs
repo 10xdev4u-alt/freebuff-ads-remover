@@ -7,6 +7,7 @@ function fail(msg) { console.error('LEDGER FAIL:', msg); ok = false; }
 // README test count must match vitest
 const readme = fs.readFileSync('README.md', 'utf8');
 let testCount = NaN;
+let testFiles = fs.readdirSync('tests').filter((f) => f.endsWith('.test.ts')).length;
 try {
   const out = execSync('npx vitest run --reporter=json 2>/dev/null', { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
   const json = JSON.parse(out);
@@ -15,6 +16,7 @@ try {
   // fallback: parse text
   const out = execSync('npx vitest run 2>&1', { encoding: 'utf8' });
   const m = out.match(/Tests\s+(\d+)\s+passed/);
+
   if (m) testCount = parseInt(m[1], 10);
 }
 const m = readme.match(/vitest, (\d+) tests/);
@@ -31,27 +33,36 @@ if (hash !== manifest.sha256) fail('corpus manifest hash mismatch');
 
 
 
-// Heal receipt verification (optional: only if receipts/ exists)
-import { readdirSync } from 'node:fs';
+// Heal receipt verification (required when the artifact carries promoted rules)
 const receiptsDir = 'receipts';
-if (fs.existsSync(receiptsDir)) {
-  const files = readdirSync(receiptsDir).filter((f) => f.endsWith('.json'));
-  if (files.length > 0) {
-    // find receipt matching artifact
-    const artifact = fs.readFileSync('config/generated-rules.json');
-    const artifactHash = 'sha256:' + crypto.createHash('sha256').update(artifact).digest('hex');
-    let matched = false;
-    for (const f of files) {
-      const r = JSON.parse(fs.readFileSync(receiptsDir + '/' + f, 'utf8'));
-      if (r.artifactHash === artifactHash) {
-        matched = true;
-        if (!r.gate?.pass) { fail('heal receipt gate not pass'); }
-        const corpusHash = crypto.createHash('sha256').update(fs.readFileSync('corpus/golden.jsonl')).digest('hex');
-        if (r.corpusHash !== 'sha256:' + corpusHash) { fail('heal receipt corpus hash mismatch'); }
-      }
+let artifact = null;
+try { artifact = JSON.parse(fs.readFileSync('config/generated-rules.json', 'utf8')); } catch { artifact = null; }
+const hasHeal = !!artifact && ((Array.isArray(artifact.addEndpoints) && artifact.addEndpoints.length > 0) || (artifact.addSelectors && Object.keys(artifact.addSelectors).length > 0));
+if (hasHeal) {
+  if (!fs.existsSync(receiptsDir)) fail('heal receipt required but receipts/ missing');
+  const files = fs.existsSync(receiptsDir) ? fs.readdirSync(receiptsDir).filter((f) => f.endsWith('.json')) : [];
+  const artifactText = fs.readFileSync('config/generated-rules.json');
+  const artifactHash = 'sha256:' + crypto.createHash('sha256').update(artifactText).digest('hex');
+  let matched = false;
+  for (const f of files) {
+    const r = JSON.parse(fs.readFileSync(receiptsDir + '/' + f, 'utf8'));
+    if (r.artifactHash === artifactHash) {
+      matched = true;
+      if (!r.gate?.pass) fail('heal receipt gate not pass');
+      const corpusHash = crypto.createHash('sha256').update(fs.readFileSync('corpus/golden.jsonl')).digest('hex');
+      if (r.corpusHash !== 'sha256:' + corpusHash) fail('heal receipt corpus hash mismatch');
     }
-    if (!matched) fail('no heal receipt matching current artifact');
   }
+  if (!matched) fail('no heal receipt matching current artifact');
+}
+
+// Landing truth-pass
+const landing = fs.readFileSync('index.html', 'utf8');
+const lm = landing.match(/✓\s+(\d+)\s+tests passed · (\d+)\s+files/);
+if (!lm) fail('landing test count not found');
+else {
+  if (parseInt(lm[1], 10) !== testCount) fail(`landing test count ${lm[1]} != actual ${testCount}`);
+  if (parseInt(lm[2], 10) !== testFiles) fail(`landing file count ${lm[2]} != actual ${testFiles}`);
 }
 
 console.log(ok ? 'LEDGER OK' : 'LEDGER FAILED');
