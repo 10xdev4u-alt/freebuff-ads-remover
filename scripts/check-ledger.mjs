@@ -6,9 +6,19 @@ function fail(msg) { console.error('LEDGER FAIL:', msg); ok = false; }
 
 // README test count must match vitest
 const readme = fs.readFileSync('README.md', 'utf8');
-const testCount = parseInt(execSync("npx vitest run 2>&1 | grep -E 'Tests[ ]+[0-9]+ passed' | grep -oE '[0-9]+' | head -1", { encoding: 'utf8' }).trim(), 10);
+let testCount = NaN;
+try {
+  const out = execSync('npx vitest run --reporter=json 2>/dev/null', { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
+  const json = JSON.parse(out);
+  testCount = json.numPassedTests ?? json.testResults?.reduce((a,r)=>a+(r.assertionResults?.filter(x=>x.status==='passed').length||0),0) ?? NaN;
+} catch {
+  // fallback: parse text
+  const out = execSync('npx vitest run 2>&1', { encoding: 'utf8' });
+  const m = out.match(/Tests\s+(\d+)\s+passed/);
+  if (m) testCount = parseInt(m[1], 10);
+}
 const m = readme.match(/vitest, (\d+) tests/);
-if (!m || parseInt(m[1], 10) !== testCount) {
+if (isNaN(testCount) || !m || parseInt(m[1], 10) !== testCount) {
   fail(`README test count ${m?.[1]} != actual ${testCount}`);
 }
 
