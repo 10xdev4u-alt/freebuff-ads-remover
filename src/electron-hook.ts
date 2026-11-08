@@ -121,6 +121,7 @@ export class ElectronHook {
         electronApi.app,
         getAllWebContents,
         this.logger,
+        loadConfig().cssFallbackHosted,
       );
       void this.cssInjector.activate(this.cssTarget);
       this.scriptTarget = new WebContentsScriptTarget(electronApi.app, getAllWebContents, this.logger);
@@ -186,14 +187,42 @@ export class ElectronHook {
     if (typeof raw !== 'object' || raw === null) return;
     const contents = raw as ElectronWebContentsLike;
     if (contents.session) this.hookSession(contents.session);
+    // Re-arm after the hosted workspace wipes onBeforeRequest on navigation.
+    const wc = raw as { on?: (e: string, l: (...a: unknown[]) => void) => unknown };
+    if (typeof wc.on === 'function') {
+      wc.on('did-finish-load', () => {
+        if (contents.session) this.hookSession(contents.session);
+      });
+    }
   }
 
   private hookSession(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return;
     const session = raw as ElectronSessionLike;
-    if (this.sessions.has(session)) return;
     const webRequest = session.webRequest;
     if (!webRequest) return;
+
+    // Re-arm path: the hosted workspace wipes onBeforeRequest (calls
+    // onBeforeRequest(null)) after we hook it. Re-attach the listener instead
+    // of bailing out, so network blocking survives.
+    if (this.sessions.has(session)) {
+      const tracker = this.chainTrackers.get(session) ?? createChainTracker((u) => this.interceptor.isAdUrl(u));
+      this.chainTrackers.set(session, tracker);
+      const attach = webRequest.onBeforeRequest.bind(webRequest);
+      attach({ urls: ['*://*/*'] }, (details, callback) => {
+        const d = details as { id?: number; url: string; method?: string };
+        if (d.id !== undefined && tracker.isAdChain(d.id)) {
+          callback({ cancel: true });
+          return;
+        }
+        const result = this.interceptor.intercept(d.url, d.method ?? 'GET');
+        if (d.id !== undefined) tracker.record(d.id, d.url);
+        callback(result.blocked ? { cancel: true } : {});
+      });
+      this.logger.debug('Session re-armed', { sessions: this.sessions.size });
+      return;
+    }
+
     this.sessions.add(session);
     this.logger.debug('Session hooked', { sessions: this.sessions.size });
     const tracker = createChainTracker((u) => this.interceptor.isAdUrl(u));

@@ -11,6 +11,7 @@ const configSchema = z.object({
   blockTracking: z.boolean().default(true),
   network: z.object({ partitionPattern: z.string().default('^freebuff-') }).default(() => ({ partitionPattern: '^freebuff-' })),
   cssFallback: z.boolean().default(true),
+  cssFallbackHosted: z.boolean().default(false),
   dashboard: z.boolean().default(true),
   domRemoval: z.boolean().default(false),
   verify: z
@@ -112,6 +113,7 @@ export const PRESETS: Record<Preset, Partial<ExtensionConfig>> = {
   strict: {
     blockTracking: true,
     cssFallback: true,
+    cssFallbackHosted: false,
     domRemoval: true,
     surfaces: {
       sponsorBreak: true, billboard: true, intermission: true, spotlight: true,
@@ -122,6 +124,7 @@ export const PRESETS: Record<Preset, Partial<ExtensionConfig>> = {
   minimal: {
     blockTracking: false,
     cssFallback: false,
+    cssFallbackHosted: false,
     domRemoval: false,
     surfaces: {
       sponsorBreak: true, billboard: true, intermission: false, spotlight: false,

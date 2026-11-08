@@ -128,6 +128,7 @@ export interface ExtensionConfig {
   blockTracking: boolean;
   network: { partitionPattern: string };
   cssFallback: boolean;
+  cssFallbackHosted: boolean;
   dashboard: boolean;
   domRemoval: boolean;
   verify: {
@@ -221,6 +222,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   blockTracking: true,
   network: { partitionPattern: '^freebuff-' },
   cssFallback: true,
+  cssFallbackHosted: false,
   dashboard: true,
   domRemoval: false,
   verify: {

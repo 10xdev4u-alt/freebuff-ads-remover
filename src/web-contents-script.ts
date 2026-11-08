@@ -104,7 +104,7 @@ export class WebContentsScriptTarget {
     const url = contents.getURL();
     const type = contents.getType();
     if (type === 'devtools') return;
-    if (!isInjectionTarget(url)) return;
+    if (!isInjectionTarget(url, true)) return;
     void contents
       .executeJavaScript(code)
       .then(() => {
