@@ -188,7 +188,7 @@ AppImage builds. Verified live on `0.0.169`, `0.0.170` and `0.0.186`; the launch
 ```bash
 npm install
 npm run build
-npm test            # vitest, 242 tests
+npm test            # vitest, 245 tests
 npm run lint
 npm run typecheck
 npm run test:coverage  # 72/77/74 threshold enforced
