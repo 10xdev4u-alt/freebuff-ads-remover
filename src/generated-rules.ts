@@ -13,4 +13,3 @@ export function loadGeneratedRules(path?: string): RuleDelta | null {
   }
 }
 
-export const GENERATED_RULES: RuleDelta | null = null;

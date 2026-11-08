@@ -83,17 +83,21 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     const blockLog = new BlockLog(getConfigDir() + '/block-log.jsonl');
     const missLog = new MissLog(getConfigDir() + '/miss-log.jsonl');
     const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
+    const promotionEngine = new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry, statePath: getConfigDir() + '/shield-state.json', maxPromotedRules: config.shield.maxPromotedRules, rollbackOnFailure: config.shield.rollbackOnFailure });
+    promotionEngine.beginLaunch();
     // Shipped (CI-healed) artifact: <pkgroot>/config/generated-rules.json
     try {
       const shippedPath = path.join(__dirname, '..', 'config', 'generated-rules.json');
       const shipped = loadGeneratedRules(shippedPath);
       if (shipped) registry.apply(shipped);
     } catch { /* fail open */ }
-    const generated = loadGeneratedRules(getConfigDir() + '/generated-rules.json');
-    if (generated) registry.apply(generated);
+    // User override (runtime-promoted): config/generated-rules.json
+    try {
+      const userGen = loadGeneratedRules(getConfigDir() + '/generated-rules.json');
+      if (userGen) registry.apply(userGen);
+    } catch { /* fail open */ }
     // Promotion engine (opt-in via shield.autoHeal).
-    new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry });
-    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog);
+    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); });
     cssInjector = new CssInjector(config, logger, registry);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
     electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);

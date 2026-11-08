@@ -18,12 +18,13 @@ export class AdInterceptor {
   private shadow: ShadowCapture | null;
   private blockLog: BlockLog | null;
   private missLog: MissLog | null;
+  private onMiss: ((route: string) => void) | null;
   private registry: RuleRegistry | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null, missLog?: MissLog | null) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null, missLog?: MissLog | null, onMiss?: ((route: string) => void) | null) {
     this.config = config;
     this.logger = logger;
     this.stats = stats ?? null;
@@ -31,6 +32,7 @@ export class AdInterceptor {
     this.registry = registry ?? null;
     this.blockLog = blockLog ?? null;
     this.missLog = missLog ?? null;
+    this.onMiss = onMiss ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -189,6 +191,7 @@ export class AdInterceptor {
       const path = normalizeRoute(u.pathname);
       if (isAdRoute(path) && this.missLog) {
         this.missLog.append({ v: 1, at: Date.now(), route: path });
+        this.onMiss?.(path);
       }
     } catch { /* ignore */ }
     if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
