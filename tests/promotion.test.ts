@@ -4,6 +4,7 @@ import path from 'node:path';
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { RuleRegistry } from '../src/rule-registry.js';
 import { PromotionEngine } from '../src/promotion.js';
+import { ShieldStateStore } from '../src/shield-state.js';
 import type { AdInterceptor } from '../src/interceptor.js';
 import type { RuntimeVerifier, VerificationReport } from '../src/runtime-verifier.js';
 
@@ -21,7 +22,7 @@ describe('runtime promotion', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
     const statePath = path.join(tmp, 'shield-state.json');
     const engine = new PromotionEngine({
-      promoteAfter: 2,
+      promoteAfter: 1,
       enabled: true,
       registry: new RuleRegistry(),
       statePath,
@@ -122,5 +123,91 @@ describe('runtime promotion', () => {
     engine.observe('route:/api/ad/wave29-proof');
     const results = await engine.tick();
     expect(results).toHaveLength(0);
+  });
+});
+
+describe('runtime promotion branches', () => {
+  it('tick is a no-op when disabled', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: false,
+      registry: new RuleRegistry(),
+      statePath: path.join(tmp, 'shield-state.json'),
+      corpusDir,
+      configDir: tmp,
+    });
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/wave29-proof');
+    expect(await engine.tick()).toEqual([]);
+    expect(engine.eligible()).toEqual([]);
+  });
+
+  it('promote() honors its guards', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const statePath = path.join(tmp, 'shield-state.json');
+    const store = new ShieldStateStore(statePath);
+    store.quarantine('route:x', 'nope');
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: true,
+      registry: new RuleRegistry(),
+      statePath,
+      maxPromotedRules: 0,
+      corpusDir,
+      configDir: tmp,
+    });
+    expect(engine.promote('route:x', { addEndpoints: [], addSelectors: {}, source: 't' })).toBe(false);
+  });
+
+  it('does not roll back when rollbackOnFailure is false', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const registry = new RuleRegistry();
+    const interceptor = { syncPatterns: vi.fn() } as unknown as AdInterceptor;
+    const verifier = {
+      run: async (): Promise<VerificationReport> => ({ pass: false, reason: 'control-not-reached', targets: 1, probes: [], at: Date.now() }),
+    } as unknown as RuntimeVerifier;
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: true,
+      registry,
+      statePath: path.join(tmp, 'shield-state.json'),
+      corpusDir,
+      configDir: tmp,
+      interceptor,
+      runtimeVerifier: verifier,
+      rollbackOnFailure: false,
+    });
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/wave29-proof');
+    await engine.tick();
+    const saved = JSON.parse(fs.readFileSync(path.join(tmp, 'rules.json'), 'utf8')) as { endpoints: string[] };
+    expect(saved.endpoints).toContain('/api/ad/wave29-proof');
+  });
+
+  it('promotes without a verifier and uses setLiveGate', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: true,
+      registry: new RuleRegistry(),
+      statePath: path.join(tmp, 'shield-state.json'),
+      corpusDir,
+      configDir: tmp,
+    });
+    engine.setLiveGate(async () => ({ pass: true, reason: undefined, targets: 1, probes: [], at: Date.now() }));
+    // no verifier attached, so live gate is skipped and static gate alone promotes
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/wave29-proof');
+    const results = await engine.tick();
+    expect(results[0]?.status).toBe('promoted');
+  });
+
+  it('loads corrupted state as empty', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const statePath = path.join(tmp, 'shield-state.json');
+    fs.writeFileSync(statePath, '{not json');
+    const store = new ShieldStateStore(statePath);
+    expect(store.launches('x')).toBe(0);
   });
 });
