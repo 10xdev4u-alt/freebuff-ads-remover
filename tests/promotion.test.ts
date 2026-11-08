@@ -191,7 +191,7 @@ describe('runtime promotion branches', () => {
     const verifier = {
       run: async (extra: string[] = []) => {
         seen.push(...extra);
-        return { pass: true, reason: undefined, targets: 1, probes: [], at: Date.now() } as VerificationReport;
+        return { pass: true, targets: 1, probes: [], at: Date.now() } as unknown as VerificationReport;
       },
     } as unknown as RuntimeVerifier;
     const engine = new PromotionEngine({
@@ -219,7 +219,7 @@ describe('runtime promotion branches', () => {
       corpusDir,
       configDir: tmp,
     });
-    engine.setLiveGate(async () => ({ pass: true, reason: undefined, targets: 1, probes: [], at: Date.now() }));
+    engine.setLiveGate(async () => ({ pass: true, targets: 1, probes: [], at: Date.now() } as unknown as VerificationReport));
     // no verifier attached, so live gate is skipped and static gate alone promotes
     engine.beginLaunch();
     engine.observe('route:/api/ad/wave29-proof');
