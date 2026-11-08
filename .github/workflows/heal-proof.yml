@@ -64,6 +64,7 @@ jobs:
           else
             node scripts/fetch-latest-appimage.mjs --version ${{ steps.payload.outputs.version }} --out /tmp/freebuff.AppImage
           fi
+          chmod +x /tmp/freebuff.AppImage
 
       - name: Run E2E with healed artifact
         continue-on-error: true
