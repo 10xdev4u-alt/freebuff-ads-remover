@@ -54,6 +54,25 @@ function cmdInspect(): number {
   return 0;
 }
 
+function cmdStatus(): number {
+  const dir = getConfigDir();
+  console.log('Config dir:', dir);
+  const shieldPath = path.join(dir, 'shield-state.json');
+  if (fs.existsSync(shieldPath)) {
+    try { console.log('Shield state:', JSON.stringify(JSON.parse(fs.readFileSync(shieldPath, 'utf8')))); } catch { console.log('Shield state: unreadable'); }
+  } else console.log('Shield state: none');
+  for (const f of ['miss-log.jsonl', 'outcomes.jsonl', 'feed-state.json', 'feed-rules.json']) {
+    const pth = path.join(dir, f);
+    if (fs.existsSync(pth)) {
+      const st = fs.statSync(pth);
+      console.log(f + ':', st.size, 'bytes');
+    } else {
+      console.log(f + ': absent');
+    }
+  }
+  return 0;
+}
+
 function cmdDoctor(): number {
   const dir = getConfigDir();
   console.log('Config dir:', dir);
@@ -254,6 +273,7 @@ export function runCli(argv: string[]): number {
   switch (cmd) {
     case 'inspect': return cmdInspect();
     case 'doctor': return cmdDoctor();
+    case 'status': return cmdStatus();
     case 'capture': return cmdCaptureStatus();
     case 'replay': return cmdReplay(flags);
     case 'discover': return cmdDiscover(flags);

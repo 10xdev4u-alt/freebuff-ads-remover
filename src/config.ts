@@ -65,11 +65,11 @@ const configSchema = z.object({
   shield: z
     .object({
       autoHeal: z.boolean().default(false),
-      promoteAfter: z.number().default(3),
+      promoteAfter: z.number().default(5),
       rollbackOnFailure: z.boolean().default(true),
-      maxPromotedRules: z.number().default(25),
+      maxPromotedRules: z.number().default(10),
     })
-    .default(() => ({ autoHeal: false, promoteAfter: 3, rollbackOnFailure: true, maxPromotedRules: 25 })),
+    .default(() => ({ autoHeal: false, promoteAfter: 5, rollbackOnFailure: true, maxPromotedRules: 10 })),
   feed: z
     .object({
       enabled: z.boolean().default(false),

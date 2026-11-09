@@ -270,9 +270,9 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   },
   shield: {
     autoHeal: false,
-    promoteAfter: 3,
+    promoteAfter: 5,
     rollbackOnFailure: true,
-    maxPromotedRules: 25,
+    maxPromotedRules: 10,
   },
   feed: {
     enabled: false,
