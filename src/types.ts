@@ -168,6 +168,9 @@ export interface ExtensionConfig {
     enabled: boolean;
     url: string;
     publicKey: string;
+    previousPublicKey: string;
+    killSwitch: boolean;
+    maxRules: number;
   };
   inbound: {
     enabled: boolean;
@@ -275,9 +278,12 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     maxPromotedRules: 10,
   },
   feed: {
-    enabled: false,
+    enabled: true,
     url: 'https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json',
     publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----',
+    previousPublicKey: '',
+    killSwitch: false,
+    maxRules: 25,
   },
   inbound: {
     enabled: false,

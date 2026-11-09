@@ -8,6 +8,8 @@ function get(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] :
 const source = get('--manifest') || get('--url') || get('--file');
 const configDir = get('--config-dir');
 const publicKey = get('--public-key') || process.env.FEED_PUBLIC_KEY;
+const killSwitch = process.env.FREEBUFF_FEED_KILL_SWITCH === 'true';
+const previousPublicKey = process.env.FEED_PREVIOUS_PUBLIC_KEY || '';
 if (!source || !configDir || !publicKey) {
   console.error('usage: feed-sync.mjs --manifest <file|url> --config-dir <dir> [--public-key <pem>]');
   process.exit(2);
@@ -28,7 +30,7 @@ async function loadManifest() {
 }
 
 const manifest = await loadManifest();
-if (!verifyManifest(manifest, publicKey)) {
+if (!verifyManifest(manifest, publicKey, previousPublicKey)) {
   console.error('feed manifest signature invalid');
   process.exit(1);
 }
@@ -48,6 +50,7 @@ if (manifest.rollbackTo) {
   console.log(JSON.stringify({ status: 'rolled-back', to: manifest.rollbackTo }));
   process.exit(0);
 }
+if (killSwitch) { console.log(JSON.stringify({ status: 'kill-switch' })); process.exit(0); }
 // materialize last-good before overwriting
 const feedRulesPath = path.join(dir, 'feed-rules.json');
 if (fs.existsSync(feedRulesPath)) {
@@ -62,4 +65,5 @@ const merged = {
 };
 fs.writeFileSync(feedRulesPath, JSON.stringify(merged, null, 2));
 fs.writeFileSync(statePath, JSON.stringify({ version, at: new Date().toISOString() }, null, 2));
+fs.writeFileSync(path.join(dir, 'delivery-receipt.json'), JSON.stringify({ healHash: merged.healHash, version, appliedAt: new Date().toISOString() }, null, 2));
 console.log(JSON.stringify({ status: 'applied', version, entries: entries.length }));

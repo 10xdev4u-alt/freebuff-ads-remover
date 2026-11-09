@@ -73,6 +73,11 @@ function cmdStatus(): number {
   return 0;
 }
 
+function cmdUpdate(): number {
+  const r = spawnSync(process.execPath, [path.join(process.cwd(), 'scripts', 'update.mjs')], { stdio: 'inherit' });
+  return r.status ?? 0;
+}
+
 function cmdDoctor(): number {
   const dir = getConfigDir();
   console.log('Config dir:', dir);
@@ -273,6 +278,7 @@ export function runCli(argv: string[]): number {
   switch (cmd) {
     case 'inspect': return cmdInspect();
     case 'doctor': return cmdDoctor();
+    case 'update': return cmdUpdate();
     case 'status': return cmdStatus();
     case 'capture': return cmdCaptureStatus();
     case 'replay': return cmdReplay(flags);

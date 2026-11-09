@@ -43,15 +43,17 @@ export function signManifest(manifest: Omit<FeedManifest, 'sig'>, privateKeyPem:
   return signature.toString('base64');
 }
 
-export function verifyManifest(manifest: FeedManifest, publicKeyPem: string): boolean {
+export function verifyManifest(manifest: FeedManifest, publicKeyPem: string, previousPublicKeyPem?: string): boolean {
   if (typeof manifest.sig !== 'string') return false;
   const { sig, ...rest } = manifest;
-  try {
-    const key = crypto.createPublicKey(publicKeyPem);
-    return crypto.verify(null, Buffer.from(canonicalManifest(rest)), key, Buffer.from(sig, 'base64'));
-  } catch {
-    return false;
+  const keys = [publicKeyPem, previousPublicKeyPem].filter(Boolean) as string[];
+  for (const k of keys) {
+    try {
+      const key = crypto.createPublicKey(k);
+      if (crypto.verify(null, Buffer.from(canonicalManifest(rest)), key, Buffer.from(sig, 'base64'))) return true;
+    } catch { /* try next */ }
   }
+  return false;
 }
 
 export function keyHash(key: string): string {
