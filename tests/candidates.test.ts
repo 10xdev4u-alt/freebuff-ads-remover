@@ -24,4 +24,10 @@ describe('candidate classifier', () => {
     const boosted = classifyRoute('/api/foo', { module: 'ad-banner', params: ['placement'] });
     expect(boosted.confidence).toBeGreaterThan(base.confidence);
   });
+
+  it('rejects a hyphenated protected segment', () => {
+    const r = classifyRoute('/api/survey-events');
+    expect(r.candidate).toBe(false);
+    expect(r.signals).toContain('not-ad-segment');
+  });
 });

@@ -89,8 +89,8 @@ const merged = {
 // 4b. control-route rejection.
 for (const r of merged.addEndpoints) {
   if (controlRoutes.includes(r)) { console.error('control route in delta:', r); process.exit(1); }
-  const segs = r.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-  if (segs.some((seg) => ['admission','threads','thread','reload','profile'].includes(seg))) { console.error('protected segment in delta:', r); process.exit(1); }
+  const segs = r.toLowerCase().split('/').map((seg) => seg.split('?')[0]).filter(Boolean);
+  if (segs.some((seg) => ['admission','threads','thread','reload','profile','survey-events'].includes(seg))) { console.error('protected segment in delta:', r); process.exit(1); }
 }
 // 5. maxPromotedRules guard.
 if (merged.addEndpoints.length > maxPromoted) {

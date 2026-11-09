@@ -55,7 +55,7 @@ export const CORE_ROUTES = CONTROL_ROUTES;
 const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', 'localhost', 'freebuff.com', 'www.freebuff.com']);
 
 function tokensOf(route: string): string[] {
-  return route.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  return route.toLowerCase().split(/[^a-z0-9]+/).filter((seg): seg is string => Boolean(seg));
 }
 
 function hostOf(context: RouteContext | undefined, route: string): string | undefined {
@@ -73,7 +73,8 @@ export function classifyRoute(route: string, context: RouteContext = {}): Candid
   let score = 0;
 
   const toksCheck = tokensOf(route);
-  if (toksCheck.some((t) => NOT_AD_SEGMENTS.has(t))) {
+  const pathSegments = route.toLowerCase().split('/').map((seg) => seg.split('?')[0]).filter((seg): seg is string => Boolean(seg));
+  if (toksCheck.some((t) => NOT_AD_SEGMENTS.has(t)) || pathSegments.some((seg) => NOT_AD_SEGMENTS.has(seg))) {
     return { candidate: false, confidence: 0, signals: ['not-ad-segment'] };
   }
   if (CONTROL_ROUTES.has(route)) {
