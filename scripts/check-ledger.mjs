@@ -99,5 +99,23 @@ if (fs.existsSync(baselinePath)) {
   fail('endpoint baseline missing');
 }
 
+// Live receipt freshness (warning-level; full enforcement requires a real AppImage run)
+const liveReceipts = fs.existsSync('receipts') ? fs.readdirSync('receipts').filter((f) => f.startsWith('live-') && f.endsWith('.json')) : [];
+if (liveReceipts.length === 0) {
+  console.error('LEDGER WARN: no live-e2e receipt present (run e2e-headless --feed to generate)');
+} else {
+  const latestLive = liveReceipts
+    .map((f) => JSON.parse(fs.readFileSync('receipts/' + f, 'utf8')))
+    .sort((a, c) => String(c.at || '').localeCompare(String(a.at || '')))[0];
+  if (latestLive.payloadVersion === null || latestLive.payloadVersion === undefined) {
+    console.error('LEDGER WARN: live receipt has null payloadVersion');
+  }
+  if (latestLive.at) {
+    const age = Date.now() - Date.parse(latestLive.at);
+    if (age > 7 * 24 * 60 * 60 * 1000) console.error('LEDGER WARN: live receipt is stale (>7d)');
+  }
+  if (latestLive.provenance !== 'live-e2e') fail('live receipt missing provenance: live-e2e');
+}
+
 console.log(ok ? 'LEDGER OK' : 'LEDGER FAILED');
 process.exit(ok ? 0 : 1);

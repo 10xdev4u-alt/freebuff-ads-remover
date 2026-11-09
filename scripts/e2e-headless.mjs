@@ -69,15 +69,35 @@ const cfg = {
     runOnBoot: true,
     settleMs: 5000,
     timeoutMs: 20000,
-    probeRoutes: promote ? ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard', '/api/ad/wave31-proof'] : ['/api/ad/policy', '/api/ad/break', '/api/ad/billboard'],
+    probeRoutes: [],
     controlRoutes: ['/healthz', '/api/account/usage'],
-    concurrency: 4,
+    concurrency: 8,
     orchestratorOrigin: 'http://127.0.0.1:5174',
   },
   surfaces: {},
   logLevel: 'debug',
   logToFile: true,
 };
+
+// Derive probe set from the full golden corpus (truncated-set guard).
+let corpusAds = [];
+let corpusControls = [];
+try {
+  const corpusPath = join(process.cwd(), 'corpus', 'golden.jsonl');
+  if (existsSync(corpusPath)) {
+    const lines = readFileSync(corpusPath, 'utf8').trim().split('\n').filter(Boolean);
+    for (const l of lines) {
+      const e = JSON.parse(l);
+      if (e.label === 'ad') corpusAds.push(e.path);
+      else if (e.label === 'control') corpusControls.push(e.path);
+    }
+  }
+} catch (e) { console.error('corpus load failed:', e.message); }
+if (corpusAds.length < 38) { console.error('Corpus truncated: only', corpusAds.length, 'ad routes'); process.exit(1); }
+cfg.verify.probeRoutes = [...new Set(corpusAds)];
+if (corpusControls.length) cfg.verify.controlRoutes = [...new Set(corpusControls)];
+cfg.verify.probeRoutes = [...new Set([...cfg.verify.probeRoutes, ...(promote ? ['/api/ad/wave31-proof'] : [])])];
+
 writeFileSync(join(configDir, 'config.json'), JSON.stringify(cfg, null, 2));
 if (genRules && existsSync(genRules)) {
   const g = JSON.parse(readFileSync(genRules, 'utf8'));
@@ -161,6 +181,12 @@ if (!report || !report.pass) {
   console.error(JSON.stringify(report, null, 2));
   process.exit(1);
 }
+// Truncated-set guard: every corpus ad route must have been probed.
+const probedAds = (report.probes || []).filter((p) => p.kind === 'ad').map((p) => p.route);
+if (probedAds.length < corpusAds.length) {
+  console.error('TRUNCATED PROBE SET:', probedAds.length, 'of', corpusAds.length);
+  process.exit(1);
+}
 if (promote) {
   let promoted = false;
   for (let i = 0; i < 20; i++) {
@@ -191,5 +217,27 @@ if (expectPromoted) {
     process.exit(1);
   }
 }
+// Machine-born live receipt
+try {
+  const crypto = await import('node:crypto');
+  const receiptsDir = join(process.cwd(), 'receipts');
+  mkdirSync(receiptsDir, { recursive: true });
+  const corpusBuf = readFileSync(join(process.cwd(), 'corpus', 'golden.jsonl'));
+  const corpusHash = 'sha256:' + crypto.createHash('sha256').update(corpusBuf).digest('hex');
+  const pv = process.env.FREEBUFF_PAYLOAD_VERSION || null;
+  const receipt = {
+    at: new Date().toISOString(),
+    payloadVersion: pv,
+    corpusHash,
+    probes: report.probes.length,
+    pass: report.pass,
+    provenance: 'live-e2e',
+    artifactHash: 'sha256:' + crypto.createHash('sha256').update(JSON.stringify(report)).digest('hex'),
+    gate: { pass: report.pass },
+  };
+  const name = 'live-' + (pv || Date.now()) + '.json';
+  writeFileSync(join(receiptsDir, name), JSON.stringify(receipt, null, 2));
+} catch (e) { console.error('receipt write failed:', e.message); }
+
 console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote, expectPromoted: expectPromoted || null }, null, 2));
 process.exit(0);
