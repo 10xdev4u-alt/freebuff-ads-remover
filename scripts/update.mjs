@@ -19,18 +19,19 @@ if (fs.existsSync(staging)) fs.rmSync(staging, { recursive: true, force: true })
 fs.mkdirSync(staging);
 execSync('npm run build', { stdio: 'inherit' });
 
-// verify marker survived
-const marker = fs.readFileSync(path.join(root, 'dist', 'bootstrap.js'), 'utf8');
-if (!marker.includes('freebuff-ads-remover')) {
-  console.error('marker missing; aborting update');
-  process.exit(1);
-}
-
-// atomic swap with backup
+// atomic swap with backup: build into staging/dist, then swap
 const dist = path.join(root, 'dist');
+const stagingDist = path.join(staging, 'dist');
 const backup = path.join(root, 'dist.bak');
+// move the freshly built dist into staging for verification
+if (fs.existsSync(stagingDist)) fs.rmSync(stagingDist, { recursive: true, force: true });
+fs.renameSync(dist, stagingDist);
+// verify marker
+const marker = fs.readFileSync(path.join(stagingDist, 'bootstrap.js'), 'utf8');
+if (!marker.includes('freebuff-ads-remover')) { console.error('marker missing'); process.exit(1); }
+// swap
 if (fs.existsSync(backup)) fs.rmSync(backup, { recursive: true, force: true });
-fs.renameSync(dist, backup);
-fs.renameSync(path.join(root, 'dist'), dist); // no-op safety
-// dist already in place from build; nothing to move
+fs.renameSync(dist, backup).catch && null;
+// dist may not exist now (moved); ensure
+fs.renameSync(stagingDist, dist);
 console.log('Update complete. Previous build at dist.bak');

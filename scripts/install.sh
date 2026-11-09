@@ -3,7 +3,7 @@ set -euo pipefail
 
 INSTALL_ROOT="${FREEBUFF_INSTALL_ROOT:-$HOME/.local/share/freebuff-ads-remover}"
 REPO_URL="${FREEBUFF_REPO_URL:-https://github.com/10xdev4u-alt/freebuff-ads-remover.git}"
-REF="${FREEBUFF_REF:-main}"
+REF="${FREEBUFF_REF:-$(git ls-remote --tags --sort=-v:refname "$REPO_URL" | head -1 | sed "s/.*refs\/tags\///;s/\^{}//")}"
 
 echo "Installing freebuff-ads-remover into $INSTALL_ROOT"
 
@@ -14,6 +14,7 @@ fi
 cd "$INSTALL_ROOT"
 git fetch --tags --force
 git checkout "$REF"
+if [ -z "$REF" ]; then echo "could not resolve ref"; exit 1; fi
 git pull --ff-only || true
 
 if [ ! -d node_modules ]; then

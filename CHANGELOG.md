@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-11-09
+
+Wave 44: the loop fires on main. feed-build receipt selection, update.mjs atomic swap, install.sh tag pin, ledger enforcement.
+
 ## [1.17.0] - 2026-11-09
 
 Wave 43: the loop runs. add-paths + large-file guard, feed/proof PR mergeability, ledger enforces feed/proof/version, truth-pass.

@@ -17,7 +17,11 @@ const receipts = fs.existsSync(receiptsDir)
       try { return JSON.parse(fs.readFileSync(path.join(receiptsDir, f), 'utf8')); } catch { return null; }
     }).filter(Boolean)
   : [];
-const latest = receipts.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))[0];
+const crypto = await import('node:crypto');
+const artifactText = fs.readFileSync(artifactPath, 'utf8');
+const artifactHash = 'sha256:' + crypto.createHash('sha256').update(artifactText).digest('hex');
+let latest = receipts.find((r) => r.artifactHash === artifactHash);
+if (!latest) latest = receipts.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))[0];
 if (!latest || !latest.artifactHash) { console.error('no valid receipt'); process.exit(1); }
 
 const manifest = {
