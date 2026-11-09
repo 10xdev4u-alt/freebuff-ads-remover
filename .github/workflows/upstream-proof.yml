@@ -78,6 +78,10 @@ jobs:
             /tmp/heal.md
       - name: Clean extracted artifacts
         run: rm -rf squashfs-root freebuff-*.AppImage .heal-tmp
+      - name: Large-file guard
+        run: |
+          bad=$(git status --porcelain | awk '{print $2}' | while read f; do [ -f "$f" ] && [ "$(stat -c%s "$f")" -gt 10485760 ] && echo "$f"; done)
+          if [ -n "$bad" ]; then echo "large files: $bad"; exit 1; fi
       - name: Open heal PR
         if: steps.heal.outputs.has_delta == 'true'
         uses: peter-evans/create-pull-request@v6
@@ -86,6 +90,10 @@ jobs:
           title: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}"
           body-path: /tmp/heal.md
           commit-message: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}" 
+          add-paths: |
+            config/generated-rules.json
+            receipts/
+            config/endpoint-baseline.json
 
   e2e:
     runs-on: ubuntu-latest

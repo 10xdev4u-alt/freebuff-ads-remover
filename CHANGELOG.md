@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-11-09
+
+Wave 43: the loop runs. add-paths + large-file guard, feed/proof PR mergeability, ledger enforces feed/proof/version, truth-pass.
+
 ## [1.16.0] - 2026-11-09
 
 Wave 42: the shield wakes. farbuff status, live-proof link, truth-pass, conservative defaults.

@@ -5,6 +5,8 @@ on:
     paths:
       - 'config/generated-rules.json'
       - 'receipts/**'
+      - 'feed/manifest.json'
+      - 'live-proof/index.html'
   workflow_dispatch:
   schedule:
     - cron: '0 6 * * *'
@@ -57,12 +59,4 @@ jobs:
         env:
           FREEBUFF_PAYLOAD_VERSION: ${{ steps.payload.outputs.version }}
         run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --expect-promoted /api/ad/wave31-proof --timeout 240000 --feed
-      - name: Publish live receipt + proof
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          mkdir -p live-proof
-          node -e "const fs=require('fs');const crypto=require('crypto');const receipts=fs.readdirSync('receipts').filter(f=>f.startsWith('live-')&&f.endsWith('.json'));const latest=receipts.sort().pop();const r=latest?JSON.parse(fs.readFileSync('receipts/'+latest,'utf8')):{};const html='<!doctype html><html><body><h1>Live proof</h1><pre>'+JSON.stringify(r,null,2)+'</pre></body></html>';fs.writeFileSync('live-proof/index.html',html);"
-          git add receipts/live-*.json live-proof/index.html
-          git commit -m "chore(proof): publish live receipt" || exit 0
-          git push
+

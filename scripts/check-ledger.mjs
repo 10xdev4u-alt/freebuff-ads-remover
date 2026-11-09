@@ -117,5 +117,33 @@ if (liveReceipts.length === 0) {
   if (latestLive.provenance !== 'live-e2e') fail('live receipt missing provenance: live-e2e');
 }
 
+
+// Feed manifest must exist, parse, and verify against the pinned public key
+const feedPath = 'feed/manifest.json';
+if (!fs.existsSync(feedPath)) {
+  fail('feed/manifest.json missing');
+} else {
+  try {
+    const fm = JSON.parse(fs.readFileSync(feedPath, 'utf8'));
+    const pub = '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----';
+    const { verifyManifest } = await import('../dist/feed.js');
+    if (!verifyManifest(fm, pub)) fail('feed manifest signature invalid');
+    if (fm.generatedAt) {
+      const age = Date.now() - Date.parse(fm.generatedAt);
+      if (age > 7 * 24 * 60 * 60 * 1000) fail('feed manifest stale (>7d)');
+    }
+  } catch (e) { fail('feed manifest unreadable: ' + e.message); }
+}
+
+// Live proof page must exist
+if (!fs.existsSync('live-proof/index.html')) fail('live-proof/index.html missing');
+
+// Version drift: README badge == package.json == top CHANGELOG
+const pkgVersion = JSON.parse(fs.readFileSync('package.json','utf8')).version;
+const readmeBadge = readme.match(/version-(\d+\.\d+\.\d+)-blue/);
+if (readmeBadge && readmeBadge[1] !== pkgVersion) fail(`README badge ${readmeBadge[1]} != package ${pkgVersion}`);
+const changelogTop = fs.readFileSync('CHANGELOG.md','utf8').match(/## \[(\d+\.\d+\.\d+)\]/);
+if (changelogTop && changelogTop[1] !== pkgVersion) fail(`CHANGELOG top ${changelogTop[1]} != package ${pkgVersion}`);
+
 console.log(ok ? 'LEDGER OK' : 'LEDGER FAILED');
 process.exit(ok ? 0 : 1);

@@ -1,0 +1,32 @@
+name: proof-publish
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - name: Generate live-proof page
+        run: |
+          mkdir -p live-proof
+          node -e "const fs=require('fs');const crypto=require('crypto');const receipts=fs.readdirSync('receipts').filter(f=>f.startsWith('live-')&&f.endsWith('.json'));const latest=receipts.sort().pop();const r=latest?JSON.parse(fs.readFileSync('receipts/'+latest,'utf8')):{};const html='<!doctype html><html><body><h1>Live proof</h1><pre>'+JSON.stringify(r,null,2)+'</pre></body></html>';fs.writeFileSync('live-proof/index.html',html);"
+      - name: Open proof PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ci/proof-publish
+          title: "chore(proof): publish live proof page"
+          commit-message: "chore(proof): publish live proof page"
+          add-paths: live-proof/index.html

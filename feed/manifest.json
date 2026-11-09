@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-09T08:57:42.238Z",
+  "entries": [
+    {
+      "healHash": "sha256:c07556dbe8312d90d348f0884779ff28a661528065d3d6d0ef414405833729aa",
+      "rules": {
+        "addEndpoints": [],
+        "addSelectors": {},
+        "source": "ci-healed:unknown"
+      },
+      "route": null
+    }
+  ],
+  "rollbackTo": null,
+  "sig": "1veM8PBPn1wpCPVJZHDByCISxoAYPZ1rbA/ZZLpcovfl3saxE803k8U/xbOPawCvyXJ2rmD1+0pMxB6yR2kdDg=="
+}
