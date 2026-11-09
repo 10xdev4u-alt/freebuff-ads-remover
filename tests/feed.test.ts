@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { execSync } from 'node:child_process';
 import { signManifest, verifyManifest } from '../src/feed.js';
 
@@ -27,6 +27,10 @@ describe('feed manifest', () => {
 });
 
 describe('feed sync', () => {
+  beforeAll(() => {
+    const dist = path.join(process.cwd(), 'dist', 'feed.js');
+    if (!fs.existsSync(dist)) execSync('npm run build', { cwd: process.cwd(), stdio: 'inherit' });
+  });
   it('materializes signed rules', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-feed-'));
     const manifestPath = path.join(tmp, 'm.json');
