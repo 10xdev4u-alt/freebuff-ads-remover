@@ -44,6 +44,14 @@ export const CONTROL_ROUTES = new Set<string>([
   '/api/config',
 ]);
 
+// Segments that, when present, indicate a non-ad route even if an ad token
+// appears elsewhere (e.g. "admission" contains "ad" but is not an ad route).
+export const NOT_AD_SEGMENTS = new Set<string>([
+  'admission', 'threads', 'thread', 'reload', 'profile', 'survey-events',
+]);
+
+export const CORE_ROUTES = CONTROL_ROUTES;
+
 const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', 'localhost', 'freebuff.com', 'www.freebuff.com']);
 
 function tokensOf(route: string): string[] {
@@ -64,15 +72,19 @@ export function classifyRoute(route: string, context: RouteContext = {}): Candid
   const signals: string[] = [];
   let score = 0;
 
+  const toksCheck = tokensOf(route);
+  if (toksCheck.some((t) => NOT_AD_SEGMENTS.has(t))) {
+    return { candidate: false, confidence: 0, signals: ['not-ad-segment'] };
+  }
   if (CONTROL_ROUTES.has(route)) {
     return { candidate: false, confidence: 0, signals: ['control-list'] };
   }
 
   const toks = tokensOf(route);
-  const pathHits = AD_TOKENS.filter((t) => toks.some((x) => x === t || x.includes(t)));
+  const pathHits = AD_TOKENS.filter((t) => toks.some((x) => x === t));
   if (pathHits.length > 0) {
     signals.push(`path:${pathHits.join(',')}`);
-    score += Math.min(0.6, 0.35 + 0.15 * (pathHits.length - 1));
+    score += Math.min(0.9, 0.7 + 0.1 * (pathHits.length - 1));
   }
 
   const host = hostOf(context, route);

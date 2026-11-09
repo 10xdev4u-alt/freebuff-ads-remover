@@ -3,6 +3,7 @@ import type { AdInterceptor } from './interceptor.js';
 import type { RuntimeVerifier, VerificationReport } from './runtime-verifier.js';
 import { ShieldStateStore } from './shield-state.js';
 import { synthesizeDelta } from './rule-synthesis.js';
+import { classifyRoute } from './candidates.js';
 import { verifyDelta } from './delta-gate.js';
 
 export interface PromotionCandidate { id: string; observations: number; delta: RuleDelta }
@@ -80,6 +81,12 @@ export class PromotionEngine {
       for (const id of this.eligible()) {
       if (!this.canPromote()) break;
       const route = id.replace(/^route:/, '');
+      const cls = classifyRoute(route);
+      if (cls.confidence < 0.7) {
+        this.state.quarantine(id, 'low-confidence');
+        results.push({ id, status: 'quarantined', reason: 'low-confidence' });
+        continue;
+      }
       const delta = synthesizeDelta([{ route }], 'runtime-promoted');
       if (!delta) { results.push({ id, status: 'skipped', reason: 'no-delta' }); continue; }
 

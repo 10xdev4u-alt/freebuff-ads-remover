@@ -1,6 +1,8 @@
 name: feed-publish
 
 on:
+  schedule:
+    - cron: '0 6 * * *'
   push:
     branches: [main]
     paths:
@@ -26,6 +28,13 @@ jobs:
         env:
           FEED_SIGNING_PRIVATE_KEY: ${{ secrets.FEED_SIGNING_PRIVATE_KEY }}
         run: node scripts/feed-sign.mjs --in feed/manifest.json --out feed/manifest.json
+      - name: Verify manifest
+        env:
+          FEED_PUBLIC_KEY: |
+            -----BEGIN PUBLIC KEY-----
+            MCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=
+            -----END PUBLIC KEY-----
+        run: node -e "const fs=require('fs');const{verifyManifest}=require('./dist/feed.js');const m=JSON.parse(fs.readFileSync('feed/manifest.json','utf8'));const pk=process.env.FEED_PUBLIC_KEY; if(!verifyManifest(m,pk)){console.error('verify failed');process.exit(1);} console.log('verified');"
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"

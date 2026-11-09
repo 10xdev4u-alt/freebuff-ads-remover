@@ -108,11 +108,11 @@ if (liveReceipts.length === 0) {
     .map((f) => JSON.parse(fs.readFileSync('receipts/' + f, 'utf8')))
     .sort((a, c) => String(c.at || '').localeCompare(String(a.at || '')))[0];
   if (latestLive.payloadVersion === null || latestLive.payloadVersion === undefined) {
-    console.error('LEDGER WARN: live receipt has null payloadVersion');
+    fail('live receipt has null payloadVersion');
   }
   if (latestLive.at) {
     const age = Date.now() - Date.parse(latestLive.at);
-    if (age > 7 * 24 * 60 * 60 * 1000) console.error('LEDGER WARN: live receipt is stale (>7d)');
+    if (age > 7 * 24 * 60 * 60 * 1000) fail('live receipt is stale (>7d)');
   }
   if (latestLive.provenance !== 'live-e2e') fail('live receipt missing provenance: live-e2e');
 }

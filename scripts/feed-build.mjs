@@ -18,12 +18,13 @@ const receipts = fs.existsSync(receiptsDir)
     }).filter(Boolean)
   : [];
 const latest = receipts.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))[0];
+if (!latest || !latest.artifactHash) { console.error('no valid receipt'); process.exit(1); }
 
 const manifest = {
   version: Number(version),
   generatedAt: new Date().toISOString(),
   entries: [{
-    healHash: latest?.artifactHash ?? 'unknown',
+    healHash: latest.artifactHash,
     rules: {
       addEndpoints: artifact.addEndpoints ?? [],
       addSelectors: artifact.addSelectors ?? {},
@@ -33,6 +34,7 @@ const manifest = {
   }],
   rollbackTo: null,
 };
+if (!manifest.entries[0].healHash || manifest.entries[0].healHash === 'unknown') { console.error('refuse unknown healHash'); process.exit(1); }
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(manifest, null, 2) + '\n');
 console.log(JSON.stringify({ out, version: manifest.version, healHash: manifest.entries[0].healHash }));
