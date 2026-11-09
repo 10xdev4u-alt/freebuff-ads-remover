@@ -132,7 +132,7 @@ if (!dryRun) {
       routes: Object.keys(classifications),
       classifications,
     };
-    const baselinePath = path.join(repoRoot, 'config', 'endpoint-baseline.json');
+    const baselinePath = path.join(path.dirname(out), 'endpoint-baseline.json');
     fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2) + '\n');
   } catch { /* fail open */ }
   if (receiptPath) {

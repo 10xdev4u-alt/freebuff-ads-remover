@@ -72,7 +72,7 @@ export function classifyRoute(route: string, context: RouteContext = {}): Candid
   const pathHits = AD_TOKENS.filter((t) => toks.some((x) => x === t || x.includes(t)));
   if (pathHits.length > 0) {
     signals.push(`path:${pathHits.join(',')}`);
-    score += Math.min(0.6, 0.2 + 0.15 * (pathHits.length - 1));
+    score += Math.min(0.6, 0.35 + 0.15 * (pathHits.length - 1));
   }
 
   const host = hostOf(context, route);

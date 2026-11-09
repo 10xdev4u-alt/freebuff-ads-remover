@@ -74,5 +74,30 @@ for (const f of receiptFiles2) {
   if (!r.provenance) fail('receipt missing provenance: ' + f);
 }
 
+// Payload-drift baseline must be real and current
+const baselinePath = 'config/endpoint-baseline.json';
+if (fs.existsSync(baselinePath)) {
+  try {
+    const b = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+    if (!Array.isArray(b.routes) || b.routes.length === 0) fail('endpoint baseline has no routes');
+    const receiptFiles = fs.existsSync('receipts') ? fs.readdirSync('receipts').filter((f) => f.endsWith('.json')) : [];
+    const latest = receiptFiles
+      .map((f) => JSON.parse(fs.readFileSync('receipts/' + f, 'utf8')))
+      .filter((r) => r.payloadVersion)
+      .sort((a, c) => String(c.at || '').localeCompare(String(a.at || '')))[0];
+    if (latest && b.payloadVersion && b.payloadVersion !== latest.payloadVersion) {
+      fail('endpoint baseline payloadVersion mismatch');
+    }
+    if (b.generatedAt) {
+      const age = Date.now() - Date.parse(b.generatedAt);
+      if (age > 7 * 24 * 60 * 60 * 1000) console.error('LEDGER WARN: endpoint baseline is stale');
+    }
+  } catch {
+    fail('endpoint baseline unreadable');
+  }
+} else {
+  fail('endpoint baseline missing');
+}
+
 console.log(ok ? 'LEDGER OK' : 'LEDGER FAILED');
 process.exit(ok ? 0 : 1);

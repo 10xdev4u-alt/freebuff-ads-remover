@@ -1,0 +1,7 @@
+{
+  "addEndpoints": [
+    "/api/monetize"
+  ],
+  "addSelectors": {},
+  "source": "ci-healed:unknown"
+}

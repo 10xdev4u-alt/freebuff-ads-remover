@@ -42,5 +42,6 @@ describe('loop fires for real', () => {
     expect(artifact).toEqual(expected);
     const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8')) as { gate: { pass: boolean } };
     expect(receipt.gate.pass).toBe(true);
+    expect(fs.existsSync(path.join(tmp, 'endpoint-baseline.json'))).toBe(true);
   });
 });
