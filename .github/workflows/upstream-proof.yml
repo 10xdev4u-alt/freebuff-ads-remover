@@ -63,6 +63,7 @@ jobs:
           set -e
           cat /tmp/heal.json
           echo "exit=$HEAL_EXIT" >> "$GITHUB_OUTPUT"
+          if [ -s config/generated-rules.json ] && node -e "const d=require('./config/generated-rules.json');process.exit((d.addEndpoints||[]).length||Object.keys(d.addSelectors||{}).length?0:1)"; then echo "has_delta=true" >> "$GITHUB_OUTPUT"; else echo "has_delta=false" >> "$GITHUB_OUTPUT"; fi
           if [ "$HEAL_EXIT" -ne 0 ] && [ "${{ steps.audit.outputs.audit_exit }}" != "0" ]; then
             echo "heal failed with gaps" >&2
             exit 1
@@ -76,6 +77,7 @@ jobs:
             /tmp/heal.json
             /tmp/heal.md
       - name: Open heal PR
+        if: steps.heal.outputs.has_delta == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/upstream-heal-${{ steps.ver.outputs.version }}

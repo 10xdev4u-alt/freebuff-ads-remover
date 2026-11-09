@@ -126,6 +126,19 @@ function cmdExportOutcomes(flags: Record<string, string | boolean>): number {
   return 0;
 }
 
+function cmdFeedSync(flags: Record<string, string | boolean>): number {
+  const url = (flags['url'] as string) || '';
+  if (!url) { console.error('Usage: farbuff feed-sync --url <manifest-url>'); return 2; }
+  const dir = (flags['dir'] as string) || getConfigDir();
+  const key = (flags['key'] as string) || process.env.FEED_PUBLIC_KEY || '';
+  const r = spawnSync(process.execPath, [path.join(process.cwd(), 'scripts', 'feed-sync.mjs'), '--manifest', url, '--config-dir', dir], {
+    env: { ...process.env, FEED_PUBLIC_KEY: key },
+    encoding: 'utf8',
+    stdio: 'inherit',
+  });
+  return r.status ?? 0;
+}
+
 function cmdSubmitOutcomes(flags: Record<string, string | boolean>): number {
   const url = flags['url'] as string;
   if (!url) { console.error('Usage: farbuff submit-outcomes --url <endpoint>'); return 2; }
@@ -248,6 +261,7 @@ export function runCli(argv: string[]): number {
     case 'config-get': return cmdConfigGet(flags, positional);
     case 'submit-misses': return cmdSubmitMisses(flags);
     case 'submit-outcomes': return cmdSubmitOutcomes(flags);
+    case 'feed-sync': return cmdFeedSync(flags);
     case 'gate': return cmdGate(flags);
     case 'corpus': return cmdCorpusVerify(flags);
     case 'synthesize': return cmdSynthesize(flags);

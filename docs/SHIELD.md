@@ -181,7 +181,7 @@ cd ~/.local/share/freebuff-ads-remover
 npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-Expected: 154 tests pass, no lint or type errors, and a
+Expected: 278 tests pass, no lint or type errors, and a
 `[build] dashboard-client.js sanitized for page injection` line.
 
 To see it in the app:
