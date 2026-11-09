@@ -19,6 +19,9 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci && npm run build
+      - name: Require live receipt
+        run: |
+          if ! ls receipts/live-*.json >/dev/null 2>&1; then echo 'no live receipt'; exit 1; fi
       - name: Generate live-proof page
         run: |
           mkdir -p live-proof
