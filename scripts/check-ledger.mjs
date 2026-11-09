@@ -10,7 +10,8 @@ let testCount = NaN;
 let testFiles = fs.readdirSync('tests').filter((f) => f.endsWith('.test.ts')).length;
 let out = '';
 try { out = execSync('npx vitest run 2>&1', { encoding: 'utf8' }); } catch (e) { out = String(e.stdout || '') + String(e.stderr || ''); }
-const mm = out.match(/Tests\s+(\d+)\s+passed/);
+const clean = out.replace(/\x1b\[[0-9;]*m/g, '');
+const mm = clean.match(/Tests\s+(\d+)\s+passed/);
 if (mm) testCount = parseInt(mm[1], 10);
 const m = readme.match(/vitest, (\d+) tests/);
 if (isNaN(testCount) || !m || parseInt(m[1], 10) !== testCount) {
