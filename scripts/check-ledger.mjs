@@ -8,7 +8,8 @@ function fail(msg) { console.error('LEDGER FAIL:', msg); ok = false; }
 const readme = fs.readFileSync('README.md', 'utf8');
 let testCount = NaN;
 let testFiles = fs.readdirSync('tests').filter((f) => f.endsWith('.test.ts')).length;
-const out = execSync('npx vitest run 2>&1', { encoding: 'utf8' });
+let out = '';
+try { out = execSync('npx vitest run 2>&1', { encoding: 'utf8' }); } catch (e) { out = String(e.stdout || '') + String(e.stderr || ''); }
 const mm = out.match(/Tests\s+(\d+)\s+passed/);
 if (mm) testCount = parseInt(mm[1], 10);
 const m = readme.match(/vitest, (\d+) tests/);
