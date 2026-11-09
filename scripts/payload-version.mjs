@@ -1,55 +1,42 @@
 #!/usr/bin/env node
-// Prints "<name> <version>" for a Freebuff payload resources dir, reading
-// package.json from an unpacked app/ dir or from app.asar. Prints nothing
-// (exit 0) when the directory is not a recognizable payload. Used by
-// launch-freebuff.sh to spot updater-supplied payloads newer than the
-// AppImage on disk.
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { createRequire } from 'node:module';
+const args = process.argv.slice(2);
+function get(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; }
+const requested = get('--version');
+const jsonMode = args.includes('--json');
 
-const require = createRequire(import.meta.url);
-
-function readPackageJson(dir, file) {
-  try {
-    const pkg = JSON.parse(readFileSync(join(dir, file), 'utf8'));
-    if (pkg && typeof pkg.version === 'string') {
-      return `${pkg.name ?? ''} ${pkg.version}`;
-    }
-  } catch {
-    // not a readable payload — fall through
+function walk(d) {
+  if (!fs.existsSync(d)) return [];
+  const out = [];
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const f = path.join(d, e.name);
+    if (e.isDirectory()) out.push(...walk(f));
+    else if (e.name.endsWith('.json')) out.push(f);
   }
-  return null;
+  return out;
 }
 
-function main() {
-  const resourcesDir = process.argv[2];
-  if (!resourcesDir) {
-    console.error('usage: payload-version.mjs <resources-dir>');
-    process.exit(2);
-  }
+let version = requested || null;
+let source = requested ? 'explicit' : 'none';
 
-  const unpacked = existsSync(join(resourcesDir, 'app', 'package.json'))
-    ? readPackageJson(resourcesDir, join('app', 'package.json'))
-    : null;
-  if (unpacked) {
-    console.log(unpacked);
-    return;
-  }
-
-  if (existsSync(join(resourcesDir, 'app.asar'))) {
-    try {
-      const asar = require('@electron/asar');
-      const pkg = JSON.parse(asar.extractFile(join(resourcesDir, 'app.asar'), 'package.json').toString());
-      if (pkg && typeof pkg.version === 'string') {
-        console.log(`${pkg.name ?? ''} ${pkg.version}`);
-        return;
-      }
-    } catch {
-      // unreadable asar — fall through
-    }
+if (!version) {
+  const receipts = walk('receipts')
+    .filter((f) => !f.includes(`${path.sep}dry-run${path.sep}`))
+    .map((f) => {
+      try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return null; }
+    })
+    .filter((r) => r && r.payloadVersion)
+    .sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+  if (receipts.length > 0) {
+    version = receipts[0].payloadVersion;
+    source = 'receipt';
+  } else {
+    version = 'latest';
+    source = 'latest';
   }
 }
 
-main();
+if (jsonMode) console.log(JSON.stringify({ version, source }));
+else console.log(version);

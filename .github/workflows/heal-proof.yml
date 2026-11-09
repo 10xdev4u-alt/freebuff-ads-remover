@@ -30,30 +30,9 @@ jobs:
       - name: Resolve payload version from receipt
         id: payload
         run: |
-          node -e "
-            const fs = require('fs');
-            const path = require('path');
-            function walk(d) {
-              if (!fs.existsSync(d)) return [];
-              const out = [];
-              for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-                const f = path.join(d, e.name);
-                if (e.isDirectory()) out.push(...walk(f));
-                else if (e.name.endsWith('.json')) out.push(f);
-              }
-              return out;
-            }
-            let v = '';
-            for (const f of walk('receipts')) {
-              try {
-                const r = JSON.parse(fs.readFileSync(f, 'utf8'));
-                if (r.payloadVersion) { v = r.payloadVersion; break; }
-              } catch {}
-            }
-            if (!v) v = 'latest';
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + v + '\\n');
-            console.log('payloadVersion=' + v);
-          "
+          V=$(node scripts/payload-version.mjs)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "payloadVersion=$V"
 
       - name: Resolve AppImage
         id: appimage
