@@ -124,6 +124,32 @@ describe('runtime promotion', () => {
     const results = await engine.tick();
     expect(results).toHaveLength(0);
   });
+
+  it('N concurrent ticks promote once', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
+    const statePath = path.join(tmp, 'shield-state.json');
+    const registry = new RuleRegistry();
+    const syncPatterns = vi.fn();
+    const interceptor = { syncPatterns } as unknown as AdInterceptor;
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: true,
+      registry,
+      statePath,
+      corpusDir,
+      configDir: tmp,
+      interceptor,
+    });
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/wave29-proof');
+    const results = await Promise.all([engine.tick(), engine.tick(), engine.tick()]);
+    for (const r of results) {
+      expect(r).toHaveLength(1);
+      expect(r[0]?.status).toBe('promoted');
+    }
+    expect(syncPatterns).toHaveBeenCalledTimes(1);
+  });
+
 });
 
 describe('runtime promotion branches', () => {

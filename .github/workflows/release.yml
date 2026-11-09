@@ -126,4 +126,4 @@ jobs:
           fi
           chmod +x /tmp/freebuff.AppImage
       - name: Run headless E2E with healed artifact
-        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --timeout 240000
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --expect-promoted /api/ad/wave31-proof --timeout 240000

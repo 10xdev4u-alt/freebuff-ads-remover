@@ -16,6 +16,7 @@ const genRulesExisting = get('--existing') || (out && fs.existsSync(out) ? out :
 const maxPromoted = parseInt(get('--max-promoted-rules') || '25', 10);
 const controlRoutes = (get('--control-routes') || '/healthz,/api/account/usage').split(',').map((x) => x.trim()).filter(Boolean);
 const payloadVersionOverride = get('--payload-version');
+const provenance = get('--provenance') || (process.env.GITHUB_ACTIONS === 'true' ? 'machine' : 'manual');
 
 if (!resources || !out) {
   console.error('usage: self-heal.mjs --resources <dir> --out <artifact> [--receipt <path>] [--existing <artifact>] [--dry-run] [--json]');
@@ -94,6 +95,7 @@ const receipt = {
   addedSelectors: newDelta.addSelectors ?? {},
   gate: { pass, recall: gate.recall, precision: gate.precision, missed: gate.missed ?? [], fps: gate.fps ?? [] },
   domGaps: auditJson.dom?.gaps ?? [],
+  provenance,
   at: new Date().toISOString(),
 };
 

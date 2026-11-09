@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-11-09
+
+Wave 31 proof-green: machine-born receipts, live promotion assertion, single-flight
+and debounce invariants, truth-passed landing hash, and dependency bumps.
+
+### Added
+
+- `provenance` field on heal receipts (`machine` in CI, `legacy-hand-merge` for the
+  historical receipt).
+- Single-flight `PromotionEngine.tick()` and debounced `ShieldStateStore` writes.
+- `--expect-promoted` assertion folded into heal-proof and release workflows.
+
+### Changed
+
+- Upstream AppImage tag resolution now matches `freebuff-desktop-v…`.
+- Landing cites the real receipt artifact hash.
+
 ## [1.5.1] - 2026-11-08
 
 19 waves of hardening: self-healing loop primitives, real activation proof,
