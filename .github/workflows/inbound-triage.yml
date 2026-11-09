@@ -42,3 +42,4 @@ jobs:
               console.log('candidates='+c.candidates.length);
             } else console.log('candidates=0');
           "
+          if [ -s /tmp/issue.md ]; then gh issue create --title "Inbound candidate routes" --body-file /tmp/issue.md || true; fi

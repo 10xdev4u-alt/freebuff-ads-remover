@@ -268,16 +268,16 @@ main() {
 
     # Feed sync (opt-in): fetch + verify + materialize a signed heal manifest.
     # Fail-open: any failure leaves the existing rules in place.
-    FEED_ENABLED="$("$NODE_BIN" -e "try{const c=require(process.argv[1]);console.log(c.feed&&c.feed.enabled?'true':'false')}catch{console.log('false')}" "$EXTENSION_DIR/../config/config.json" 2>/dev/null || echo false)"
-    # config lives in user config dir, not extension dir; check there too
     USER_CONFIG="${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}/config.json"
-    FEED_ENABLED="$("$NODE_BIN" -e "try{const c=require(process.argv[1]);console.log(c.feed&&c.feed.enabled?'true':'false')}catch{console.log('false')}" "$USER_CONFIG" 2>/dev/null || echo "$FEED_ENABLED")"
-    if [[ "$FEED_ENABLED" == "true" && -n "${FREEBUFF_FEED_URL:-}" ]]; then
-      FEED_PUBLIC_KEY="${FREEBUFF_FEED_PUBLIC_KEY:-}" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "$FREEBUFF_FEED_URL" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
+    FEED_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.enabled 2>/dev/null || echo false)"
+    FEED_URL="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.url 2>/dev/null || echo "")"
+    FEED_KEY="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.publicKey 2>/dev/null || echo "")"
+    if [[ "$FEED_ENABLED" == "true" ]]; then
+      FEED_PUBLIC_KEY="$FEED_KEY" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "${FREEBUFF_FEED_URL:-$FEED_URL}" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
     fi
 
     # Inbound relay (opt-in): submit redacted miss envelopes. Fail-open.
-    INBOUND_ENABLED="$("$NODE_BIN" -e "try{const c=require(process.argv[1]);console.log(c.inbound&&c.inbound.enabled?'true':'false')}catch{console.log('false')}" "$USER_CONFIG" 2>/dev/null || echo false)"
+    INBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" inbound.enabled 2>/dev/null || echo false)"
     if [[ "$INBOUND_ENABLED" == "true" && -n "${FREEBUFF_INBOUND_URL:-}" ]]; then
       "$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" submit-misses --url "$FREEBUFF_INBOUND_URL" >/dev/null 2>&1 || echo "Inbound submit failed; continuing." >&2
     fi

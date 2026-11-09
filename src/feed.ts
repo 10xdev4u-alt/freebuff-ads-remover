@@ -20,8 +20,21 @@ export interface FeedManifest {
   sig: string;
 }
 
+function sortKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeys);
+  if (value !== null && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(obj).sort()) {
+      out[key] = sortKeys(obj[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
 export function canonicalManifest(manifest: Omit<FeedManifest, 'sig'>): string {
-  return JSON.stringify(manifest, Object.keys(manifest).sort());
+  return JSON.stringify(sortKeys(manifest));
 }
 
 export function signManifest(manifest: Omit<FeedManifest, 'sig'>, privateKeyPem: string): string {

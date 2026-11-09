@@ -25,7 +25,7 @@ function parseArgs(argv: string[]): { cmd: string; flags: Record<string, string 
   const flags: Record<string, string | boolean> = {};
   const positional: string[] = [];
   for (let i = 1; i < argv.length; i++) {
-    const a = argv[i] as string;
+    const a = argv[i] ?? '';
     if (a.startsWith('--')) {
       const key = a.slice(2);
       const next = argv[i + 1];
@@ -135,6 +135,22 @@ function cmdSubmitMisses(flags: Record<string, string | boolean>): number {
   return 0;
 }
 
+function cmdConfigGet(flags: Record<string, string | boolean>, positional: string[]): number {
+  const key = positional[0] ?? '';
+  const dir = (flags['dir'] as string) || getConfigDir();
+  const cfg = loadConfig();
+  // load from explicit dir if provided
+  let value: unknown = (cfg as Record<string, unknown>)[key];
+  if (flags['dir']) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8')) as Record<string, unknown>;
+      value = raw[key];
+    } catch { /* fall back */ }
+  }
+  console.log(typeof value === 'string' ? value : JSON.stringify(value));
+  return 0;
+}
+
 function cmdAudit(positional: string[]): number {
   const resources = positional[0];
   /* v8 ignore next */ if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
@@ -218,6 +234,7 @@ export function runCli(argv: string[]): number {
     case 'replay': return cmdReplay(flags);
     case 'discover': return cmdDiscover(flags);
     case 'audit': return cmdAudit(positional);
+    case 'config-get': return cmdConfigGet(flags, positional);
     case 'submit-misses': return cmdSubmitMisses(flags);
     case 'gate': return cmdGate(flags);
     case 'corpus': return cmdCorpusVerify(flags);

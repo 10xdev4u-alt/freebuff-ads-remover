@@ -166,6 +166,7 @@ export interface ExtensionConfig {
   };
   feed: {
     enabled: boolean;
+    url: string;
     publicKey: string;
   };
   inbound: {
@@ -270,7 +271,8 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   },
   feed: {
     enabled: false,
-    publicKey: '',
+    url: 'https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json',
+    publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----',
   },
   inbound: {
     enabled: false,

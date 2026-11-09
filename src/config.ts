@@ -73,9 +73,10 @@ const configSchema = z.object({
   feed: z
     .object({
       enabled: z.boolean().default(false),
-      publicKey: z.string().default(''),
+      url: z.string().default('https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json'),
+      publicKey: z.string().default('-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----'),
     })
-    .default(() => ({ enabled: false, publicKey: '' })),
+    .default(() => ({ enabled: false, url: 'https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json', publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----' })),
   inbound: z
     .object({
       enabled: z.boolean().default(false),
