@@ -10,10 +10,13 @@ export function isAdRoute(route: string): boolean {
   return AD_ROUTE.test(route) || AD_EXTRA.test(route);
 }
 
+import { CONTROL_ROUTES } from './candidates.js';
+
 export function isControlRoute(route: string): boolean {
-  // A control route is anything that is not an ad route. Used by the gate to
-  // reject synthesized rules that would block a known-good endpoint.
-  return !isAdRoute(route);
+  // Explicit allow-list of known-good endpoints. The previous `!isAdRoute`
+  // implementation was a dead no-op that rejected nothing while implying a
+  // safety guarantee. An unknown route is NOT automatically a control route.
+  return CONTROL_ROUTES.has(route);
 }
 
 export function normalizeRoute(route: string): string {

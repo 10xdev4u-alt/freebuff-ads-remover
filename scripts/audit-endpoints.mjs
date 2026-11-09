@@ -23,6 +23,8 @@ const jsonMode = process.argv.includes('--json');
 const configDirArg = process.argv.find((a) => a.startsWith('--config-dir='));
 const genRulesArg = process.argv.find((a) => a.startsWith('--generated-rules='));
 const genRulesPath = genRulesArg ? genRulesArg.split('=').slice(1).join('=') : null;
+const baselineArg = process.argv.find((a) => a.startsWith('--baseline='));
+const baselinePath = baselineArg ? baselineArg.split('=').slice(1).join('=') : 'config/endpoint-baseline.json';
 const configDir = configDirArg ? configDirArg.split('=')[1] : null;
 const resources = process.argv.find((a) => !a.startsWith('--') && a !== process.argv[0] && a !== process.argv[1]);
 if (!resources || !existsSync(resources)) {
@@ -67,17 +69,22 @@ for (const src of sources) {
   }
 }
 let isAdRoute;
+let classifyRoute;
 try {
   isAdRoute = require('../dist/ad-heuristics.js').isAdRoute;
+  classifyRoute = require('../dist/candidates.js').classifyRoute;
 } catch {
-  // Fallback (keep in sync with src/ad-heuristics.ts) when dist is not built.
   const AD_ROUTE = /(^|\/)ad(s)?\//i;
   const AD_EXTRA = /ad-density|display-ad|sponsored-survey|creative-image/i;
   const NOT_AD = /admission|adapter|address|admin/i;
   const IGNORE = new Set(['/api/ad/']);
   isAdRoute = (r) => !IGNORE.has(r) && !NOT_AD.test(r) && (AD_ROUTE.test(r) || AD_EXTRA.test(r));
+  classifyRoute = (r) => ({ candidate: isAdRoute(r), confidence: isAdRoute(r) ? 0.9 : 0, signals: isAdRoute(r) ? ['heuristic'] : ['below-threshold'] });
 }
-const adRoutes = [...routes].filter((r) => isAdRoute(r)).sort();
+const classifications = {};
+for (const r of routes) classifications[r] = classifyRoute(r);
+const candidateRoutes = [...routes].filter((r) => classifications[r].candidate).sort();
+const adRoutes = [...new Set([... [...routes].filter((r) => isAdRoute(r)), ...candidateRoutes])].sort();
 
 let registry = null;
 try {
@@ -199,10 +206,21 @@ if (domGaps.length > 0) {
   if(!jsonMode) console.error(`\nDOM gaps — add selectors for these to AD_CSS_SELECTORS in src/types.ts:`);
   for (const r of domGaps) if(!jsonMode) console.error(`  ${r}`);
 }
+let baseline = null;
+try { if (existsSync(baselinePath)) baseline = JSON.parse(readFileSync(baselinePath, 'utf8')); } catch { baseline = null; }
+const baselineRoutes = new Set(baseline?.routes ?? []);
+const newRoutes = [...routes].filter((r) => !baselineRoutes.has(r)).sort();
+const changedClassification = [...routes].filter((r) => {
+  const prev = baseline?.classifications?.[r];
+  if (!prev) return false;
+  return prev.candidate !== classifications[r].candidate || prev.confidence !== classifications[r].confidence;
+}).sort();
+
 const summary = {
-  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing },
+  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing, candidates: candidateRoutes, classifications },
   dom: { total: selectorLiterals.size, covered: selectorLiterals.size - domGaps.length, gaps: domGaps },
   css: { total: cssAdClasses.size, covered: cssAdClasses.size - cssGaps.length, gaps: cssGaps },
+  baseline: { newRoutes, changedClassification },
   pass: missing.length === 0 && domGaps.length === 0,
 };
 if (jsonMode) {

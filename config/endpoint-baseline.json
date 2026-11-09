@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "generatedAt": "2026-11-09T05:23:46.237Z",
+  "payloadVersion": null,
+  "routes": [
+    "/api/ad/wave29-proof",
+    "/api/ad/policy"
+  ],
+  "classifications": {
+    "/api/ad/wave29-proof": {
+      "candidate": false,
+      "confidence": 0.2,
+      "signals": [
+        "path:ad",
+        "below-threshold"
+      ]
+    },
+    "/api/ad/policy": {
+      "candidate": false,
+      "confidence": 0.2,
+      "signals": [
+        "path:ad",
+        "below-threshold"
+      ]
+    }
+  }
+}

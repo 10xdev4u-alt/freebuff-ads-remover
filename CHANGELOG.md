@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-11-09
+
+Wave 32: multi-signal candidate classifier, payload-drift baseline, runtime
+observation of candidates, explicit control rejection.
+
+### Added
+- `src/candidates.ts` classifier with path/host/module/param signals.
+- `config/endpoint-baseline.json` payload-drift baseline.
+- Candidate reporting in audit and baseline updates in self-heal.
+
+### Changed
+- `isControlRoute` now uses an explicit allow-list.
+- Runtime observer considers classifier candidates, not only ad-shaped misses.
+
 ## [1.6.1] - 2026-11-09
 
 Wave 31 proof-green: machine-born receipts, live promotion assertion, single-flight

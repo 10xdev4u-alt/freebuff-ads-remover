@@ -122,6 +122,19 @@ const markdown = `# Heal receipt
 if (!dryRun) {
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, artifactText);
+  // update payload-drift baseline
+  try {
+    const classifications = auditJson.routes?.classifications ?? {};
+    const baseline = {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      payloadVersion: receipt.payloadVersion,
+      routes: Object.keys(classifications),
+      classifications,
+    };
+    const baselinePath = path.join(repoRoot, 'config', 'endpoint-baseline.json');
+    fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2) + '\n');
+  } catch { /* fail open */ }
   if (receiptPath) {
     fs.mkdirSync(path.dirname(receiptPath), { recursive: true });
     fs.writeFileSync(receiptPath, JSON.stringify(receipt, null, 2));

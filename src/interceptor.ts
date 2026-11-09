@@ -7,6 +7,7 @@ import { ShadowCapture } from './shadow-capture.js';
 import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
 import { isAdRoute, normalizeRoute } from './ad-heuristics.js';
+import { classifyRoute } from './candidates.js';
 import type { MissLog } from './miss-log.js';
 import type { RuleRegistry } from './rule-registry.js';
 
@@ -193,7 +194,8 @@ export class AdInterceptor {
     try {
       const u = new URL(url);
       const path = normalizeRoute(u.pathname);
-      if (isAdRoute(path) && this.missLog) {
+      const candidate = classifyRoute(path).candidate || isAdRoute(path);
+      if (candidate && this.missLog) {
         this.missLog.append({ v: 1, at: Date.now(), route: path });
         this.onMiss?.(path);
       }
