@@ -8,7 +8,7 @@
   [![CI](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions/workflows/ci.yml/badge.svg)](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions)
   [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
   [![Platform: Linux](https://img.shields.io/badge/platform-linux-lightgrey)](docs/INSTALLATION.md)
-  [![Version: 1.16.0](https://img.shields.io/badge/version-1.16.0-blue)](CHANGELOG.md)
+  [![Version: 1.17.0](https://img.shields.io/badge/version-1.17.0-blue)](CHANGELOG.md)
 </div>
 
 ---
@@ -179,7 +179,7 @@ AppImage builds. Verified live on `0.0.169`, `0.0.170` and `0.0.186`; the launch
 | [Configuration](docs/CONFIGURATION.md) | Every config key, per-surface table |
 | [Architecture](docs/ARCHITECTURE.md) | Components, data flow, updater survival |
 | [Research](docs/RESEARCH.md) | Reverse-engineering notes |
-| [Changelog](CHANGELOG.md) | Release history (current: `1.16.0`) |
+| [Changelog](CHANGELOG.md) | Release history (current: `1.17.0`) |
 | [Security](SECURITY.md) | Supported versions, private reporting |
 | [Live site](https://10xdev4u-alt.github.io/freebuff-ads-remover/) | Landing page with interactive shield demo |
 
