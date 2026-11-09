@@ -76,6 +76,14 @@ const configSchema = z.object({
       publicKey: z.string().default(''),
     })
     .default(() => ({ enabled: false, publicKey: '' })),
+  inbound: z
+    .object({
+      enabled: z.boolean().default(false),
+      submitUrl: z.string().default(''),
+      maxBatch: z.number().int().positive().default(100),
+      retentionDays: z.number().int().positive().default(7),
+    })
+    .default(() => ({ enabled: false, submitUrl: '', maxBatch: 100, retentionDays: 7 })),
   ghost: z
     .object({
       enabled: z.boolean().default(false),

@@ -168,6 +168,12 @@ export interface ExtensionConfig {
     enabled: boolean;
     publicKey: string;
   };
+  inbound: {
+    enabled: boolean;
+    submitUrl: string;
+    maxBatch: number;
+    retentionDays: number;
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -265,6 +271,12 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   feed: {
     enabled: false,
     publicKey: '',
+  },
+  inbound: {
+    enabled: false,
+    submitUrl: '',
+    maxBatch: 100,
+    retentionDays: 7,
   },
   surfaces: {
     sponsorBreak: true,

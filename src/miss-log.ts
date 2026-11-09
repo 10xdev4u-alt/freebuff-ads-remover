@@ -2,6 +2,19 @@ import fs from 'node:fs';
 
 export interface MissLogEntry { v: number; at: number; route: string; surface?: string }
 
+export interface MissEnvelope {
+  v: number;
+  at: number;
+  route: string;
+  host?: string;
+  method?: string;
+  surface?: string;
+  appVersion?: string;
+  extVersion?: string;
+  installIdHash?: string;
+  signals?: string[];
+}
+
 export class MissLog {
   private filePath: string;
   private maxBytes: number;

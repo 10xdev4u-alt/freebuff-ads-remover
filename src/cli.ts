@@ -11,6 +11,7 @@ import { discover } from './discovery.js';
 import { runGate } from './gate.js';
 import { verifyCorpus } from './corpus.js';
 import { BlockLog } from './block-log.js';
+import { submitMisses } from './miss-report.js';
 import { synthesizeDelta } from './rule-synthesis.js';
 import { buildTrustReport } from './trust-report.js';
 import { RuleRegistry } from './rule-registry.js';
@@ -124,6 +125,16 @@ function cmdExportOutcomes(flags: Record<string, string | boolean>): number {
   return 0;
 }
 
+function cmdSubmitMisses(flags: Record<string, string | boolean>): number {
+  const url = flags['url'] as string;
+  if (!url) { console.error('Usage: farbuff submit-misses --url <endpoint>'); return 2; }
+  const maxBatch = Number(flags['max-batch'] ?? 100);
+  submitMisses(url, maxBatch).then((r) => {
+    console.log(JSON.stringify(r));
+  }).catch((e: unknown) => { console.error(e); process.exit(1); });
+  return 0;
+}
+
 function cmdAudit(positional: string[]): number {
   const resources = positional[0];
   /* v8 ignore next */ if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
@@ -207,6 +218,7 @@ export function runCli(argv: string[]): number {
     case 'replay': return cmdReplay(flags);
     case 'discover': return cmdDiscover(flags);
     case 'audit': return cmdAudit(positional);
+    case 'submit-misses': return cmdSubmitMisses(flags);
     case 'gate': return cmdGate(flags);
     case 'corpus': return cmdCorpusVerify(flags);
     case 'synthesize': return cmdSynthesize(flags);

@@ -16,6 +16,7 @@ const genRulesExisting = get('--existing') || (out && fs.existsSync(out) ? out :
 const maxPromoted = parseInt(get('--max-promoted-rules') || '25', 10);
 const controlRoutes = (get('--control-routes') || '/healthz,/api/account/usage').split(',').map((x) => x.trim()).filter(Boolean);
 const payloadVersionOverride = get('--payload-version');
+const candidatesPath = get('--candidates');
 const provenance = get('--provenance') || (process.env.GITHUB_ACTIONS === 'true' ? 'machine' : 'manual');
 
 if (!resources || !out) {
@@ -39,6 +40,12 @@ try {
 }
 
 const missing = (auditJson.routes?.missing ?? []).map((r) => (typeof r === 'string' ? r : r.route)).filter(Boolean);
+if (candidatesPath && fs.existsSync(candidatesPath)) {
+  try {
+    const c = JSON.parse(fs.readFileSync(candidatesPath, 'utf8'));
+    for (const cand of (c.candidates ?? [])) { if (cand.route && !missing.includes(cand.route)) missing.push(cand.route); }
+  } catch { /* ignore */ }
+}
 
 // 2. Load existing artifact for cumulative merge.
 let existing = null;

@@ -8,6 +8,7 @@ import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
 import { isAdRoute, normalizeRoute } from './ad-heuristics.js';
 import { classifyRoute } from './candidates.js';
+import { hashedInstallId } from './install-id.js';
 import type { MissLog } from './miss-log.js';
 import type { OutcomeLog } from './outcome-log.js';
 import type { RuleRegistry } from './rule-registry.js';
@@ -200,9 +201,20 @@ export class AdInterceptor {
     try {
       const u = new URL(url);
       const path = normalizeRoute(u.pathname);
-      const candidate = classifyRoute(path).candidate || isAdRoute(path);
+      const classification = classifyRoute(path);
+      const candidate = classification.candidate || isAdRoute(path);
       if (candidate && this.missLog) {
-        this.missLog.append({ v: 1, at: Date.now(), route: path });
+        let host: string | undefined;
+        try { host = new URL(url).hostname; } catch { host = undefined; }
+        this.missLog.append({
+          v: 1,
+          at: Date.now(),
+          route: path,
+          host,
+          method,
+          installIdHash: hashedInstallId('miss'),
+          signals: classification.signals,
+        } as never);
         this.onMiss?.(path);
       }
     } catch { /* ignore */ }

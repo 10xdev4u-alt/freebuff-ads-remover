@@ -1,0 +1,44 @@
+name: inbound-triage
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      envelopes:
+        description: 'Path to envelopes JSON'
+        required: false
+        default: 'inbound/envelopes.json'
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - name: Aggregate
+        run: |
+          if [ -f "${{ github.event.inputs.envelopes || 'inbound/envelopes.json' }}" ]; then
+            node scripts/inbound-aggregate.mjs --input "${{ github.event.inputs.envelopes || 'inbound/envelopes.json' }}" --out inbound/candidates.json
+          else
+            echo '{"generatedAt":"","candidates":[]}' > inbound/candidates.json
+          fi
+      - name: Open triage issue if candidates
+        run: |
+          node -e "
+            const fs=require('fs');
+            const c=JSON.parse(fs.readFileSync('inbound/candidates.json','utf8'));
+            if (c.candidates && c.candidates.length) {
+              const body = c.candidates.map(x=>'- '+x.route+' ('+x.installs+' installs, conf '+x.confidence+')').join('\\n');
+              fs.writeFileSync('/tmp/issue.md', body);
+              console.log('candidates='+c.candidates.length);
+            } else console.log('candidates=0');
+          "

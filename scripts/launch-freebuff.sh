@@ -276,6 +276,12 @@ main() {
       FEED_PUBLIC_KEY="${FREEBUFF_FEED_PUBLIC_KEY:-}" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "$FREEBUFF_FEED_URL" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
     fi
 
+    # Inbound relay (opt-in): submit redacted miss envelopes. Fail-open.
+    INBOUND_ENABLED="$("$NODE_BIN" -e "try{const c=require(process.argv[1]);console.log(c.inbound&&c.inbound.enabled?'true':'false')}catch{console.log('false')}" "$USER_CONFIG" 2>/dev/null || echo false)"
+    if [[ "$INBOUND_ENABLED" == "true" && -n "${FREEBUFF_INBOUND_URL:-}" ]]; then
+      "$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" submit-misses --url "$FREEBUFF_INBOUND_URL" >/dev/null 2>&1 || echo "Inbound submit failed; continuing." >&2
+    fi
+
     patch_resources "$squashfs_root/resources"
 
     # Integrity check: confirm the loader marker survived into the repacked asar.
