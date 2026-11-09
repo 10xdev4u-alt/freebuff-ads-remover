@@ -2,13 +2,16 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const repo = path.resolve(__dirname, '..');
 const fixture = path.join(repo, 'tests', 'fixtures', 'payload-rename', 'resources');
+const corpusFiles = ['corpus/golden.jsonl','corpus/manifest.json'];
+const corpusBackup = new Map<string,string>();
 
 describe('loop heals a rename', () => {
   beforeAll(() => {
+    for (const f of corpusFiles) corpusBackup.set(f, fs.readFileSync(path.join(repo, f), 'utf8'));
     const interceptor = path.join(repo, 'dist', 'interceptor.js');
     if (!fs.existsSync(interceptor)) {
       execSync('npm run build', { cwd: repo, stdio: 'inherit' });
@@ -46,3 +49,6 @@ describe('loop heals a rename', () => {
     expect(fs.existsSync(path.join(tmp, 'endpoint-baseline.json'))).toBe(true);
   });
 });
+  afterAll(() => {
+    for (const [f, v] of corpusBackup) fs.writeFileSync(path.join(repo, f), v);
+  });

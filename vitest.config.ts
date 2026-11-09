@@ -17,5 +17,7 @@ export default defineConfig({
       exclude: ['src/types.ts', 'src/index.ts'],
     },
     include: ['tests/**/*.test.ts'],
+    fileParallelism: false,
+    maxWorkers: 1,
   },
 });

@@ -39,13 +39,15 @@ try {
   try { auditJson = JSON.parse(raw); } catch { console.error('audit failed:', e.message); process.exit(1); }
 }
 
-// Corpus drift guard: do not heal a payload the corpus does not cover.
-let corpusVersion = null;
-try { corpusVersion = JSON.parse(fs.readFileSync(path.join(corpusDir, 'manifest.json'), 'utf8')).freebuffVersion; } catch {}
+// Refresh corpus from the payload before healing (differential gate).
 const payloadVersion = payloadVersionOverride || auditJson.freebuffVersion || null;
-if (corpusVersion && payloadVersion && corpusVersion !== payloadVersion) {
-  console.error('corpus drift: corpus', corpusVersion, '!= payload', payloadVersion);
-  process.exit(1);
+if (payloadVersion) {
+  try {
+    execSync(`node scripts/update-corpus.mjs --resources "${resources}" --version "${payloadVersion}"`, { cwd: repoRoot, stdio: 'pipe' });
+  } catch (e) {
+    console.error('corpus refresh failed:', e.message);
+    process.exit(1);
+  }
 }
 
 const missing = (auditJson.routes?.missing ?? []).map((r) => (typeof r === 'string' ? r : r.route)).filter(Boolean);

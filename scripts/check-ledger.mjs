@@ -132,6 +132,12 @@ if (!fs.existsSync(feedPath)) {
       const age = Date.now() - Date.parse(fm.generatedAt);
       if (age > 7 * 24 * 60 * 60 * 1000) fail('feed manifest stale (>7d)');
     }
+    // feed healHash must match a committed receipt
+    const receiptFiles = fs.existsSync('receipts') ? fs.readdirSync('receipts').filter((f) => f.endsWith('.json')) : [];
+    const hashes = receiptFiles.map((f) => JSON.parse(fs.readFileSync('receipts/' + f, 'utf8')).artifactHash);
+    if (fm.entries && fm.entries[0] && !hashes.includes(fm.entries[0].healHash)) {
+      fail('feed healHash does not match any committed receipt');
+    }
   } catch (e) { fail('feed manifest unreadable: ' + e.message); }
 }
 

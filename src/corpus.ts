@@ -7,7 +7,7 @@ import { z } from 'zod';
 const EntrySchema = z.object({
   path: z.string().min(1),
   label: z.enum(['ad', 'control']),
-  surface: z.string().optional(),
+  surface: z.string().nullable().optional(),
   stage: z.string().optional(),
   source: z.string().optional(),
 });
