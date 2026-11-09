@@ -284,6 +284,12 @@ main() {
 
     patch_resources "$squashfs_root/resources"
 
+    # Outbound relay (opt-in): submit wild outcome envelopes. Fail-open.
+    OUTBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" outbound.enabled 2>/dev/null || echo false)"
+    if [[ "$OUTBOUND_ENABLED" == "true" && -n "${FREEBUFF_OUTBOUND_URL:-}" ]]; then
+      "$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" submit-outcomes --url "$FREEBUFF_OUTBOUND_URL" >/dev/null 2>&1 || echo "Outbound submit failed; continuing." >&2
+    fi
+
     # Integrity check: confirm the loader marker survived into the repacked asar.
     # If an updater or a partial write stripped it, re-patch (idempotent).
     if ! "$NODE_BIN" "$EXTENSION_DIR/scripts/check-injection.mjs" "$squashfs_root/resources/app.asar" 2>/dev/null; then

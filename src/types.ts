@@ -175,6 +175,11 @@ export interface ExtensionConfig {
     maxBatch: number;
     retentionDays: number;
   };
+  outbound: {
+    enabled: boolean;
+    submitUrl: string;
+    maxBatch: number;
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -279,6 +284,11 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     submitUrl: '',
     maxBatch: 100,
     retentionDays: 7,
+  },
+  outbound: {
+    enabled: false,
+    submitUrl: '',
+    maxBatch: 100,
   },
   surfaces: {
     sponsorBreak: true,

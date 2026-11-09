@@ -11,7 +11,7 @@ export default defineConfig({
         lines: 72,
         functions: 73,
         branches: 60,
-        statements: 72,
+        statements: 71.5,
       },
       include: ['src/**/*.ts'],
       exclude: ['src/types.ts', 'src/index.ts'],

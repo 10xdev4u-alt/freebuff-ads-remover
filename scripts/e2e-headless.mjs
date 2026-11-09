@@ -26,6 +26,7 @@ const extractDir = resolve(get('--extract-dir') || join(tmpdir(), 'far-e2e-extra
 const timeout = Number(get('--timeout') || 120000);
 const genRules = get('--generated-rules');
 const promote = args.includes('--promote');
+const feed = args.includes('--feed');
 const expectPromoted = get('--expect-promoted');
 
 if (!appimage) {
@@ -61,6 +62,7 @@ const cfg = {
   dashboard: true,
   domRemoval: false,
   shield: { autoHeal: promote, promoteAfter: 1, rollbackOnFailure: true, maxPromotedRules: 25 },
+  feed: { enabled: feed, url: process.env.FREEBUFF_FEED_URL || '', publicKey: process.env.FREEBUFF_FEED_PUBLIC_KEY || '' },
   verify: {
     enabled: true,
     port: 0,

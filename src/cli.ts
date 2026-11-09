@@ -12,6 +12,7 @@ import { runGate } from './gate.js';
 import { verifyCorpus } from './corpus.js';
 import { BlockLog } from './block-log.js';
 import { submitMisses } from './miss-report.js';
+import { submitOutcomes } from './outcome-report.js';
 import { synthesizeDelta } from './rule-synthesis.js';
 import { buildTrustReport } from './trust-report.js';
 import { RuleRegistry } from './rule-registry.js';
@@ -122,6 +123,16 @@ function cmdExportOutcomes(flags: Record<string, string | boolean>): number {
     : [];
   fs.writeFileSync(out, JSON.stringify(rows, null, 2));
   console.log('exported', rows.length, 'outcomes to', out);
+  return 0;
+}
+
+function cmdSubmitOutcomes(flags: Record<string, string | boolean>): number {
+  const url = flags['url'] as string;
+  if (!url) { console.error('Usage: farbuff submit-outcomes --url <endpoint>'); return 2; }
+  const maxBatch = Number(flags['max-batch'] ?? 100);
+  submitOutcomes(url, maxBatch).then((r) => {
+    console.log(JSON.stringify(r));
+  }).catch((e: unknown) => { console.error(e); process.exit(1); });
   return 0;
 }
 
@@ -236,6 +247,7 @@ export function runCli(argv: string[]): number {
     case 'audit': return cmdAudit(positional);
     case 'config-get': return cmdConfigGet(flags, positional);
     case 'submit-misses': return cmdSubmitMisses(flags);
+    case 'submit-outcomes': return cmdSubmitOutcomes(flags);
     case 'gate': return cmdGate(flags);
     case 'corpus': return cmdCorpusVerify(flags);
     case 'synthesize': return cmdSynthesize(flags);
