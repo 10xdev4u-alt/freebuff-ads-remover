@@ -26,6 +26,7 @@ const extractDir = resolve(get('--extract-dir') || join(tmpdir(), 'far-e2e-extra
 const timeout = Number(get('--timeout') || 120000);
 const genRules = get('--generated-rules');
 const promote = args.includes('--promote');
+const expectPromoted = get('--expect-promoted');
 
 if (!appimage) {
   console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
@@ -172,5 +173,21 @@ if (promote) {
     process.exit(1);
   }
 }
-console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote }, null, 2));
+if (expectPromoted) {
+  let blocked = false;
+  for (let i = 0; i < 20; i++) {
+    try {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+      const rep = await r.json();
+      const probes = Array.isArray(rep?.probes) ? rep.probes : [];
+      if (probes.some((p) => p.route === expectPromoted && p.outcome === 'blocked')) { blocked = true; break; }
+    } catch {}
+    await wait(1000);
+  }
+  if (!blocked) {
+    console.error('PROMOTION FAILED: promoted route not blocked');
+    process.exit(1);
+  }
+}
+console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote, expectPromoted: expectPromoted || null }, null, 2));
 process.exit(0);

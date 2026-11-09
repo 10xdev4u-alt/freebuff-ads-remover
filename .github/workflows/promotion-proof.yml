@@ -1,0 +1,43 @@
+name: Promotion Proof
+
+on:
+  pull_request:
+    paths:
+      - 'src/promotion.ts'
+      - 'src/shield-state.ts'
+      - 'src/bootstrap.ts'
+      - 'src/interceptor.ts'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  promotion-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: sudo apt-get update && sudo apt-get install -y xvfb
+      - run: npm ci && npm run build
+      - name: Resolve payload version
+        id: payload
+        run: |
+          V=$(node scripts/payload-version.mjs)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+      - name: Fetch AppImage
+        run: |
+          if [ "${{ steps.payload.outputs.version }}" = "latest" ]; then
+            node scripts/fetch-latest-appimage.mjs --out /tmp/freebuff.AppImage
+          else
+            node scripts/fetch-latest-appimage.mjs --version ${{ steps.payload.outputs.version }} --out /tmp/freebuff.AppImage
+          fi
+          chmod +x /tmp/freebuff.AppImage
+      - name: Run promotion E2E
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --promote --expect-promoted /api/ad/wave31-proof --timeout 240000
