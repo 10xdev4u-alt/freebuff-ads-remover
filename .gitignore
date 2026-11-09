@@ -9,3 +9,6 @@ coverage/
 .vscode/
 .idea/
 .vitest/
+squashfs-root/
+freebuff-*.AppImage
+.heal-tmp/

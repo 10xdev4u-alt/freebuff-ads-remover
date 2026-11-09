@@ -36,10 +36,10 @@ jobs:
             MCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=
             -----END PUBLIC KEY-----
         run: node -e "const fs=require('fs');const{verifyManifest}=require('./dist/feed.js');const m=JSON.parse(fs.readFileSync('feed/manifest.json','utf8'));const pk=process.env.FEED_PUBLIC_KEY; if(!verifyManifest(m,pk)){console.error('verify failed');process.exit(1);} console.log('verified');"
-      - name: Commit
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add feed/manifest.json
-          git commit -m "chore(feed): publish signed manifest" || exit 0
-          git push
+      - name: Open feed PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ci/feed-publish
+          title: "chore(feed): publish signed manifest"
+          commit-message: "chore(feed): publish signed manifest"
+          body: "Automated signed feed manifest publish."

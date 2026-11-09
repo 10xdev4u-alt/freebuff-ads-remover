@@ -76,6 +76,8 @@ jobs:
             /tmp/audit.json
             /tmp/heal.json
             /tmp/heal.md
+      - name: Clean extracted artifacts
+        run: rm -rf squashfs-root freebuff-*.AppImage .heal-tmp
       - name: Open heal PR
         if: steps.heal.outputs.has_delta == 'true'
         uses: peter-evans/create-pull-request@v6

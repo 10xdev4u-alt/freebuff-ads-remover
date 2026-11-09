@@ -21,12 +21,12 @@ block prepended to `electron/main.cjs` inside the archive:
 ```js
 // freebuff-ads-remover:begin (auto-injected by patch-freebuff-app.mjs; do not edit)
 try {
-  require("/home/<you>/.local/share/freebuff-ads-remover/dist/index.js");
+  require("/home/<you>/.local/share/freebuff-ads-remover/dist/bootstrap.js");
 } catch (err) { ... }
 // freebuff-ads-remover:end
 ```
 
-So the app requires **`dist/index.js` from the live install** — the absolute
+So the app requires **`dist/bootstrap.js` from the live install** — the absolute
 path is baked into the patch. To change what the app renders you must edit and
 build in the live install (or point the patch somewhere else by re-running the
 launcher against a different directory).

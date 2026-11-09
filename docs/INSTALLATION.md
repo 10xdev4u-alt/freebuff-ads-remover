@@ -44,7 +44,7 @@ If Freebuff is already patched (any previous launcher run), you can start the
 extracted binary directly:
 
 ```bash
-FREEBUFF_ADS_REMOVER_ENTRY="$PWD/dist/index.js" \
+FREEBUFF_ADS_REMOVER_ENTRY="$PWD/dist/bootstrap.js" \
   /tmp/freebuff-ads-remover-extract/squashfs-root/freebuff --no-sandbox
 ```
 
@@ -69,11 +69,11 @@ Freebuff `< 0.0.186`; newer builds refuse the app-wide
 
 ### Extension not loading
 
-- Check that `dist/index.js` exists (run `npm run build`)
+- Check that `dist/bootstrap.js` exists (run `npm run build`)
 - Check `~/.config/freebuff-ads-remover/extension.log` for errors
 - Re-run the launcher — it re-applies the patch if Freebuff was updated
 - If the loader reports a missing entry, make sure `FREEBUFF_ADS_REMOVER_ENTRY`
-  points at your `dist/index.js` (the launcher sets it for you)
+  points at your `dist/bootstrap.js` (the launcher sets it for you)
 
 ### Freebuff not found
 

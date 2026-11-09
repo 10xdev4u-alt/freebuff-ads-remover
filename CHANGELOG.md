@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-11-09
+
+Wave 41: the shield ships. Installer, uninstaller, self-update, .gitignore for extracted artifacts, feed publish via PR, truth-pass docs.
+
 ## [1.14.0] - 2026-11-09
 
 Wave 40: the shield delivers. Front door drift check, empty-delta no-op, live receipt + proof page committed, feed-sync CLI, truth-pass docs.
