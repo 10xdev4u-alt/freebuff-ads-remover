@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-11-09
+
+Wave 49: the shield hardens. Threat model, key ceremony, red-team feed verification.
+
 ## [1.22.0] - 2026-11-09
 
 Wave 48: the loop crosses the release. Corpus refresh, differential gate, ledger proof enforcement.
