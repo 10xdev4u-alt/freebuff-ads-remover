@@ -9,6 +9,7 @@ import { matchRoute } from './url-match.js';
 import { isAdRoute, normalizeRoute } from './ad-heuristics.js';
 import { classifyRoute } from './candidates.js';
 import type { MissLog } from './miss-log.js';
+import type { OutcomeLog } from './outcome-log.js';
 import type { RuleRegistry } from './rule-registry.js';
 
 export class AdInterceptor {
@@ -20,12 +21,13 @@ export class AdInterceptor {
   private blockLog: BlockLog | null;
   private missLog: MissLog | null;
   private onMiss: ((route: string) => void) | null;
+  private outcomeLog: OutcomeLog | null;
   private registry: RuleRegistry | null;
   private active: boolean;
   private requestCount: number;
   private blockCount: number;
 
-  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null, missLog?: MissLog | null, onMiss?: ((route: string) => void) | null) {
+  constructor(config: Config, logger: Logger, stats?: StatsStore, shadow?: ShadowCapture | null, registry?: RuleRegistry | null, blockLog?: BlockLog | null, missLog?: MissLog | null, onMiss?: ((route: string) => void) | null, outcomeLog?: OutcomeLog | null) {
     this.config = config;
     this.logger = logger;
     this.stats = stats ?? null;
@@ -34,6 +36,7 @@ export class AdInterceptor {
     this.blockLog = blockLog ?? null;
     this.missLog = missLog ?? null;
     this.onMiss = onMiss ?? null;
+    this.outcomeLog = outcomeLog ?? null;
     this.active = false;
     this.requestCount = 0;
     this.blockCount = 0;
@@ -184,6 +187,9 @@ export class AdInterceptor {
         }
         if (this.blockLog) {
           this.blockLog.append({ v: 1, at: Date.now(), stage: pattern.stage, surface: pattern.surface, endpoint: pattern.pattern, session: 'default' });
+        }
+        if (this.outcomeLog && this.registry && this.registry.current().source.startsWith('feed')) {
+          this.outcomeLog.append({ v: 1, at: Date.now(), healHash: this.registry.current().source, route: url, suppressed: true });
         }
         if (dryRun) return { blocked: false };
         return result;

@@ -16,6 +16,7 @@ import { createCrashGuard } from './crash-guard.js';
 import { ShadowCapture } from './shadow-capture.js';
 import { BlockLog } from './block-log.js';
 import { MissLog } from './miss-log.js';
+import { OutcomeLog } from './outcome-log.js';
 import { RuleRegistry } from './rule-registry.js';
 import { PromotionEngine } from './promotion.js';
 import { loadGeneratedRules } from './generated-rules.js';
@@ -82,6 +83,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     const shadowCapture = new ShadowCapture(config.shadow);
     const blockLog = new BlockLog(getConfigDir() + '/block-log.jsonl');
     const missLog = new MissLog(getConfigDir() + '/miss-log.jsonl');
+    const outcomeLog = new OutcomeLog(getConfigDir() + '/outcomes.jsonl');
     const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
     const promotionEngine = new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry, statePath: getConfigDir() + '/shield-state.json', maxPromotedRules: config.shield.maxPromotedRules, rollbackOnFailure: config.shield.rollbackOnFailure, corpusDir: path.join(__dirname, '..', 'corpus'), configDir: getConfigDir() });
     promotionEngine.beginLaunch();
@@ -102,7 +104,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       if (feedGen) registry.apply(feedGen);
     } catch { /* fail open */ }
     // Promotion engine (opt-in via shield.autoHeal).
-    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); void promotionEngine.tick(); });
+    interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); void promotionEngine.tick(); }, outcomeLog);
     promotionEngine.setInterceptor(interceptor);
     cssInjector = new CssInjector(config, logger, registry);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });

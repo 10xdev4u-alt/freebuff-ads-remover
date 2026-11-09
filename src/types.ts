@@ -164,6 +164,10 @@ export interface ExtensionConfig {
     rollbackOnFailure: boolean;
     maxPromotedRules: number;
   };
+  feed: {
+    enabled: boolean;
+    publicKey: string;
+  };
   surfaces: Record<AdSurface, boolean>;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   logToFile: boolean;
@@ -257,6 +261,10 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     promoteAfter: 3,
     rollbackOnFailure: true,
     maxPromotedRules: 25,
+  },
+  feed: {
+    enabled: false,
+    publicKey: '',
   },
   surfaces: {
     sponsorBreak: true,

@@ -70,6 +70,12 @@ const configSchema = z.object({
       maxPromotedRules: z.number().default(25),
     })
     .default(() => ({ autoHeal: false, promoteAfter: 3, rollbackOnFailure: true, maxPromotedRules: 25 })),
+  feed: z
+    .object({
+      enabled: z.boolean().default(false),
+      publicKey: z.string().default(''),
+    })
+    .default(() => ({ enabled: false, publicKey: '' })),
   ghost: z
     .object({
       enabled: z.boolean().default(false),

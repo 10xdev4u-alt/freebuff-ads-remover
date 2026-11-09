@@ -7,9 +7,9 @@ const args = process.argv.slice(2);
 function get(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; }
 const source = get('--manifest') || get('--url') || get('--file');
 const configDir = get('--config-dir');
-const key = get('--key') || process.env.FEED_SIGNING_KEY;
-if (!source || !configDir || !key) {
-  console.error('usage: feed-sync.mjs --manifest <file|url> --config-dir <dir> [--key <secret>]');
+const publicKey = get('--public-key') || process.env.FEED_PUBLIC_KEY;
+if (!source || !configDir || !publicKey) {
+  console.error('usage: feed-sync.mjs --manifest <file|url> --config-dir <dir> [--public-key <pem>]');
   process.exit(2);
 }
 const dir = configDir;
@@ -28,7 +28,7 @@ async function loadManifest() {
 }
 
 const manifest = await loadManifest();
-if (!verifyManifest(manifest, key)) {
+if (!verifyManifest(manifest, publicKey)) {
   console.error('feed manifest signature invalid');
   process.exit(1);
 }

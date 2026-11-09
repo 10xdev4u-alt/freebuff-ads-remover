@@ -24,16 +24,18 @@ export function canonicalManifest(manifest: Omit<FeedManifest, 'sig'>): string {
   return JSON.stringify(manifest, Object.keys(manifest).sort());
 }
 
-export function signManifest(manifest: Omit<FeedManifest, 'sig'>, key: string): string {
-  return crypto.createHmac('sha256', key).update(canonicalManifest(manifest)).digest('hex');
+export function signManifest(manifest: Omit<FeedManifest, 'sig'>, privateKeyPem: string): string {
+  const key = crypto.createPrivateKey(privateKeyPem);
+  const signature = crypto.sign(null, Buffer.from(canonicalManifest(manifest)), key);
+  return signature.toString('base64');
 }
 
-export function verifyManifest(manifest: FeedManifest, key: string): boolean {
+export function verifyManifest(manifest: FeedManifest, publicKeyPem: string): boolean {
   if (typeof manifest.sig !== 'string') return false;
   const { sig, ...rest } = manifest;
-  const expected = signManifest(rest, key);
   try {
-    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+    const key = crypto.createPublicKey(publicKeyPem);
+    return crypto.verify(null, Buffer.from(canonicalManifest(rest)), key, Buffer.from(sig, 'base64'));
   } catch {
     return false;
   }

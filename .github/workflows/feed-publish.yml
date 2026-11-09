@@ -1,0 +1,35 @@
+name: feed-publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'config/generated-rules.json'
+      - 'receipts/*.json'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - name: Build manifest
+        run: node scripts/feed-build.mjs --artifact config/generated-rules.json --receipts receipts --out feed/manifest.json --version ${{ github.run_number }}
+      - name: Sign manifest
+        env:
+          FEED_SIGNING_PRIVATE_KEY: ${{ secrets.FEED_SIGNING_PRIVATE_KEY }}
+        run: node scripts/feed-sign.mjs --in feed/manifest.json --out feed/manifest.json
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed/manifest.json
+          git commit -m "chore(feed): publish signed manifest" || exit 0
+          git push

@@ -266,6 +266,16 @@ main() {
       exit 1
     fi
 
+    # Feed sync (opt-in): fetch + verify + materialize a signed heal manifest.
+    # Fail-open: any failure leaves the existing rules in place.
+    FEED_ENABLED="$("$NODE_BIN" -e "try{const c=require(process.argv[1]);console.log(c.feed&&c.feed.enabled?'true':'false')}catch{console.log('false')}" "$EXTENSION_DIR/../config/config.json" 2>/dev/null || echo false)"
+    # config lives in user config dir, not extension dir; check there too
+    USER_CONFIG="${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}/config.json"
+    FEED_ENABLED="$("$NODE_BIN" -e "try{const c=require(process.argv[1]);console.log(c.feed&&c.feed.enabled?'true':'false')}catch{console.log('false')}" "$USER_CONFIG" 2>/dev/null || echo "$FEED_ENABLED")"
+    if [[ "$FEED_ENABLED" == "true" && -n "${FREEBUFF_FEED_URL:-}" ]]; then
+      FEED_PUBLIC_KEY="${FREEBUFF_FEED_PUBLIC_KEY:-}" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "$FREEBUFF_FEED_URL" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
+    fi
+
     patch_resources "$squashfs_root/resources"
 
     # Integrity check: confirm the loader marker survived into the repacked asar.
