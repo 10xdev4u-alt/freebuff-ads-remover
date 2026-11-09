@@ -96,6 +96,11 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       const userGen = loadGeneratedRules(getConfigDir() + '/generated-rules.json');
       if (userGen) registry.apply(userGen);
     } catch { /* fail open */ }
+    // Feed-synced heals (launcher-fetched, signed): config/feed-rules.json
+    try {
+      const feedGen = loadGeneratedRules(getConfigDir() + '/feed-rules.json');
+      if (feedGen) registry.apply(feedGen);
+    } catch { /* fail open */ }
     // Promotion engine (opt-in via shield.autoHeal).
     interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); void promotionEngine.tick(); });
     promotionEngine.setInterceptor(interceptor);

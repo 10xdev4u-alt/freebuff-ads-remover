@@ -112,6 +112,18 @@ function cmdDiscover(flags: Record<string, string | boolean>): number {
   return 0;
 }
 
+function cmdExportOutcomes(flags: Record<string, string | boolean>): number {
+  const dir = getConfigDir();
+  const out = (flags['out'] as string) || path.join(process.cwd(), 'outcomes.json');
+  const logPath = path.join(dir, 'outcomes.jsonl');
+  const rows = fs.existsSync(logPath)
+    ? fs.readFileSync(logPath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l) as unknown)
+    : [];
+  fs.writeFileSync(out, JSON.stringify(rows, null, 2));
+  console.log('exported', rows.length, 'outcomes to', out);
+  return 0;
+}
+
 function cmdAudit(positional: string[]): number {
   const resources = positional[0];
   /* v8 ignore next */ if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
@@ -200,6 +212,7 @@ export function runCli(argv: string[]): number {
     case 'synthesize': return cmdSynthesize(flags);
     case 'trust': return cmdTrust();
     case 'export': return cmdExport(flags);
+    case 'export-outcomes': return cmdExportOutcomes(flags);
     case 'autopilot': return cmdAutopilot(flags);
     case 'help':
     default: return cmdHelp();
