@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeVersion, compareVersions } from '../scripts/fetch-latest-appimage.mjs';
+import * as fetchModRaw from '../scripts/fetch-latest-appimage.mjs';
+const fetchMod = fetchModRaw as unknown as { normalizeVersion: (v: unknown) => string; compareVersions: (a: unknown, b: unknown) => number };
+const normalizeVersion = fetchMod.normalizeVersion;
+const compareVersions = fetchMod.compareVersions;
 
 describe('fetch-latest-appimage', () => {
   it('normalizes a leading v', () => {

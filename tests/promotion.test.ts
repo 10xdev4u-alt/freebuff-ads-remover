@@ -219,7 +219,7 @@ describe('runtime promotion branches', () => {
       corpusDir,
       configDir: tmp,
     });
-    engine.setLiveGate(async () => ({ pass: true, targets: 1, probes: [], at: Date.now() } as unknown as VerificationReport));
+    engine.setLiveGate(async () => ({ pass: true, targets: 1, probes: [], at: Date.now() }));
     // no verifier attached, so live gate is skipped and static gate alone promotes
     engine.beginLaunch();
     engine.observe('route:/api/ad/wave29-proof');
