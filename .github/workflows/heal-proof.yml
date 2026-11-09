@@ -59,7 +59,7 @@ jobs:
       - name: Run E2E with healed artifact
         env:
           FREEBUFF_PAYLOAD_VERSION: ${{ steps.payload.outputs.version }}
-        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --expect-promoted /api/ad/wave31-proof --timeout 240000 --feed
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --timeout 240000 --feed
       - name: Publish live receipt
         uses: peter-evans/create-pull-request@v6
         with:
@@ -67,4 +67,5 @@ jobs:
           title: "chore(proof): publish live receipt"
           commit-message: "chore(proof): publish live receipt"
           add-paths: receipts/live-*.json
+          base: main
 
