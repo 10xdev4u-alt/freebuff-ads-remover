@@ -64,6 +64,13 @@ else {
   if (parseInt(lm[1], 10) !== testCount) fail(`landing test count ${lm[1]} != actual ${testCount}`);
   if (parseInt(lm[2], 10) !== testFiles) fail(`landing file count ${lm[2]} != actual ${testFiles}`);
 }
+// Landing receipt hash must match the real receipt
+const landingHashMatch = landing.match(/hash:'(sha256:[0-9a-f]+)'/);
+if (landingHashMatch) {
+  const receiptFiles = fs.existsSync('receipts') ? fs.readdirSync('receipts').filter((f) => f.endsWith('.json')) : [];
+  const hashes = receiptFiles.map((f) => JSON.parse(fs.readFileSync('receipts/' + f, 'utf8')).artifactHash);
+  if (!hashes.includes(landingHashMatch[1])) fail('landing receipt hash does not match any receipt');
+}
 
 console.log(ok ? 'LEDGER OK' : 'LEDGER FAILED');
 process.exit(ok ? 0 : 1);
