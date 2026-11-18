@@ -9,9 +9,13 @@ const resources = get('--resources');
 const out = get('--out') || 'corpus/golden.jsonl';
 const manifestOut = get('--manifest') || 'corpus/manifest.json';
 const dryRun = args.includes('--dry-run');
-const version = get('--version') || '0.0.201';
+const version = get('--version') || '0.0.204';
 
 if (!resources) { console.error('usage: update-corpus.mjs --resources <dir> [--version X] [--dry-run]'); process.exit(2); }
+
+// Loaded only after arg validation so a missing --resources exits 2 without
+// requiring a prior build.
+const { classifyRoute } = await import('../dist/candidates.js');
 
 // Load existing corpus for additive-superset check
 let existingAds = new Set();
@@ -49,7 +53,7 @@ const ads = new Set(existingAds);
 const controls = new Set(CONTROL_ROUTES);
 for (const r of found) {
   if (CONTROL_ROUTES.includes(r)) controls.add(r);
-  else if (/ad|monet|sponsor|promo|break|billboard|impression/i.test(r)) ads.add(r);
+  else if (classifyRoute(r).candidate) ads.add(r);
 }
 
 // Additive superset check

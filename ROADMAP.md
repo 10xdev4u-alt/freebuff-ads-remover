@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: v1.5.0 (Freebuff 0.0.201).
+Last updated: v1.26.0 (Freebuff 0.0.204).
 
 ## Guiding principles
 

@@ -68,6 +68,14 @@ jobs:
             echo "heal failed with gaps" >&2
             exit 1
           fi
+      - name: Detect proof drift
+        id: drift
+        run: |
+          if git diff --quiet -- corpus config/endpoint-baseline.json config/generated-rules.json receipts; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Upload audit artifact
         uses: actions/upload-artifact@v4
         with:
@@ -83,7 +91,7 @@ jobs:
           bad=$(git status --porcelain | awk '{print $2}' | while read f; do [ -f "$f" ] && [ "$(stat -c%s "$f")" -gt 10485760 ] && echo "$f"; done)
           if [ -n "$bad" ]; then echo "large files: $bad"; exit 1; fi
       - name: Open heal PR
-        if: steps.heal.outputs.has_delta == 'true'
+        if: steps.heal.outputs.has_delta == 'true' || steps.drift.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/upstream-heal-${{ steps.ver.outputs.version }}
@@ -91,6 +99,7 @@ jobs:
           body-path: /tmp/heal.md
           commit-message: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}" 
           add-paths: |
+            corpus/
             config/generated-rules.json
             receipts/
             config/endpoint-baseline.json
@@ -107,6 +116,6 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y xvfb
       - run: npm ci && npm run build
       - name: Fetch AppImage
-        run: node scripts/fetch-latest-appimage.mjs --version ${{ github.event.inputs.version || '0.0.201' }} --out /tmp/freebuff.AppImage
+        run: node scripts/fetch-latest-appimage.mjs --version ${{ github.event.inputs.version || '0.0.204' }} --out /tmp/freebuff.AppImage
       - name: Run headless E2E
         run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --timeout 180000

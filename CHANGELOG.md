@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.26.0] - 2026-11-09
+## [1.26.0] - 2026-11-18
+
+Wave 53: Freebuff 0.0.204. Corpus refresh, shared classifier, new DOM selectors, live receipt, feed key rotation.
 
 Wave 52: the loop pays its first wage. E2E no longer drills wave31-proof; receipt hashes the artifact.
 
