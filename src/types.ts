@@ -280,8 +280,8 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   feed: {
     enabled: true,
     url: 'https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json',
-    publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----',
-    previousPublicKey: '',
+    publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAXPPjDp264OD7EOmZY7//cV2rXyP1rNbWnJvHu2I34EI=\n-----END PUBLIC KEY-----',
+    previousPublicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----',
     killSwitch: false,
     maxRules: 25,
   },
@@ -383,6 +383,8 @@ export const AD_CSS_SELECTORS: Record<AdSurface, string[]> = {
     '[class*="ad-reward"]',
     '[class*="ad-greptile"]',
     '[class*="ad-posthog"]',
+    '[class*="placement-sidebar-card"]',
+    '[class*="ad-showcase-link"]',
     // 0.0.201: child nodes of sponsored-card / ad-banner roots. These are
     // normally hidden by the parent rule, but an explicit rule makes the
     // hide robust against re-parenting or partial renders.

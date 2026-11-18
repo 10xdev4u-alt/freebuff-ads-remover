@@ -74,12 +74,12 @@ const configSchema = z.object({
     .object({
       enabled: z.boolean().default(true),
       url: z.string().default('https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json'),
-      publicKey: z.string().default('-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----'),
-      previousPublicKey: z.string().default(''),
+      publicKey: z.string().default('-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAXPPjDp264OD7EOmZY7//cV2rXyP1rNbWnJvHu2I34EI=\n-----END PUBLIC KEY-----'),
+      previousPublicKey: z.string().default('-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----'),
       killSwitch: z.boolean().default(false),
       maxRules: z.number().int().positive().default(25),
     })
-    .default(() => ({ enabled: true, url: 'https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json', publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----', previousPublicKey: '', killSwitch: false, maxRules: 25 })),
+    .default(() => ({ enabled: true, url: 'https://10xdev4u-alt.github.io/freebuff-ads-remover/feed/manifest.json', publicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAXPPjDp264OD7EOmZY7//cV2rXyP1rNbWnJvHu2I34EI=\n-----END PUBLIC KEY-----', previousPublicKey: '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----', killSwitch: false, maxRules: 25 })),
   inbound: z
     .object({
       enabled: z.boolean().default(false),

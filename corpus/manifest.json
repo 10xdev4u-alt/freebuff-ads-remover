@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "freebuffVersion": "0.0.201",
-  "entries": 40,
-  "ads": 38,
+  "freebuffVersion": "0.0.204",
+  "entries": 42,
+  "ads": 40,
   "controls": 2,
-  "sha256": "2227bdd9eb44381a6587937b6835a7db24976a186a0906751c8af912341bcb7f"
+  "sha256": "e69b424a3620ddde9b79fa942bd06dddf78fb198d82bd3a7aa989d6b98ec0085"
 }

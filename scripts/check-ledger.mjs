@@ -88,6 +88,13 @@ if (fs.existsSync(baselinePath)) {
     if (latest && b.payloadVersion && b.payloadVersion !== latest.payloadVersion) {
       fail('endpoint baseline payloadVersion mismatch');
     }
+    const corpusVersion = JSON.parse(fs.readFileSync('corpus/manifest.json', 'utf8')).freebuffVersion;
+    if (latest && corpusVersion && latest.payloadVersion !== corpusVersion) {
+      fail('corpus manifest version mismatch');
+    }
+    if (b.payloadVersion && corpusVersion && b.payloadVersion !== corpusVersion) {
+      fail('baseline/corpus version mismatch');
+    }
     if (b.generatedAt) {
       const age = Date.now() - Date.parse(b.generatedAt);
       if (age > 7 * 24 * 60 * 60 * 1000) console.error('LEDGER WARN: endpoint baseline is stale');
@@ -125,7 +132,7 @@ if (!fs.existsSync(feedPath)) {
 } else {
   try {
     const fm = JSON.parse(fs.readFileSync(feedPath, 'utf8'));
-    const pub = '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAV9Zst2Z+TZ0UjmZgUhacxR2+gaIUyh3JozsNNNb/0CI=\n-----END PUBLIC KEY-----';
+    const pub = '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAXPPjDp264OD7EOmZY7//cV2rXyP1rNbWnJvHu2I34EI=\n-----END PUBLIC KEY-----';
     const { verifyManifest } = await import('../dist/feed.js');
     if (!verifyManifest(fm, pub)) fail('feed manifest signature invalid');
     if (fm.generatedAt) {

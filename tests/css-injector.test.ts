@@ -111,6 +111,8 @@ describe('AD_CSS_SELECTORS', () => {
 
   it('hides in-chat sponsored cards by their real markup', () => {
     const selectors = AD_CSS_SELECTORS.sponsoredCard;
+    expect(selectors).toContain('[class*="placement-sidebar-card"]');
+    expect(selectors).toContain('[class*="ad-showcase-link"]');
     expect(selectors).toContain('a.sponsored-ad');
     expect(selectors).toContain('a.ad-card');
     expect(selectors).toContain('[class*="sponsored-ad"]');
