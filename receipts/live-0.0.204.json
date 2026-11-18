@@ -1,0 +1,12 @@
+{
+  "at": "2026-11-18T07:52:05.208Z",
+  "payloadVersion": "0.0.204",
+  "corpusHash": "sha256:e69b424a3620ddde9b79fa942bd06dddf78fb198d82bd3a7aa989d6b98ec0085",
+  "probes": 42,
+  "pass": true,
+  "provenance": "live-e2e",
+  "artifactHash": "sha256:c07556dbe8312d90d348f0884779ff28a661528065d3d6d0ef414405833729aa",
+  "gate": {
+    "pass": true
+  }
+}

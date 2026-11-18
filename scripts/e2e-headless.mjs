@@ -236,7 +236,7 @@ try {
   };
   const name = 'live-' + (pv || Date.now()) + '.json';
   writeFileSync(join(receiptsDir, name), JSON.stringify(receipt, null, 2));
-} catch (e) { console.error('receipt write failed:', e.message); }
+} catch (e) { console.error('receipt write failed:', e.message); process.exit(1); }
 
 console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote, expectPromoted: expectPromoted || null }, null, 2));
 process.exit(0);

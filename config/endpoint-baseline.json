@@ -1,25 +1,487 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-09T05:31:55.694Z",
-  "payloadVersion": null,
+  "generatedAt": "2026-11-18T07:47:40.507Z",
+  "payloadVersion": "0.0.204",
   "routes": [
-    "/api/ad/wave29-proof",
-    "/api/ad/policy"
+    "/api/chat",
+    "/api/v1/freebuff/session/admission",
+    "/api/v1/freebuff/models",
+    "/api/v1/freebuff/device-keys",
+    "/api/v1/cloud/skills",
+    "/api/v1/web-search",
+    "/api/v1/web-fetch",
+    "/api/v1/docs-search",
+    "/api/v1/gravity-index",
+    "/api/v1/me",
+    "/api/v1/agents/:param/:param/:param",
+    "/api/v1/agent-runs",
+    "/api/v1",
+    "/api/v1/project-profile",
+    "/api/v1/project-understanding",
+    "/api/v1/ads/sponsored-skills",
+    "/api/threads",
+    "/api/v1/ads/proposal/${encodeURIComponent",
+    "/api/v1/ads/agentic/offer",
+    "/api/v1/ads/invitation/click",
+    "/api/v1/ads/impression",
+    "/api/v1/ads/click",
+    "/api/v1/ads/click-return",
+    "/api/v1/ads/engagement",
+    "/api/ads",
+    "/api/v1/ads",
+    "/api/ads/first-party/creative-image/",
+    "/api/v1/ads/invitation/event",
+    "/api/v1/ads/proposal",
+    "/api/v1/ads/prefs",
+    "/api/v1/cloud/history",
+    "/api/realtime/ticket",
+    "/api/",
+    "/api/storage/",
+    "/api/v1/freebuff/byok:param",
+    "/api/v1/cloud/agent-credentials:param",
+    "/api/v1/freebuff/appearance",
+    "/api/profile-survey",
+    "/api/profile-survey/answers",
+    "/api/sponsored-survey",
+    "/api/survey-events",
+    "/api/appearance/wallpapers/:param",
+    "/api/appearance/wallpapers",
+    "/api/appearance/wallpapers/:filename",
+    "/api/auth/status",
+    "/api/auth/login/start",
+    "/api/auth/login/cancel",
+    "/api/auth/logout",
+    "/api/v1/cloud/projects",
+    "/api/hosted-workspace/:param",
+    "/api/telemetry/funnel",
+    "/api/app/restarting-for-update",
+    "/api/app/restart",
+    "/api/diagnostics/renderer-error",
+    "/api/diagnostics/renderer-health",
+    "/api/diagnostics/app-memory",
+    "/api/diagnostics/renderer-boot",
+    "/api/events",
+    "/api/ad/",
+    "/api/terminal"
   ],
   "classifications": {
-    "/api/ad/wave29-proof": {
+    "/api/chat": {
       "candidate": false,
-      "confidence": 0.2,
+      "confidence": 0,
       "signals": [
-        "path:ad",
         "below-threshold"
       ]
     },
-    "/api/ad/policy": {
+    "/api/v1/freebuff/session/admission": {
       "candidate": false,
-      "confidence": 0.2,
+      "confidence": 0,
       "signals": [
-        "path:ad",
+        "not-ad-segment"
+      ]
+    },
+    "/api/v1/freebuff/models": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/freebuff/device-keys": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/cloud/skills": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/web-search": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/web-fetch": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/docs-search": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/gravity-index": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/me": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/agents/:param/:param/:param": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/agent-runs": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/project-profile": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "not-ad-segment"
+      ]
+    },
+    "/api/v1/project-understanding": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/ads/sponsored-skills": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,sponsored"
+      ]
+    },
+    "/api/threads": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "not-ad-segment"
+      ]
+    },
+    "/api/v1/ads/proposal/${encodeURIComponent": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,proposal"
+      ]
+    },
+    "/api/v1/ads/agentic/offer": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,offer"
+      ]
+    },
+    "/api/v1/ads/invitation/click": {
+      "candidate": true,
+      "confidence": 0.9,
+      "signals": [
+        "path:ads,click,invitation"
+      ]
+    },
+    "/api/v1/ads/impression": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,impression"
+      ]
+    },
+    "/api/v1/ads/click": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,click"
+      ]
+    },
+    "/api/v1/ads/click-return": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,click"
+      ]
+    },
+    "/api/v1/ads/engagement": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,engagement"
+      ]
+    },
+    "/api/ads": {
+      "candidate": true,
+      "confidence": 0.7,
+      "signals": [
+        "path:ads"
+      ]
+    },
+    "/api/v1/ads": {
+      "candidate": true,
+      "confidence": 0.7,
+      "signals": [
+        "path:ads"
+      ]
+    },
+    "/api/ads/first-party/creative-image/": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,creative"
+      ]
+    },
+    "/api/v1/ads/invitation/event": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,invitation"
+      ]
+    },
+    "/api/v1/ads/proposal": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:ads,proposal"
+      ]
+    },
+    "/api/v1/ads/prefs": {
+      "candidate": true,
+      "confidence": 0.7,
+      "signals": [
+        "path:ads"
+      ]
+    },
+    "/api/v1/cloud/history": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/realtime/ticket": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/storage/": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/freebuff/byok:param": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/cloud/agent-credentials:param": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/freebuff/appearance": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/profile-survey": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "not-ad-segment"
+      ]
+    },
+    "/api/profile-survey/answers": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "not-ad-segment"
+      ]
+    },
+    "/api/sponsored-survey": {
+      "candidate": true,
+      "confidence": 0.8,
+      "signals": [
+        "path:survey,sponsored"
+      ]
+    },
+    "/api/survey-events": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "not-ad-segment"
+      ]
+    },
+    "/api/appearance/wallpapers/:param": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/appearance/wallpapers": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/appearance/wallpapers/:filename": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/auth/status": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/auth/login/start": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/auth/login/cancel": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/auth/logout": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/cloud/projects": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/hosted-workspace/:param": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/telemetry/funnel": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/app/restarting-for-update": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/app/restart": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/diagnostics/renderer-error": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/diagnostics/renderer-health": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/diagnostics/app-memory": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/diagnostics/renderer-boot": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/events": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/ad/": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "ignore-base-path"
+      ]
+    },
+    "/api/terminal": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
         "below-threshold"
       ]
     }

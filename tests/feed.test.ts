@@ -30,6 +30,18 @@ describe('feed manifest', () => {
     const other = crypto.generateKeyPairSync('ed25519').publicKey.export({ type: 'spki', format: 'pem' });
     expect(verifyManifest({ ...base, sig }, other)).toBe(false);
   });
+
+  it('accepts a previous key during rollover', () => {
+    const current = crypto.generateKeyPairSync('ed25519');
+    const previous = crypto.generateKeyPairSync('ed25519');
+    const currentPub = current.publicKey.export({ type: 'spki', format: 'pem' });
+    const previousPub = previous.publicKey.export({ type: 'spki', format: 'pem' });
+    const previousPriv = previous.privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const base = { version: 1, entries: [], rollbackTo: null };
+    const sig = signManifest(base, previousPriv);
+    expect(verifyManifest({ ...base, sig }, currentPub, previousPub)).toBe(true);
+    expect(verifyManifest({ ...base, sig }, currentPub)).toBe(false);
+  });
 });
 
 describe('feed sync', () => {

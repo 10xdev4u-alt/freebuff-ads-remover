@@ -30,4 +30,11 @@ describe('candidate classifier', () => {
     expect(r.candidate).toBe(false);
     expect(r.signals).toContain('not-ad-segment');
   });
+
+  it('ignores the bare /api/ad/ base path', () => {
+    const r = classifyRoute('/api/ad/');
+    expect(r.candidate).toBe(false);
+    expect(r.signals).toContain('ignore-base-path');
+    expect(classifyRoute('/api/ad/policy').candidate).toBe(true);
+  });
 });

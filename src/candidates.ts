@@ -72,6 +72,11 @@ export function classifyRoute(route: string, context: RouteContext = {}): Candid
   const signals: string[] = [];
   let score = 0;
 
+  // Bare base paths are navigation prefixes, not ad endpoints.
+  if (route === '/api/ad/') {
+    return { candidate: false, confidence: 0, signals: ['ignore-base-path'] };
+  }
+
   const toksCheck = tokensOf(route);
   const pathSegments = route.toLowerCase().split('/').map((seg) => seg.split('?')[0]).filter((seg): seg is string => Boolean(seg));
   if (toksCheck.some((t) => NOT_AD_SEGMENTS.has(t)) || pathSegments.some((seg) => NOT_AD_SEGMENTS.has(seg))) {

@@ -45,7 +45,7 @@ const genRules = path.join(work, 'generated-rules.json');
 const receipt = path.join(work, 'receipt.json');
 const healExit = (() => {
   try {
-    execSync(`node scripts/self-heal.mjs --resources "${target}" --out "${genRules}" --receipt "${receipt}" --payload-version 0.0.201 --provenance drill --json`, { stdio: 'pipe' });
+    execSync(`node scripts/self-heal.mjs --resources "${target}" --out "${genRules}" --receipt "${receipt}" --payload-version 0.0.204 --provenance drill --json`, { stdio: 'pipe' });
     return 0;
   } catch (e) { return e.status ?? 1; }
 })();
