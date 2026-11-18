@@ -66,7 +66,7 @@ jobs:
           mkdir -p /tmp/far-live-receipt
           cp receipts/live-*.json /tmp/far-live-receipt/
           git fetch origin main
-          git checkout -f -B ci/live-receipt origin/main
+          git checkout -f --detach origin/main
           cp /tmp/far-live-receipt/live-*.json receipts/
 
       - name: Publish live receipt
