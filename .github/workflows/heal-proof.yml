@@ -63,11 +63,16 @@ jobs:
 
       - name: Stage live receipt on a main-based branch
         run: |
+          V="${{ steps.payload.outputs.version }}"
+          if [ ! -f "receipts/live-${V}.json" ]; then
+            echo "E2E did not produce receipts/live-${V}.json" >&2
+            exit 1
+          fi
           mkdir -p /tmp/far-live-receipt
-          cp receipts/live-*.json /tmp/far-live-receipt/
+          cp "receipts/live-${V}.json" /tmp/far-live-receipt/
           git fetch origin main
           git checkout -f --detach origin/main
-          cp /tmp/far-live-receipt/live-*.json receipts/
+          cp "/tmp/far-live-receipt/live-${V}.json" receipts/
 
       - name: Publish live receipt
         uses: peter-evans/create-pull-request@v6
