@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: v1.26.0 (Freebuff 0.0.204).
+Last updated: 2026-11-19 (Wave 54 truth pass; Freebuff 0.0.204).
 
 ## Guiding principles
 
@@ -42,21 +42,31 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 
 ## 1. Robustness & self-healing (high priority)
 
-- [ ] Launcher injection-integrity check: verify loader marker present in `app.asar`;
-      auto-re-patch if stripped by an updater.
-- [ ] Launcher audit-at-patch-time: run `audit-endpoints.mjs` after patching; warn on gaps.
-- [ ] Launcher `--repair` flag: force re-extract + re-patch + verify.
-- [ ] Extension load ping: main process confirms load within N seconds; else log + retry.
-- [ ] Graceful degradation: if injection fails, launch unpatched rather than crash.
-- [ ] Atomic patch writes (temp file + rename) to avoid half-written asar.
-- [ ] Backup rotation: keep last 3 pristine asars, prune older.
-- [ ] Checksum verification of `app.asar.orig` before restore.
-- [ ] Detect Freebuff self-update mid-session; queue re-patch for next launch.
-- [ ] Watch `~/.local/bin/freebuff-app` mtime; trigger re-extract on change.
-- [ ] Handle AppImage FUSE mount expiry (re-extract on stale mount).
-- [ ] Survive `ELECTRON_RUN_AS_NODE` / env contamination.
-- [ ] stdout/stderr EPIPE guard (done in v1.5.0 launcher).
-- [ ] Crash-loop protection: if Freebuff crashes 3x after patch, auto-disable extension.
+Verified 2026-11-19 against the real code. Done items are marked; rejected items moved to
+the Deprecated section.
+
+- [x] Launcher injection-integrity check: `scripts/launch-freebuff.sh:294-299` +
+      `scripts/check-injection.mjs`.
+- [x] Launcher audit-at-patch-time: `scripts/launch-freebuff.sh:301-306`.
+- [x] Launcher `--repair` flag: `scripts/launch-freebuff.sh:193-202`.
+- [ ] Extension load ping: marker presence is not activation; `scripts/check-injection.mjs`
+      only checks the marker substring, so a throwing `dist/bootstrap.js` still reports a
+      clean patch. → Wave 60
+- [x] Graceful degradation: fail open to an unpatched launch
+      (`scripts/launch-freebuff.sh:176-180,298`).
+- [x] Atomic patch writes: `scripts/patch-freebuff-app.mjs:130,144` (temp + same-dir rename).
+- [x] Detect Freebuff self-update mid-session: `adopt_live_payload`
+      (`scripts/launch-freebuff.sh:119-165`); the adopted copy is unverified → Wave 56.
+- [x] Handle AppImage FUSE mount expiry: the launcher never execs from a FUSE mount; it
+      extracts to disk (`scripts/launch-freebuff.sh:250-261,311`).
+- [x] Survive `ELECTRON_RUN_AS_NODE`: unset at `scripts/launch-freebuff.sh:246-247`; other
+      Electron env vars still inherit → Wave 60.
+- [x] stdout/stderr EPIPE guard: `src/logger.ts:14-31,95-106` plus child fds redirected;
+      the launcher's own `echo` is still exposed → Wave 56.
+- [~] Crash-loop protection: implemented (`src/crash-guard.ts`) but the sentinel is never
+      cleared on a clean exit and the threshold is checked before counting → Wave 55.
+- [ ] Checksum verification of `app.asar.orig` before restore: bare `renameSync` at
+      `scripts/patch-freebuff-app.mjs:87-90` → Wave 56.
 
 ## 2. Coverage — network layer
 
@@ -70,10 +80,17 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 - [ ] Cover new partitions naming schemes without code changes (regex match).
 - [ ] Handle ad requests with query-string variants (`?placement=...`).
 - [ ] Handle ad requests with trailing slashes / case differences.
-- [ ] Block by host in addition to path (allowlist of ad hosts).
+- [ ] Normalize duplicate slashes in paths (`/api//ad//break` slips through today). → Wave 59
+- [ ] Block by host in addition to path (allowlist of ad hosts). → Wave 59
 - [ ] Block by request body content (sponsored task payloads).
 - [ ] Block redirect chains that land on ad endpoints.
 - [ ] Block prefetch/preload of ad assets.
+- [ ] Guard malformed URLs in matching: `decodeURIComponent` throws on `/api/ad/%ZZ`
+      (`src/url-match.ts:21`). → Wave 59
+- [ ] Never skip `callback()` when `intercept()` throws (`src/electron-hook.ts:218,237`);
+      a throw today leaves the request handling dangling. → Wave 59
+- [ ] Audit absolute ad URLs: the scan regex only sees `/api/`-prefixed literals
+      (`scripts/audit-endpoints.mjs:67`), so host-based ad URLs are invisible. → Wave 59
 
 ## 3. Coverage — DOM & CSS layer
 
@@ -82,10 +99,12 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 - [ ] iframe ad removal (same-origin only; cross-origin via URL blocking).
 - [ ] Re-inject CSS on SPA navigation without full reload.
 - [ ] Handle dynamically added ad surfaces after initial render.
-- [ ] Cover all 68 CSS classes (done) + keep audit green on every release.
+- [x] Cover all 68 CSS classes (done) + keep audit green on every release.
 - [ ] Add per-surface CSS scoping to avoid over-hiding.
 - [ ] Dark/light theme-aware hiding (avoid layout shift).
 - [ ] Prevent ad placeholder skeleton flicker (reserve space collapse).
+- [ ] Derive DOM selectors from the registry: 5 are hardcoded in
+      `src/dom-remover.ts:11-17` while `src/types.ts:315-403` registers 56. → Wave 59
 
 ## 4. Coverage — script layer
 
@@ -100,7 +119,7 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 
 ## 5. Placement aliases & sponsored commands
 
-- [ ] Resolve retired↔canonical placement IDs in any client-side logic (done: map).
+- [x] Resolve retired↔canonical placement IDs in any client-side logic (done: map).
 - [ ] Block sponsored-command refusals bypass (new v0.0.201 module).
 - [ ] Track placement-alias usage in dashboard.
 - [ ] Auto-update alias map from upstream bundle on each release.
@@ -124,8 +143,8 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 - [ ] Preset profiles: strict / balanced / minimal.
 - [ ] First-run wizard.
 - [ ] In-app settings panel (not just JSON).
-- [ ] Hot-reload all settings without restart (mostly done).
-- [ ] Remote block-list feed (opt-in, signed).
+- [x] Hot-reload all settings without restart (mostly done; watcher ignores profile/rename).
+- [x] Remote block-list feed (opt-in, signed).
 - [ ] Scheduled updates of block lists.
 
 ## 8. Testing & quality
@@ -134,24 +153,30 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 - [ ] Fuzz tests for URL matching (edge cases, unicode, encoding).
 - [ ] Snapshot tests for `HIDE_ALL_ADS_CSS`.
 - [ ] Visual regression for dashboard (Playwright).
-- [ ] E2E against a real Freebuff instance in CI (headless).
+- [x] E2E against a real Freebuff instance in CI (headless): `scripts/e2e-headless.mjs`,
+      `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
-- [ ] Coverage ratchet: never drop below 85%.
+- [ ] Coverage ratchet: never drop below 85% (thresholds are pinned at the current
+      72/73/60/71.5 baseline). → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [ ] Golden-file tests for audit output.
+- [ ] Self-test the ledger gate with negative fixtures. → Wave 57
 
 ## 9. CI / automation / scale
 
-- [ ] Cron job: fetch latest Freebuff AppImage, run audit, open PR with deltas.
-- [ ] Auto-bump version on audit-clean release.
-- [ ] Auto-generate CHANGELOG from conventional commits.
-- [ ] Semantic-release.
-- [ ] Matrix testing across Node 20/22.
-- [ ] Dependabot for all deps (already partial).
-- [ ] Signed releases (cosign) for the extension bundle.
-- [ ] SBOM generation.
-- [ ] Reproducible builds.
-- [ ] Release artifacts attached to GitHub releases.
+- [x] Cron job: fetch latest Freebuff AppImage, run audit, open PR with deltas
+      (`upstream-proof.yml:4-5,41-105`).
+- [ ] Auto-bump version on audit-clean release: `release.yml:40-47` only asserts
+      tag == `package.json`; nothing bumps it. → Wave 61 (policy-gated)
+- [ ] Matrix testing across Node 20/22: `engines.node >=20` is unverified; `ci.yml` pins 22
+      and `upstream-proof.yml` pins 20, but no job tests both. → Wave 60
+- [~] Dependabot for all deps: npm only (`.github/dependabot.yml`); the `github-actions`
+      ecosystem is absent. → Wave 60
+- [ ] Signed releases (cosign) for the extension bundle: only SHA256SUMS today; the
+      Ed25519 feed signature is a different system. → Wave 60
+- [ ] SBOM generation. → Wave 60
+- [ ] Reproducible builds: `release.yml:67` uses bare `tar -czf`. → Wave 60
+- [x] Release artifacts attached to GitHub releases (`release.yml:52-84`).
 
 ## 10. Anti-detection & privacy
 
@@ -165,21 +190,117 @@ Last updated: v1.26.0 (Freebuff 0.0.204).
 
 ## 11. Documentation
 
-- [ ] Auto-generate API docs from types.
+- [x] Auto-generate API docs from types (`scripts/gen-api-docs.mjs`).
 - [ ] Keep ARCHITECTURE.md in sync via CI check.
 - [ ] Video walkthrough of install + verify.
 - [ ] Troubleshooting guide with common failures.
-- [ ] Security policy (SECURITY.md).
+- [x] Security policy (SECURITY.md).
 - [ ] Contributing guide with PR checklist.
 
 ## 12. Community & scale
 
-- [ ] Issue templates for new ad surfaces (with audit output).
-- [ ] PR template requiring audit green.
-- [ ] CODEOWNERS per module.
-- [ ] Triage bot for stale issues.
-- [ ] Release notes automation.
-- [ ] Discord/community channel.
+- [ ] Issue templates for new ad surfaces (with audit output): only bug/feature/research
+      exist today. → Wave 60
+- [ ] PR template requiring audit green: no audit checkbox; `ci.yml` never runs
+      `npm run audit`. → Wave 60
+- [x] Release notes automation (`release.yml:81`, `proof-publish.yml`).
+
+---
+
+## 13. Wave backlog (locked 2026-11-19)
+
+Sequenced from the five-audit research pass: coverage gaps, ROADMAP truth, patch/launcher
+integrity, testing/ledger honesty, and loop automation. Each bullet is one atomic PR.
+
+### Wave 54 — Hygiene & truth
+- [x] Triage noise bot PRs (#189 timestamp-only receipt, #190 re-signed manifest closed).
+- [x] Remove untracked drill receipts from the worktree (root fix lands in Wave 57).
+- [ ] ROADMAP truth pass (this PR).
+- [ ] Cut v1.27.0 for the #191 EPIPE / e2e-isolation / payload-version fixes.
+
+### Wave 55 — Stop breaking the install (P0 runtime)
+- [ ] `fix(update): restore dist when the marker check fails` — `scripts/update.mjs:28-36`
+      moves `dist` away, then throws before the restore; every updater run leaves no `dist/`.
+- [ ] `fix(crash-guard): clear the sentinel on clean exit` — no `before-quit`/`exit` hook
+      exists, so the product self-disables after three ordinary quits.
+- [ ] `fix(crash-guard): count before the threshold check` — off-by-one at
+      `src/crash-guard.ts:35-46`; a surviving sentinel is also double-counted.
+- [ ] `fix(launcher): serialize extract/patch with flock` — concurrent launchers
+      `rm -rf` the shared extract and can exec a half-patched host.
+
+### Wave 56 — Trust the payload you patch
+- [ ] `fix(launcher): stamp the extract only when complete` — extraction exit status is
+      discarded at `scripts/launch-freebuff.sh:67`; a partial tree becomes permanent.
+- [ ] `fix(patch): verify the asar backup before restore` — bare rename at
+      `scripts/patch-freebuff-app.mjs:87-90` promotes a truncated archive to live.
+- [ ] `fix(launcher): verify the adopted payload after copy` — `.adopted-version` is
+      written from the source version and the copy is never checked.
+- [ ] `fix(launcher): redirect launcher output to the log` — the launcher's own `echo`
+      can SIGPIPE before `exec` when stdout is a closed pipe.
+- [ ] `fix(feed): atomic feed writes` — plain `writeFileSync` in
+      `scripts/feed-sync.mjs:66-68` can strand a truncated rules file forever.
+
+### Wave 57 — Make the gates tell the truth
+- [ ] `fix(ledger): require passing live evidence` — `check-ledger.mjs:109-125` ignores
+      `pass`, so a recorded failure passes the ledger.
+- [ ] `fix(feed): bind healHash to the published artifact` — `feed-build.mjs:23-25` falls
+      back to any receipt; the chain is tautological.
+- [ ] `fix(e2e): fail on empty promotion` — `e2e-headless.mjs:233-246` treats
+      "nothing to promote" as a pass.
+- [ ] `test(ledger): self-test the gate` — no negative tests exist for `check-ledger.mjs`.
+- [ ] `fix(proof): publish the newest verified receipt` — `proof-publish.yml:28` picks by
+      filename, not `at`, and never checks `pass`.
+- [ ] `test(drill): assert a real heal delta and write to temp` — `loop-drill.mjs:54-59,86-87`
+      tolerates an empty delta and dirties the repo.
+
+### Wave 58 — Make truth apply to shipped code
+- [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.
+- [ ] `fix(verify): require a real block reason` — any fetch rejection is labelled BLOCKED.
+- [ ] `ci: close the fail-open paths` — `|| true` / `set +e` hide audit and heal failures.
+- [ ] `test(verifier): cover negative paths` — happy-path mocks only.
+- [ ] `fix(e2e): exercise the signed feed` — `--feed` is wired to an empty url/key.
+- [ ] `fix(ci): pin the E2E payload version` — a `||` fallback can test a different binary
+      than the receipt claims.
+- [ ] `fix(corpus): preserve controls and stage writes` — `update-corpus.mjs:53` resets
+      controls to the hardcoded pair.
+- [ ] `fix(heal): stop daily receipt churn` — `generatedAt` bumps every run, opening a
+      no-op PR daily.
+- [ ] `ci: serialize the loop workflows` — four crons race on release day.
+- [ ] `ci: alert when the heal gate fails` — a rejected heal leaks ads silently.
+- [ ] `fix(loop): connect inbound candidates to heal` — the candidates file is never
+      committed or uploaded.
+
+### Wave 59 — Coverage & registry
+- [ ] `fix(match): guard malformed URLs` — `decodeURIComponent` throws on `/api/ad/%ZZ`.
+- [ ] `fix(hook): never skip callback on intercept throw` — `electron-hook.ts:218,237`.
+- [ ] `feat(audit): audit absolute ad URLs` — regex only sees `/api/`-prefixed literals.
+- [ ] `feat(dom): derive selectors from the registry` — 5 hardcoded vs 56 registered.
+- [ ] `feat(block): block third-party ad hosts`.
+- [ ] `test(corpus): assert surface classifications` — all ads labelled `sponsorBreak`;
+      the gate ignores `surface`.
+- [ ] `test(proof): cover the zero-coverage proof modules`.
+- [ ] `test: ratchet coverage toward 85%`.
+- [ ] `fix(proof): verify the landing-page claims`.
+- [ ] `test: de-flake the timing benchmarks`.
+
+### Wave 60 — Release trust & contribution gates
+- [ ] `ci: SBOM in release`.
+- [ ] `ci: cosign the release tarball`.
+- [ ] `ci: reproducible release tarball`.
+- [ ] `ci: dependabot for GitHub Actions`.
+- [ ] `ci: Node 20/22 test matrix`.
+- [ ] `docs: ad-surface issue template`.
+- [ ] `ci: gate PRs on audit deltas`.
+- [ ] `fix(launcher): sanitize Electron env vars`.
+- [ ] `feat(bootstrap): confirm extension load on boot`.
+- [ ] `fix(config): honor profile in the watcher`.
+- [ ] `build: harden the page-client sanitizer guard`.
+
+### Wave 61 — Zero manual landing (policy-gated)
+- [ ] `ci: auto-merge the bot PR train` — conflicts with `PLAN.md` non-negotiables;
+      needs an explicit decision first.
+- [ ] `ci: auto-cut a release from a verified live receipt` — needs the versioning policy
+      decided first.
 
 ---
 
@@ -198,3 +319,13 @@ Total tracked items: 100+. Each item = one issue/PR. Target: 1000+ commits over 
 - SSE/WebSocket renderer hooks — 0 ad usage (only LLM streaming libs).
 - Service-worker ad blocking — no service worker present.
 - Renderer fetch/XHR monkey-patching — session.webRequest already covers it.
+
+## Rejected (reviewed 2026-11-19)
+- Backup rotation (last 3 asars) — the AppImage is the authoritative pristine source;
+  rotation adds state and recovery ambiguity with no user benefit.
+- mtime watch on `freebuff-app` — sha256-at-launch is strictly stronger.
+- Semantic-release / auto-generated CHANGELOG — fights the curated wave versioning and
+  the `check-ledger.mjs` drift guard; the CHANGELOG is prose, not commit logs.
+- CODEOWNERS per module / stale-issue bot / Discord — single maintainer, no community yet.
+- "Repacking breaks asar integrity" — the installed 0.0.204 asar has no `integrity` header
+  and `package.json` has no `asarIntegrity` (verified directly).
