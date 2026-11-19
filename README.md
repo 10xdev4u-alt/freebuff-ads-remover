@@ -8,7 +8,7 @@
   [![CI](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions/workflows/ci.yml/badge.svg)](https://github.com/10xdev4u-alt/freebuff-ads-remover/actions)
   [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
   [![Platform: Linux](https://img.shields.io/badge/platform-linux-lightgrey)](docs/INSTALLATION.md)
-  [![Version: 1.26.0](https://img.shields.io/badge/version-1.26.0-blue)](CHANGELOG.md)
+  [![Version: 1.27.0](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)
 </div>
 
 ---

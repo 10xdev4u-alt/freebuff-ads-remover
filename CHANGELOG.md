@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-11-19
+
+Wave 54: the roadmap tells the truth. Five read-only audits synthesized into a locked Wave 54-61 plan; noise bot PRs closed; the #191 EPIPE guard, e2e isolation, and payload-version fixes shipped.
+
 ## [1.26.0] - 2026-11-18
 
 Wave 53: Freebuff 0.0.204. Corpus refresh, shared classifier, new DOM selectors, live receipt, feed key rotation.
