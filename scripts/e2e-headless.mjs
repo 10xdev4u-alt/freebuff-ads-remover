@@ -52,8 +52,11 @@ if (!existsSync(resources)) {
   process.exit(1);
 }
 
-// Write a temp config enabling verification.
+// Write a temp config enabling verification. Start clean: a reused extract dir
+// carries a stale verify.json (pointing at a dead port) and a stale crash
+// counter that makes the extension refuse to activate.
 const configDir = join(extractDir, 'config');
+rmSync(configDir, { recursive: true, force: true });
 mkdirSync(configDir, { recursive: true });
 const cfg = {
   enabled: true,
@@ -115,15 +118,58 @@ try {
   process.exit(1);
 }
 
-// Launch
+// Launch. The app gets its own Electron profile and orchestrator state dir:
+// sharing the desktop profile opens the user's real window, and sharing the
+// state dir makes the orchestrator exit with "another orchestrator is already
+// using this Desktop state profile".
 const electronBin = join(extractDir, 'squashfs-root', 'freebuff'); // best-effort
-const child = spawn('xvfb-run', ['-a', electronBin, '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'], {
-  env: { ...process.env, FREEBUFF_CONFIG_DIR: configDir, ELECTRON_RUN_AS_NODE: '' },
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
+const profileDir = join(extractDir, 'profile');
+const stateDir = join(extractDir, 'state');
+rmSync(profileDir, { recursive: true, force: true });
+rmSync(stateDir, { recursive: true, force: true });
+mkdirSync(profileDir, { recursive: true });
+mkdirSync(stateDir, { recursive: true });
+
+const child = spawn(
+  'xvfb-run',
+  ['-a', electronBin, '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--ozone-platform=x11', `--user-data-dir=${profileDir}`],
+  {
+    env: {
+      ...process.env,
+      FREEBUFF_CONFIG_DIR: configDir,
+      FREEBUFF_DESKTOP_STATE_PATH: stateDir,
+      ELECTRON_RUN_AS_NODE: '',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true,
+  },
+);
 let exited = false;
 child.on('exit', () => { exited = true; });
 child.on('error', (e) => { console.error('Launch failed:', e.message); exited = true; });
+
+// Drain both pipes. An undrained pipe fills its 64 KiB buffer and stalls the
+// app, and closing our read end while the app still writes is what raises the
+// EPIPE that Electron shows as an uncaught-exception dialog.
+let logTail = '';
+const remember = (chunk) => { logTail = (logTail + chunk.toString()).slice(-8000); };
+child.stdout?.on('data', remember);
+child.stderr?.on('data', remember);
+
+// xvfb-run is only the direct child; Xvfb and Electron are its descendants.
+// detached:true makes it a process-group leader, so one signal reaps the tree
+// instead of orphaning Electron on the real display.
+const killTree = () => {
+  if (child.pid === undefined) return;
+  try { process.kill(-child.pid, 'SIGKILL'); } catch { /* already gone */ }
+  try { child.kill('SIGKILL'); } catch { /* already gone */ }
+};
+const fail = (message) => {
+  console.error(message);
+  if (logTail.trim()) console.error('--- app output tail ---\n' + logTail.trim());
+  killTree();
+  process.exit(1);
+};
 
 // Read token file
 const tokenPath = join(configDir, 'verify.json');
@@ -139,33 +185,30 @@ while (Date.now() < deadline && !exited) {
   }
   await wait(1000);
 }
-if (!port) {
-  console.error('Timed out waiting for verify service');
-  try { child.kill('SIGKILL'); } catch {}
-  process.exit(1);
-}
+if (!port) fail('Timed out waiting for verify service');
 
-// Poll health
+// Poll health. fetch() has no default timeout, so an unresponsive app would
+// stall the run instead of failing it.
 let healthy = false;
 for (let i = 0; i < 30 && !exited; i++) {
   try {
-    const r = await fetch(`http://127.0.0.1:${port}/health`);
+    const r = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(5000) });
     if (r.ok) { healthy = true; break; }
   } catch {}
   await wait(1000);
 }
-if (!healthy) {
-  console.error('Verify service never became healthy');
-  try { child.kill('SIGKILL'); } catch {}
-  process.exit(1);
-}
+if (!healthy) fail('Verify service never became healthy');
 
 // Run verification (retry until pass or timeout)
 let report = null;
 const verifyDeadline = Date.now() + Math.min(timeout, 30000);
 while (Date.now() < verifyDeadline && !exited) {
   try {
-    const r = await fetch(`http://127.0.0.1:${port}/verify`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+    const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(20000),
+    });
     report = await r.json();
     if (report?.pass) break;
   } catch (e) {
@@ -173,11 +216,12 @@ while (Date.now() < verifyDeadline && !exited) {
   }
   await wait(1000);
 }
-try { child.kill('SIGKILL'); } catch {}
 
 if (!report || !report.pass) {
   console.error('VERIFICATION FAILED');
   console.error(JSON.stringify(report, null, 2));
+  if (logTail.trim()) console.error('--- app output tail ---\n' + logTail.trim());
+  killTree();
   process.exit(1);
 }
 // Truncated-set guard: every corpus ad route must have been probed.
@@ -204,7 +248,11 @@ if (expectPromoted) {
   let blocked = false;
   for (let i = 0; i < 20; i++) {
     try {
-      const r = await fetch(`http://127.0.0.1:${port}/verify`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(20000),
+      });
       const rep = await r.json();
       const probes = Array.isArray(rep?.probes) ? rep.probes : [];
       if (probes.some((p) => p.route === expectPromoted && p.outcome === 'blocked')) { blocked = true; break; }
@@ -213,9 +261,13 @@ if (expectPromoted) {
   }
   if (!blocked) {
     console.error('PROMOTION FAILED: promoted route not blocked');
+    killTree();
     process.exit(1);
   }
 }
+// The app is still running for the --expect-promoted check above; reap the
+// whole tree only once we are done with it.
+killTree();
 // Machine-born live receipt
 try {
   const crypto = await import('node:crypto');

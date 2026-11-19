@@ -11,6 +11,25 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
   error: 3,
 };
 
+/**
+ * Logging must never crash the host app. When the launcher exits, or a CI
+ * harness closes its pipes, writes to stdout/stderr raise EPIPE; without an
+ * 'error' listener Node rethrows it as an uncaught exception, which Electron
+ * surfaces as a "JS Uncaught Exception" dialog. Install a sink once and wrap
+ * every write.
+ */
+let streamsGuarded = false;
+function guardStreams(): void {
+  if (streamsGuarded) return;
+  streamsGuarded = true;
+  const swallow = (): void => {
+    // The reader is gone. The file log below still carries the line.
+  };
+  for (const stream of [process.stdout, process.stderr]) {
+    stream.on('error', swallow);
+  }
+}
+
 function formatArg(arg: unknown): string {
   if (typeof arg === 'string') return arg;
   if (typeof arg === 'number' || typeof arg === 'boolean' || typeof arg === 'bigint') {
@@ -73,12 +92,17 @@ export class Logger {
     const parts = args.map(formatArg);
     const line = parts.length > 0 ? `${formatted} ${parts.join(' ')}` : formatted;
 
-    if (level === 'error') {
-      console.error(line);
-    } else if (level === 'warn') {
-      console.warn(line);
-    } else {
-      console.log(line);
+    guardStreams();
+    try {
+      if (level === 'error') {
+        console.error(line);
+      } else if (level === 'warn') {
+        console.warn(line);
+      } else {
+        console.log(line);
+      }
+    } catch {
+      // EPIPE / closed stream: never let a log line take the app down.
     }
 
     if (this.logToFile) {
