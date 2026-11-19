@@ -113,7 +113,7 @@ jobs:
       - name: Resolve payload version from receipt
         id: payload
         run: |
-          V=$(node scripts/payload-version.mjs)
+          V=$(node scripts/payload-version.mjs | awk '{print $2}')
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "payloadVersion=$V"
 
