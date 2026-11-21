@@ -8,6 +8,7 @@ const artifactPath = get('--artifact') || 'config/generated-rules.json';
 const receiptsDir = get('--receipts') || 'receipts';
 const out = get('--out') || 'feed/manifest.json';
 const version = get('--version') || '1';
+const generatedAtArg = get('--generated-at');
 
 let artifact = { addEndpoints: [], addSelectors: {} };
 try { artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8')); } catch {}
@@ -26,7 +27,7 @@ if (!latest || !latest.artifactHash) { console.error('no valid receipt'); proces
 
 const manifest = {
   version: Number(version),
-  generatedAt: new Date().toISOString(),
+  generatedAt: generatedAtArg || latest.at || new Date().toISOString(),
   entries: [{
     healHash: latest.artifactHash,
     rules: {
