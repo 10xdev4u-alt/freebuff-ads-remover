@@ -20,10 +20,11 @@ const { classifyRoute } = await import('../dist/candidates.js');
 // Load existing corpus for additive-superset check
 let existingAds = new Set();
 let existingControls = new Set();
+const existingSource = new Map();
 const corpusPath = path.resolve('corpus/golden.jsonl');
 if (fs.existsSync(corpusPath)) {
   for (const line of fs.readFileSync(corpusPath,'utf8').trim().split('\n').filter(Boolean)) {
-    try { const e = JSON.parse(line); if (e.label === 'ad') existingAds.add(e.path); else if (e.label === 'control') existingControls.add(e.path); } catch {}
+    try { const e = JSON.parse(line); if (e.label === 'ad') existingAds.add(e.path); else if (e.label === 'control') existingControls.add(e.path); if (e.path && e.source) existingSource.set(e.path, e.source); } catch {}
   }
 }
 
@@ -50,7 +51,8 @@ function scan(dir) {
 const found = [...new Set(scan(resources))];
 
 const ads = new Set(existingAds);
-const controls = new Set(CONTROL_ROUTES);
+// Keep controls added by earlier runs; the hardcoded pair is the minimum.
+const controls = new Set([...existingControls, ...CONTROL_ROUTES]);
 for (const r of found) {
   if (CONTROL_ROUTES.includes(r)) controls.add(r);
   else if (classifyRoute(r).candidate) ads.add(r);
@@ -59,9 +61,10 @@ for (const r of found) {
 // Additive superset check
 for (const a of existingAds) if (!ads.has(a)) { console.error('DROPPED golden ad:', a); process.exit(1); }
 
+const sourceFor = (p) => existingSource.get(p) || `upstream-audit@${version}`;
 const entries = [
-  ...[...ads].map((p) => ({ path: p, label: 'ad', surface: 'sponsorBreak', source: `upstream-audit@${version}` })),
-  ...[...controls].map((p) => ({ path: p, label: 'control', surface: null, source: `upstream-audit@${version}` })),
+  ...[...ads].map((p) => ({ path: p, label: 'ad', surface: 'sponsorBreak', source: sourceFor(p) })),
+  ...[...controls].map((p) => ({ path: p, label: 'control', surface: null, source: sourceFor(p) })),
 ];
 
 const body = entries.map((e) => JSON.stringify(e)).join('\n') + '\n';
