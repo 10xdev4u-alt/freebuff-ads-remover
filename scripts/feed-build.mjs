@@ -21,8 +21,10 @@ const receipts = fs.existsSync(receiptsDir)
 const crypto = await import('node:crypto');
 const artifactText = fs.readFileSync(artifactPath, 'utf8');
 const artifactHash = 'sha256:' + crypto.createHash('sha256').update(artifactText).digest('hex');
-let latest = receipts.find((r) => r.artifactHash === artifactHash);
-if (!latest) latest = receipts.sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')))[0];
+// Newest first: several receipts can share one artifactHash, and directory
+// order is not chronological order.
+const sorted = [...receipts].sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+let latest = sorted.find((r) => r.artifactHash === artifactHash) || sorted[0];
 if (!latest || !latest.artifactHash) { console.error('no valid receipt'); process.exit(1); }
 
 const manifest = {

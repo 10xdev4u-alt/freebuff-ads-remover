@@ -4,7 +4,7 @@
  * release (CodebuffAI/codebuff-community). Exits non-zero (and prints a clear
  * error) on any failure — never silently skips.
  */
-import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync, chmodSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -139,6 +139,9 @@ async function main() {
     process.exit(1);
   }
   await pipeline(dl.body, createWriteStream(out));
+  // createWriteStream writes with the default non-executable mode; the
+  // AppImage must be executable for --appimage-extract.
+  chmodSync(out, 0o755);
 
   if (resolved.sha512) {
     const hash = createHash('sha512');

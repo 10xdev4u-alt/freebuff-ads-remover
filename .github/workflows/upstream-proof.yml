@@ -12,6 +12,9 @@ on:
 concurrency:
   group: proof-loop
   cancel-in-progress: false
+  # Five proof workflows share this group; the default queue would cancel the
+  # earlier pending run whenever a new one is queued.
+  queue: max
 
 permissions:
   contents: write
@@ -20,6 +23,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     outputs:
       version: ${{ steps.ver.outputs.version }}
     steps:
@@ -113,6 +117,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: needs.audit.result == 'success'
     needs: audit
     steps:

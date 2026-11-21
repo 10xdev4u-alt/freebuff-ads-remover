@@ -7,7 +7,8 @@
  * Usage:
  *   node scripts/e2e-headless.mjs --appimage <path> [--extract-dir <dir>] [--timeout <ms>]
  *
- * Exits 0 on success or when --appimage is omitted (skip mode for CI without payload).
+ * Exits 0 on success, or 0 with --allow-skip when --appimage is omitted.
+ * Exits 2 for a missing --appimage, a missing --feed env, or bad arguments.
  * Exits 1 on any verification failure.
  */
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';

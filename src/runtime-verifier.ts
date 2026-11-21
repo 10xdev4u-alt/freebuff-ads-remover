@@ -283,6 +283,9 @@ export class RuntimeVerifier {
           const rid = p.requestId as string;
           if (requestIds.has(rid)) {
             const status = (p.response as { status?: number } | undefined)?.status;
+            // CDP reports every hop of a redirect chain on the same requestId;
+            // wait for the final response instead of failing on the 3xx.
+            if (typeof status === 'number' && status >= 300 && status < 400) return;
             cleanup();
             // A control route that answers 5xx is not reachable: accepting it
             // would let every live receipt go green while the app is broken.
