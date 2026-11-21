@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll } from 'vitest';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import { signManifest, verifyManifest } from '../src/feed.js';
 
@@ -64,7 +64,33 @@ describe('feed sync', () => {
       { env: { ...process.env, FEED_PUBLIC_KEY: pubPem }, encoding: 'utf8' },
     );
     expect(r).toContain('applied');
+    expect(fs.existsSync(path.join(cfg, 'feed-rules.json.tmp'))).toBe(false);
     const rules = JSON.parse(fs.readFileSync(path.join(cfg, 'feed-rules.json'), 'utf8')) as { addEndpoints: string[] };
     expect(rules.addEndpoints).toContain('/api/monetize');
+  });
+
+  it('keeps the previous rules when the manifest signature is invalid', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-feed-'));
+    const manifestPath = path.join(tmp, 'm.json');
+    const { privateKey } = crypto.generateKeyPairSync('ed25519');
+    const privPem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const base = { version: 1, entries: [{ healHash: 'h1', rules: { addEndpoints: ['/api/monetize'] } }], rollbackTo: null };
+    const signed = { ...base, sig: signManifest(base, privPem) };
+    fs.writeFileSync(manifestPath, JSON.stringify(signed));
+    const cfg = path.join(tmp, 'cfg');
+    fs.mkdirSync(cfg, { recursive: true });
+    const rulesPath = path.join(cfg, 'feed-rules.json');
+    fs.writeFileSync(rulesPath, JSON.stringify({ addEndpoints: ['/api/old'] }));
+
+    const otherPub = crypto.generateKeyPairSync('ed25519').publicKey.export({ type: 'spki', format: 'pem' });
+    const r = spawnSync(
+      process.execPath,
+      [path.join(process.cwd(), 'scripts', 'feed-sync.mjs'), '--manifest', manifestPath, '--config-dir', cfg],
+      { env: { ...process.env, FEED_PUBLIC_KEY: otherPub }, encoding: 'utf8' },
+    );
+
+    expect(r.status).not.toBe(0);
+    expect(JSON.parse(fs.readFileSync(rulesPath, 'utf8'))).toEqual({ addEndpoints: ['/api/old'] });
+    expect(fs.existsSync(`${rulesPath}.tmp`)).toBe(false);
   });
 });

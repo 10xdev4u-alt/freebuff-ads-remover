@@ -17,6 +17,20 @@ if (!source || !configDir || !publicKey) {
 const dir = configDir;
 fs.mkdirSync(dir, { recursive: true });
 const statePath = path.join(dir, 'feed-state.json');
+
+// Write through a sibling temp file and rename: a crash or ENOSPC mid-write
+// must leave the previous rules intact rather than a truncated JSON file.
+function atomicWrite(file, data) {
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, data);
+  fs.renameSync(tmp, file);
+}
+function atomicCopy(from, to) {
+  const tmp = `${to}.tmp`;
+  fs.copyFileSync(from, tmp);
+  fs.renameSync(tmp, to);
+}
+
 let state = {};
 try { state = JSON.parse(fs.readFileSync(statePath, 'utf8')); } catch {}
 
@@ -42,11 +56,11 @@ if (state.version && version <= state.version && !manifest.rollbackTo) {
 if (manifest.rollbackTo) {
   const lastGood = path.join(dir, 'feed-rules.last-good.json');
   if (fs.existsSync(lastGood)) {
-    fs.copyFileSync(lastGood, path.join(dir, 'feed-rules.json'));
+    atomicCopy(lastGood, path.join(dir, 'feed-rules.json'));
   } else {
     try { fs.unlinkSync(path.join(dir, 'feed-rules.json')); } catch {}
   }
-  fs.writeFileSync(statePath, JSON.stringify({ version, rolledBack: true, at: new Date().toISOString() }, null, 2));
+  atomicWrite(statePath, JSON.stringify({ version, rolledBack: true, at: new Date().toISOString() }, null, 2));
   console.log(JSON.stringify({ status: 'rolled-back', to: manifest.rollbackTo }));
   process.exit(0);
 }
@@ -54,7 +68,7 @@ if (killSwitch) { console.log(JSON.stringify({ status: 'kill-switch' })); proces
 // materialize last-good before overwriting
 const feedRulesPath = path.join(dir, 'feed-rules.json');
 if (fs.existsSync(feedRulesPath)) {
-  fs.copyFileSync(feedRulesPath, path.join(dir, 'feed-rules.last-good.json'));
+  atomicCopy(feedRulesPath, path.join(dir, 'feed-rules.last-good.json'));
 }
 const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
 const merged = {
@@ -63,7 +77,7 @@ const merged = {
   source: `feed:${entries.map((e) => e.healHash).join(',')}`,
   healHash: entries.map((e) => e.healHash).join(','),
 };
-fs.writeFileSync(feedRulesPath, JSON.stringify(merged, null, 2));
-fs.writeFileSync(statePath, JSON.stringify({ version, at: new Date().toISOString() }, null, 2));
-fs.writeFileSync(path.join(dir, 'delivery-receipt.json'), JSON.stringify({ healHash: merged.healHash, version, appliedAt: new Date().toISOString() }, null, 2));
+atomicWrite(feedRulesPath, JSON.stringify(merged, null, 2));
+atomicWrite(statePath, JSON.stringify({ version, at: new Date().toISOString() }, null, 2));
+atomicWrite(path.join(dir, 'delivery-receipt.json'), JSON.stringify({ healHash: merged.healHash, version, appliedAt: new Date().toISOString() }, null, 2));
 console.log(JSON.stringify({ status: 'applied', version, entries: entries.length }));
