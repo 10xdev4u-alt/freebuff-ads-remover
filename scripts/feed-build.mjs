@@ -21,11 +21,15 @@ const receipts = fs.existsSync(receiptsDir)
 const crypto = await import('node:crypto');
 const artifactText = fs.readFileSync(artifactPath, 'utf8');
 const artifactHash = 'sha256:' + crypto.createHash('sha256').update(artifactText).digest('hex');
-// Newest first: several receipts can share one artifactHash, and directory
-// order is not chronological order.
+// The published healHash must be the hash of the artifact actually shipped, and
+// the receipt that vouches for it must record a passing gate. Falling back to
+// any receipt made the chain tautological: the feed signed whatever receipt was
+// newest, not the artifact it published.
 const sorted = [...receipts].sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
-let latest = sorted.find((r) => r.artifactHash === artifactHash) || sorted[0];
-if (!latest || !latest.artifactHash) { console.error('no valid receipt'); process.exit(1); }
+const latest = sorted.find((r) => r.artifactHash === artifactHash);
+if (!latest) { console.error('no receipt matches artifact ' + artifactHash); process.exit(1); }
+if (latest.gate?.pass !== true) { console.error('receipt gate not pass for ' + artifactHash); process.exit(1); }
+if (!latest.provenance) { console.error('receipt missing provenance for ' + artifactHash); process.exit(1); }
 
 const manifest = {
   version: Number(version),
