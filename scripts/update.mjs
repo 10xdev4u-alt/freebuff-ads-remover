@@ -6,6 +6,9 @@ import path from 'node:path';
 const root = process.env.FREEBUFF_INSTALL_ROOT || (process.env.HOME + '/.local/share/freebuff-ads-remover');
 process.chdir(root);
 
+const dist = path.join(root, 'dist');
+const backup = path.join(root, 'dist.bak');
+
 console.log('Fetching latest...');
 execSync('git fetch --tags --force', { stdio: 'inherit' });
 execSync('git pull --ff-only', { stdio: 'inherit' });
@@ -13,25 +16,29 @@ execSync('git pull --ff-only', { stdio: 'inherit' });
 console.log('Installing deps...');
 execSync('npm ci', { stdio: 'inherit' });
 
-// staging build
-const staging = root + '.staging';
-if (fs.existsSync(staging)) fs.rmSync(staging, { recursive: true, force: true });
-fs.mkdirSync(staging);
-execSync('npm run build', { stdio: 'inherit' });
+// `npm run build` runs tsc with outDir "dist", so it overwrites the live build
+// in place. Copy the current dist aside first so a failed build can be undone.
+let hadBackup = false;
+if (fs.existsSync(dist)) {
+  fs.rmSync(backup, { recursive: true, force: true });
+  fs.cpSync(dist, backup, { recursive: true });
+  hadBackup = true;
+}
 
-// atomic swap with backup: build into staging/dist, then swap
-const dist = path.join(root, 'dist');
-const stagingDist = path.join(staging, 'dist');
-const backup = path.join(root, 'dist.bak');
-// move the freshly built dist into staging for verification
-if (fs.existsSync(stagingDist)) fs.rmSync(stagingDist, { recursive: true, force: true });
-fs.renameSync(dist, stagingDist);
-// verify marker
-const marker = fs.readFileSync(path.join(stagingDist, 'bootstrap.js'), 'utf8');
-if (!marker.includes('freebuff-ads-remover')) { console.error('marker missing'); process.exit(1); }
-// swap
-if (fs.existsSync(backup)) fs.rmSync(backup, { recursive: true, force: true });
-fs.renameSync(dist, backup).catch && null;
-// dist may not exist now (moved); ensure
-fs.renameSync(stagingDist, dist);
-console.log('Update complete. Previous build at dist.bak');
+try {
+  console.log('Building...');
+  execSync('npm run build', { stdio: 'inherit' });
+  const marker = fs.readFileSync(path.join(dist, 'bootstrap.js'), 'utf8');
+  if (!marker.includes('freebuff-ads-remover')) throw new Error('marker missing from dist/bootstrap.js');
+} catch (err) {
+  if (hadBackup) {
+    fs.rmSync(dist, { recursive: true, force: true });
+    fs.renameSync(backup, dist);
+    console.error('Update failed; previous build restored:', err);
+  } else {
+    console.error('Update failed and there was no previous build to restore:', err);
+  }
+  process.exit(1);
+}
+
+console.log('Update complete.' + (hadBackup ? ' Previous build kept at dist.bak' : ''));

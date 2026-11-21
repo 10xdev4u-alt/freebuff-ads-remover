@@ -74,7 +74,10 @@ function cmdStatus(): number {
 }
 
 function cmdUpdate(): number {
-  const r = spawnSync(process.execPath, [path.join(process.cwd(), 'scripts', 'update.mjs')], { stdio: 'inherit' });
+  // cli.js is compiled into dist/, so the package root is one level up.
+  // Resolving against cwd made `farbuff update` fail from any other directory.
+  const script = path.join(__dirname, '..', 'scripts', 'update.mjs');
+  const r = spawnSync(process.execPath, [script], { stdio: 'inherit' });
   return r.status ?? 0;
 }
 

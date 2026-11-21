@@ -19,6 +19,24 @@ function readCount(): number {
   catch { return 0; }
 }
 
+/**
+ * True when the pid recorded in the sentinel belongs to a process that is
+ * still alive (and is not us). A live process has not crashed, so its
+ * sentinel must not be counted as an unclean exit.
+ */
+function sentinelIsLive(): boolean {
+  let pid = 0;
+  try { pid = Number(fs.readFileSync(sentinelPath(), 'utf8').trim()); } catch { return false; }
+  if (!Number.isInteger(pid) || pid <= 0 || pid === process.pid) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    // EPERM means the process exists but is owned by another user.
+    return (err as NodeJS.ErrnoException | undefined)?.code === 'EPERM';
+  }
+}
+
 export interface CrashGuard {
   /** Returns false if we should refuse to activate (crash loop). */
   shouldActivate(): boolean;
@@ -33,15 +51,19 @@ export interface CrashGuard {
 export function createCrashGuard(): CrashGuard {
   return {
     shouldActivate() {
-      const c = readCount();
+      let c = readCount();
+      // Consume the sentinel so one unclean exit is counted exactly once.
+      if (fs.existsSync(sentinelPath()) && !sentinelIsLive()) {
+        c += 1;
+        try {
+          fs.writeFileSync(counterPath(), String(c));
+          fs.rmSync(sentinelPath(), { force: true });
+        } catch { /* ignore */ }
+      }
       if (c >= CRASH_THRESHOLD) {
         // Reset so the user can retry after investigating.
         try { fs.writeFileSync(counterPath(), '0'); } catch { /* ignore */ }
         return false;
-      }
-      // If a previous run didn't exit cleanly, count it.
-      if (fs.existsSync(sentinelPath())) {
-        try { fs.writeFileSync(counterPath(), String(c + 1)); } catch { /* ignore */ }
       }
       return true;
     },
