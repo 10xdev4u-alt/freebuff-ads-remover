@@ -282,8 +282,18 @@ export class RuntimeVerifier {
         } else if (m === 'Network.responseReceived') {
           const rid = p.requestId as string;
           if (requestIds.has(rid)) {
+            const status = (p.response as { status?: number } | undefined)?.status;
+            // CDP reports every hop of a redirect chain on the same requestId;
+            // wait for the final response instead of failing on the 3xx.
+            if (typeof status === 'number' && status >= 300 && status < 400) return;
             cleanup();
-            resolve({ route, kind, outcome: 'reached' });
+            // A control route that answers 5xx is not reachable: accepting it
+            // would let every live receipt go green while the app is broken.
+            if (typeof status === 'number' && status >= 200 && status < 300) {
+              resolve({ route, kind, outcome: 'reached' });
+            } else {
+              resolve({ route, kind, outcome: 'failed-other', detail: `HTTP ${String(status ?? 'unknown')}` });
+            }
           }
         }
       };

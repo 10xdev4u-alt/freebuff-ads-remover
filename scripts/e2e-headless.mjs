@@ -7,7 +7,8 @@
  * Usage:
  *   node scripts/e2e-headless.mjs --appimage <path> [--extract-dir <dir>] [--timeout <ms>]
  *
- * Exits 0 on success or when --appimage is omitted (skip mode for CI without payload).
+ * Exits 0 on success, or 0 with --allow-skip when --appimage is omitted.
+ * Exits 2 for a missing --appimage, a missing --feed env, or bad arguments.
  * Exits 1 on any verification failure.
  */
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
@@ -30,8 +31,17 @@ const feed = args.includes('--feed');
 const expectPromoted = get('--expect-promoted');
 
 if (!appimage) {
-  console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
-  process.exit(0);
+  if (args.includes('--allow-skip')) {
+    console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
+    process.exit(0);
+  }
+  // A missing or misspelled --appimage must not look like a passing run.
+  console.error('no --appimage provided (pass --allow-skip to skip explicitly)');
+  process.exit(2);
+}
+if (feed && (!process.env.FREEBUFF_FEED_URL || !process.env.FREEBUFF_FEED_PUBLIC_KEY)) {
+  console.error('--feed requires FREEBUFF_FEED_URL and FREEBUFF_FEED_PUBLIC_KEY');
+  process.exit(2);
 }
 if (!existsSync(appimage)) {
   console.error(`AppImage not found: ${appimage}`);

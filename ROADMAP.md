@@ -215,29 +215,29 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 ### Wave 54 — Hygiene & truth
 - [x] Triage noise bot PRs (#189 timestamp-only receipt, #190 re-signed manifest closed).
 - [x] Remove untracked drill receipts from the worktree (root fix lands in Wave 57).
-- [ ] ROADMAP truth pass (this PR).
-- [ ] Cut v1.27.0 for the #191 EPIPE / e2e-isolation / payload-version fixes.
+- [x] ROADMAP truth pass (this PR).
+- [x] Cut v1.27.0 for the #191 EPIPE / e2e-isolation / payload-version fixes.
 
 ### Wave 55 — Stop breaking the install (P0 runtime)
-- [ ] `fix(update): restore dist when the marker check fails` — `scripts/update.mjs:28-36`
+- [x] `fix(update): restore dist when the marker check fails` — `scripts/update.mjs:28-36`
       moves `dist` away, then throws before the restore; every updater run leaves no `dist/`.
-- [ ] `fix(crash-guard): clear the sentinel on clean exit` — no `before-quit`/`exit` hook
+- [x] `fix(crash-guard): clear the sentinel on clean exit` — no `before-quit`/`exit` hook
       exists, so the product self-disables after three ordinary quits.
-- [ ] `fix(crash-guard): count before the threshold check` — off-by-one at
+- [x] `fix(crash-guard): count before the threshold check` — off-by-one at
       `src/crash-guard.ts:35-46`; a surviving sentinel is also double-counted.
-- [ ] `fix(launcher): serialize extract/patch with flock` — concurrent launchers
+- [x] `fix(launcher): serialize extract/patch with flock` — concurrent launchers
       `rm -rf` the shared extract and can exec a half-patched host.
 
 ### Wave 56 — Trust the payload you patch
-- [ ] `fix(launcher): stamp the extract only when complete` — extraction exit status is
+- [x] `fix(launcher): stamp the extract only when complete` — extraction exit status is
       discarded at `scripts/launch-freebuff.sh:67`; a partial tree becomes permanent.
-- [ ] `fix(patch): verify the asar backup before restore` — bare rename at
+- [x] `fix(patch): verify the asar backup before restore` — bare rename at
       `scripts/patch-freebuff-app.mjs:87-90` promotes a truncated archive to live.
-- [ ] `fix(launcher): verify the adopted payload after copy` — `.adopted-version` is
+- [x] `fix(launcher): verify the adopted payload after copy` — `.adopted-version` is
       written from the source version and the copy is never checked.
-- [ ] `fix(launcher): redirect launcher output to the log` — the launcher's own `echo`
+- [x] `fix(launcher): redirect launcher output to the log` — the launcher's own `echo`
       can SIGPIPE before `exec` when stdout is a closed pipe.
-- [ ] `fix(feed): atomic feed writes` — plain `writeFileSync` in
+- [x] `fix(feed): atomic feed writes` — plain `writeFileSync` in
       `scripts/feed-sync.mjs:66-68` can strand a truncated rules file forever.
 
 ### Wave 57 — Make the gates tell the truth
@@ -255,18 +255,18 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 
 ### Wave 58 — Make truth apply to shipped code
 - [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.
-- [ ] `fix(verify): require a real block reason` — any fetch rejection is labelled BLOCKED.
+- [x] `fix(verify): require a real block reason` — any fetch rejection is labelled BLOCKED.
 - [ ] `ci: close the fail-open paths` — `|| true` / `set +e` hide audit and heal failures.
-- [ ] `test(verifier): cover negative paths` — happy-path mocks only.
-- [ ] `fix(e2e): exercise the signed feed` — `--feed` is wired to an empty url/key.
-- [ ] `fix(ci): pin the E2E payload version` — a `||` fallback can test a different binary
+- [x] `test(verifier): cover negative paths` — happy-path mocks only.
+- [x] `fix(e2e): exercise the signed feed` — `--feed` is wired to an empty url/key.
+- [x] `fix(ci): pin the E2E payload version` — a `||` fallback can test a different binary
       than the receipt claims.
-- [ ] `fix(corpus): preserve controls and stage writes` — `update-corpus.mjs:53` resets
+- [x] `fix(corpus): preserve controls and stage writes` — `update-corpus.mjs:53` resets
       controls to the hardcoded pair.
-- [ ] `fix(heal): stop daily receipt churn` — `generatedAt` bumps every run, opening a
+- [x] `fix(heal): stop daily receipt churn` — `generatedAt` bumps every run, opening a
       no-op PR daily.
-- [ ] `ci: serialize the loop workflows` — four crons race on release day.
-- [ ] `ci: alert when the heal gate fails` — a rejected heal leaks ads silently.
+- [x] `ci: serialize the loop workflows` — four crons race on release day.
+- [x] `ci: alert when the heal gate fails` — a rejected heal leaks ads silently.
 - [ ] `fix(loop): connect inbound candidates to heal` — the candidates file is never
       committed or uploaded.
 
