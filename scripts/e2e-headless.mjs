@@ -30,8 +30,17 @@ const feed = args.includes('--feed');
 const expectPromoted = get('--expect-promoted');
 
 if (!appimage) {
-  console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
-  process.exit(0);
+  if (args.includes('--allow-skip')) {
+    console.log(JSON.stringify({ status: 'skipped', reason: 'no --appimage provided' }));
+    process.exit(0);
+  }
+  // A missing or misspelled --appimage must not look like a passing run.
+  console.error('no --appimage provided (pass --allow-skip to skip explicitly)');
+  process.exit(2);
+}
+if (feed && (!process.env.FREEBUFF_FEED_URL || !process.env.FREEBUFF_FEED_PUBLIC_KEY)) {
+  console.error('--feed requires FREEBUFF_FEED_URL and FREEBUFF_FEED_PUBLIC_KEY');
+  process.exit(2);
 }
 if (!existsSync(appimage)) {
   console.error(`AppImage not found: ${appimage}`);
