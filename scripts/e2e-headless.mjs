@@ -249,10 +249,7 @@ if (promote) {
     } catch {}
     await wait(1000);
   }
-  if (!promoted) {
-    // No promoted rules in the artifact: nothing to promote; treat as pass.
-    console.log('no promoted rules in artifact; skipping promotion assertion');
-  }
+  if (!promoted) fail('PROMOTION FAILED: no promoted rules');
 }
 if (expectPromoted) {
   let blocked = false;
