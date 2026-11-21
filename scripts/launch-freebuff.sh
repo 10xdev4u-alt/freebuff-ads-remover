@@ -67,10 +67,20 @@ extract_appimage() {
   local prev_dir
   prev_dir=$(pwd)
   cd "$extract_dir"
-  "$appimage" --appimage-extract >/dev/null 2>&1 || true
+  local extract_status=0
+  "$appimage" --appimage-extract >/dev/null 2>&1 || extract_status=$?
   cd "$prev_dir"
 
-  if [[ ! -f "$squashfs_root/AppRun" ]]; then
+  # A partial extract that happens to contain AppRun must not be cached: the
+  # stamp is what makes the next launch skip extraction.
+  if (( extract_status != 0 )); then
+    echo "AppImage extraction failed (exit $extract_status)" >&2
+    rm -rf "$extract_dir"
+    return 1
+  fi
+  if [[ ! -f "$squashfs_root/AppRun" || ! -d "$squashfs_root/resources" ]]; then
+    echo "AppImage extraction incomplete" >&2
+    rm -rf "$extract_dir"
     return 1
   fi
 
@@ -148,13 +158,23 @@ adopt_live_payload() {
       *[Ff]reebuff*) ;;
       *) continue ;;
     esac
+    [[ -n "$mount_ver" ]] || continue
     if [[ -z "$current_ver" ]] || is_newer_version "$mount_ver" "$current_ver"; then
-      echo "Adopting running Freebuff $mount_ver payload (updater bypassed the launcher)"
+      say "Adopting running Freebuff $mount_ver payload (updater bypassed the launcher)"
       local stage_dir="$extract_dir.adopt-tmp"
       rm -rf "$stage_dir"
       mkdir -p "$stage_dir"
       if ! cp -a "$mount_root/." "$stage_dir/squashfs-root/"; then
         echo "Payload copy failed; keeping existing install." >&2
+        rm -rf "$stage_dir"
+        return 1
+      fi
+      # Verify what we actually copied before committing it: cp -a succeeds on
+      # a truncated tree, and .adopted-version is a claim, not a check.
+      local staged_ver
+      staged_ver=$(payload_version "$stage_dir/squashfs-root/resources" | awk '{print $2}')
+      if [[ "$staged_ver" != "$mount_ver" || ! -f "$stage_dir/squashfs-root/resources/app.asar" ]]; then
+        echo "Adopted payload failed verification; keeping existing install." >&2
         rm -rf "$stage_dir"
         return 1
       fi
@@ -193,6 +213,10 @@ release_launcher_lock() {
     HAVE_FLOCK=0
   fi
 }
+
+# stdout can be a closed pipe (the .desktop entry uses Terminal=false). A
+# failing informational echo must not abort the launcher before exec.
+say() { echo "$@" || true; }
 
 main() {
   if command -v flock >/dev/null 2>&1; then
@@ -256,10 +280,10 @@ main() {
     exit 1
   fi
 
-  echo "Freebuff Ads Remover"
-  echo "Extension: $EXTENSION_ENTRY"
-  echo "Freebuff:  $app_path"
-  echo ""
+  say "Freebuff Ads Remover"
+  say "Extension: $EXTENSION_ENTRY"
+  say "Freebuff:  $app_path"
+  say ""
 
   # Self-heal after in-place updater restarts (see adopt_live_payload).
   adopt_live_payload "$EXTRACT_ROOT" || true
@@ -273,7 +297,7 @@ main() {
   if is_appimage "$app_path"; then
     local squashfs_root
     if [[ -f "$EXTRACT_ROOT/.adopted-version" && "$app_path" -ot "$EXTRACT_ROOT/.adopted-version" && -f "$EXTRACT_ROOT/squashfs-root/AppRun" ]]; then
-      echo "Using adopted Freebuff $(cat "$EXTRACT_ROOT/.adopted-version") payload (AppImage on disk is older)"
+      say "Using adopted Freebuff $(cat "$EXTRACT_ROOT/.adopted-version") payload (AppImage on disk is older)"
       squashfs_root="$EXTRACT_ROOT/squashfs-root"
     else
       rm -f "$EXTRACT_ROOT/.adopted-version"
@@ -306,7 +330,9 @@ main() {
       "$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" submit-misses --url "$FREEBUFF_INBOUND_URL" >/dev/null 2>&1 || echo "Inbound submit failed; continuing." >&2
     fi
 
-    patch_resources "$squashfs_root/resources"
+    # patch_resources reports its own failure; keep the documented fail-open
+    # behaviour instead of letting `set -e` abort before exec.
+    patch_resources "$squashfs_root/resources" || true
 
     # Outbound relay (opt-in): submit wild outcome envelopes. Fail-open.
     OUTBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" outbound.enabled 2>/dev/null || echo false)"
@@ -328,8 +354,8 @@ main() {
       fi
     fi
 
-    echo "Electron:  $electron_bin"
-    echo ""
+    say "Electron:  $electron_bin"
+    say ""
 
     # Release before exec: the lock must not be held by the running host.
     release_launcher_lock
