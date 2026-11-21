@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -58,6 +58,23 @@ describe('patch-freebuff-app', () => {
     expect(main).toContain('require("/tmp/other-entry.js")');
     expect(main).not.toContain('require("/tmp/extension-entry.js")');
     expect(main.match(/freebuff-ads-remover:begin/g)).toHaveLength(1);
+  });
+
+  it('refuses to promote a corrupt app.asar.orig', () => {
+    const asar = join(resources, 'app.asar');
+    const orig = join(resources, 'app.asar.orig');
+    execFileSync('cp', [asar, orig]);
+    writeFileSync(orig, 'not an asar');
+    rmSync(asar);
+
+    const r = spawnSync(process.execPath, [script, resources], {
+      env: { ...process.env, FREEBUFF_ADS_REMOVER_ENTRY: '/tmp/extension-entry.js' },
+      encoding: 'utf8',
+    });
+
+    expect(r.status).not.toBe(0);
+    expect(existsSync(asar)).toBe(false);
+    expect(readFileSync(orig, 'utf8')).toBe('not an asar');
   });
 
   it('migrates a legacy unpacked resources/app patch', () => {
