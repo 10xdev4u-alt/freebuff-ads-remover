@@ -3,7 +3,10 @@ set -euo pipefail
 
 EXTENSION_DIR="${FREEBUFF_ADS_REMOVER_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 FREEBUFF_CMD="${FREEBUFF_CMD:-freebuff}"
-EXTRACT_ROOT="${FREEBUFF_EXTRACT_DIR:-/tmp/freebuff-ads-remover-extract}"
+# Per-user extract root: a world-shared /tmp path lets another local user
+# pre-create it, making our `rm -rf` fail under `set -e` and blocking every
+# launch. XDG_RUNTIME_DIR is per-user tmpfs when available.
+EXTRACT_ROOT="${FREEBUFF_EXTRACT_DIR:-${XDG_RUNTIME_DIR:-/tmp}/freebuff-ads-remover-$UID/extract}"
 
 is_appimage() {
   local file="$1"
@@ -180,7 +183,27 @@ patch_resources() {
   fi
 }
 
+# Serialize extract/patch across concurrent launchers: they share
+# EXTRACT_ROOT, and a second launcher's `rm -rf` would delete the first
+# one's in-flight tree (or kill a host already running from it).
+HAVE_FLOCK=0
+release_launcher_lock() {
+  if (( HAVE_FLOCK )); then
+    flock -u 9 || true
+    HAVE_FLOCK=0
+  fi
+}
+
 main() {
+  if command -v flock >/dev/null 2>&1; then
+    exec 9>"${TMPDIR:-/tmp}/freebuff-ads-remover-$UID.lock"
+    if ! flock -w 120 9; then
+      echo "Another launcher is extracting/patching; try again shortly." >&2
+      exit 1
+    fi
+    HAVE_FLOCK=1
+  fi
+
   # Freebuff's Electron main process (and its bun orchestrator child) write to
   # stdout/stderr. When launched from a .desktop entry (Terminal=false) those
   # descriptors can end up on a pipe whose read end closes, producing an
@@ -308,6 +331,8 @@ main() {
     echo "Electron:  $electron_bin"
     echo ""
 
+    # Release before exec: the lock must not be held by the running host.
+    release_launcher_lock
     exec "$electron_bin" --no-sandbox "$@" >>"$FREEBUFF_LOG" 2>&1
   fi
 
@@ -333,6 +358,7 @@ main() {
   fi
 
   patch_resources "$resources_dir"
+  release_launcher_lock
   exec "$FREEBUFF_CMD" "$@" >>"$FREEBUFF_LOG" 2>&1
 }
 
