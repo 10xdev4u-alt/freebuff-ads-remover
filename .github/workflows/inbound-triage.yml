@@ -10,6 +10,10 @@ on:
         required: false
         default: 'inbound/envelopes.json'
 
+concurrency:
+  group: proof-loop
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write

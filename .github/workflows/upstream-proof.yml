@@ -9,6 +9,10 @@ on:
         description: 'Pin a Freebuff version (optional)'
         required: false
 
+concurrency:
+  group: proof-loop
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -16,6 +20,8 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,8 +70,9 @@ jobs:
           cat /tmp/heal.json
           echo "exit=$HEAL_EXIT" >> "$GITHUB_OUTPUT"
           if [ -s config/generated-rules.json ] && node -e "const d=require('./config/generated-rules.json');process.exit((d.addEndpoints||[]).length||Object.keys(d.addSelectors||{}).length?0:1)"; then echo "has_delta=true" >> "$GITHUB_OUTPUT"; else echo "has_delta=false" >> "$GITHUB_OUTPUT"; fi
-          if [ "$HEAL_EXIT" -ne 0 ] && [ "${{ steps.audit.outputs.audit_exit }}" != "0" ]; then
-            echo "heal failed with gaps" >&2
+          if [ "$HEAL_EXIT" -ne 0 ]; then
+            echo "self-heal rejected the payload (exit $HEAL_EXIT)" >&2
+            cat /tmp/heal.json >&2 || true
             exit 1
           fi
       - name: Detect proof drift
@@ -106,7 +113,7 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: needs.audit.result == 'success'
     needs: audit
     steps:
       - uses: actions/checkout@v4
@@ -116,6 +123,8 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y xvfb
       - run: npm ci && npm run build
       - name: Fetch AppImage
-        run: node scripts/fetch-latest-appimage.mjs --version ${{ github.event.inputs.version || '0.0.204' }} --out /tmp/freebuff.AppImage
+        run: node scripts/fetch-latest-appimage.mjs --version ${{ needs.audit.outputs.version }} --out /tmp/freebuff.AppImage
       - name: Run headless E2E
+        env:
+          FREEBUFF_PAYLOAD_VERSION: ${{ needs.audit.outputs.version }}
         run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --timeout 180000
