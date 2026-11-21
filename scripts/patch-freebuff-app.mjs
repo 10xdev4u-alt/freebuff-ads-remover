@@ -85,6 +85,12 @@ async function main() {
   // Freebuff >= 0.0.186 refuses to boot that layout, so put the archive back and
   // let the repack path below patch it properly.
   if (!existsSync(asarPath) && existsSync(backupPath)) {
+    // Only promote a backup we can actually read: a truncated .orig must not
+    // become the live payload.
+    const backupMain = await readMain(backupPath);
+    if (backupMain === null) {
+      fail(`app.asar.orig at ${backupPath} is not a readable asar archive; refusing to restore it`);
+    }
     renameSync(backupPath, asarPath);
     console.log('[patch-freebuff-app] restored app.asar from app.asar.orig (legacy patch migration)');
   }
@@ -130,7 +136,7 @@ async function main() {
   await createPackageWithOptions(stagingDir, pendingAsar, {});
 
   const packedMain = await readMain(pendingAsar);
-  if (!packedMain || !packedMain.includes(MARKER_PREFIX)) {
+  if (!packedMain || !packedMain.includes(MARKER_PREFIX) || !packedMain.includes('// freebuff-ads-remover:end') || !packedMain.includes(entry)) {
     rmSync(pendingAsar, { force: true });
     rmSync(stagingDir, { recursive: true, force: true });
     fail('repacked archive failed verification (loader marker missing)');
