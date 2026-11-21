@@ -112,6 +112,17 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     if (session) {
       electronHook.activate(session, electronApi);
     }
+    // Clear the crash sentinel on a graceful quit. Without this the sentinel
+    // survives every ordinary exit and the guard eventually disables the
+    // extension after a few launches (fail-open for the host, but the user
+    // loses ad blocking). Tests and non-Electron hosts pass no app object.
+    if (electronApi?.app.on) {
+      try {
+        electronApi.app.on('will-quit', () => { deactivate(); });
+      } catch (err) {
+        logger.warn('will-quit hook failed', err);
+      }
+    }
     // Ghost Mode runtime (default off).
     ghostRuntime = new GhostRuntime(config.ghost);
     ghostRuntime.activate();
@@ -128,7 +139,6 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       const attachAll = (): void => {
         try {
           const ec = getElectron();
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           const all = ec?.webContents?.getAllWebContents() ?? [];
           runtimeVerifier?.watch(ec?.app, () => (ec?.webContents?.getAllWebContents() ?? []) as unknown as Parameters<RuntimeVerifier['attachAll']>[0]);
           runtimeVerifier?.attachAll(all as unknown as Parameters<RuntimeVerifier['attachAll']>[0]);

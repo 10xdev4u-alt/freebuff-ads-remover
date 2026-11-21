@@ -55,6 +55,22 @@ describe('Activation: real bootstrap path', () => {
     expect(controls).toBeGreaterThan(0);
   });
 
+  it('clears the crash sentinel on will-quit', () => {
+    const listeners: Record<string, () => void> = {};
+    const fakeApp = {
+      whenReady: async () => {},
+      on: (event: string, listener: () => void) => { listeners[event] = listener; },
+      removeListener: () => {},
+    };
+    const ok = activate(fakeSession, { app: fakeApp });
+    expect(ok).toBe(true);
+    const sentinel = path.join(process.env.FREEBUFF_CONFIG_DIR as string, 'running.sentinel');
+    expect(fs.existsSync(sentinel)).toBe(true);
+    expect(listeners['will-quit']).toBeDefined();
+    listeners['will-quit']!();
+    expect(fs.existsSync(sentinel)).toBe(false);
+  });
+
   it('corpus manifest hash matches', () => {
     const corpusPath = path.resolve('corpus/golden.jsonl');
     const buf = fs.readFileSync(corpusPath);
