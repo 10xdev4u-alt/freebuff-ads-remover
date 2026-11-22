@@ -22,6 +22,13 @@ function readJson(file) {
   catch { return { ok: false, value: null }; }
 }
 
+// NaN for a missing or unparseable timestamp, so a freshness check cannot be
+// skipped by omitting the field.
+function ageMs(ts) {
+  const t = Date.parse(ts);
+  return Number.isFinite(t) ? Date.now() - t : NaN;
+}
+
 function receiptList(root, dir) {
   const abs = path.join(root, dir);
   if (!fs.existsSync(abs)) return [];
@@ -158,13 +165,23 @@ export async function checkLedger(root, deps = {}) {
     if (latestLive.payloadVersion === null || latestLive.payloadVersion === undefined) {
       fail('live receipt has null payloadVersion');
     }
-    if (latestLive.at) {
-      const age = Date.now() - Date.parse(latestLive.at);
-      if (age > 7 * 24 * 60 * 60 * 1000) fail('live receipt is stale (>7d)');
-    }
+    // A missing or unparseable timestamp must not read as fresh.
+    const liveAge = ageMs(latestLive.at);
+    if (!Number.isFinite(liveAge)) fail('live receipt has a missing or invalid timestamp');
+    else if (liveAge > 7 * 24 * 60 * 60 * 1000) fail('live receipt is stale (>7d)');
     if (latestLive.provenance !== 'live-e2e') fail('live receipt missing provenance: live-e2e');
     if (latestLive.pass !== true) fail('live receipt did not pass');
     if (!Number.isFinite(latestLive.probes) || latestLive.probes <= 0) fail('live receipt has no probes');
+    // The live receipt must describe the artifact currently shipped: a passing
+    // run for artifact A must not green-light artifact B.
+    if (!exists('config/generated-rules.json')) {
+      fail('live receipt present but config/generated-rules.json is missing');
+    } else {
+      const liveArtifactHash = 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(artifactPath)).digest('hex');
+      if (latestLive.artifactHash !== liveArtifactHash) {
+        fail('live receipt artifactHash does not match config/generated-rules.json');
+      }
+    }
   }
 
   // Feed manifest must exist, parse, and verify against the pinned public key
@@ -179,10 +196,9 @@ export async function checkLedger(root, deps = {}) {
       let valid = false;
       try { valid = await verifyManifest(value, PINNED_PUBLIC_KEY); } catch (e) { valid = false; fail('feed manifest verify threw: ' + e.message); }
       if (!valid) fail('feed manifest signature invalid');
-      if (value.generatedAt) {
-        const age = Date.now() - Date.parse(value.generatedAt);
-        if (age > 7 * 24 * 60 * 60 * 1000) fail('feed manifest stale (>7d)');
-      }
+      const feedAge = ageMs(value.generatedAt);
+      if (!Number.isFinite(feedAge)) fail('feed manifest has a missing or invalid generatedAt');
+      else if (feedAge > 7 * 24 * 60 * 60 * 1000) fail('feed manifest stale (>7d)');
       // feed healHash must match a committed receipt
       const hashes = receiptList(root, receiptsDir).filter((r) => r.ok).map((r) => r.value.artifactHash);
       if (value.entries && value.entries[0] && !hashes.includes(value.entries[0].healHash)) {

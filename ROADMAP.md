@@ -262,6 +262,11 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       reads, so `heal-proof`'s "feed was applied" guard could never pass. `scripts/feed-apply.mjs`
       runs the launcher's `feed-sync.mjs` invocation, requires the delivery receipt, and the
       harness probes the routes the feed delivered.
+- [x] `fix(ledger): bind live evidence to the shipped artifact` — a missing or unparseable
+      receipt timestamp skipped the freshness check, and a live `artifactHash` was never
+      compared to `config/generated-rules.json`, so a passing run for artifact A could
+      green-light artifact B. Both now fail; the feed manifest's `generatedAt` gets the same
+      finite-age check.
 
 ### Wave 58 — Make truth apply to shipped code
 - [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.

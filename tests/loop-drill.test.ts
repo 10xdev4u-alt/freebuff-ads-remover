@@ -44,8 +44,24 @@ describe('loop drill', () => {
     expect(drillReceipt.healHash).toBe(healReceipt.artifactHash);
   });
 
-  it('fails when the fixture has no heal delta', () => {
-    const fixtureRoot = path.join(repo, 'tests', 'fixtures', 'payload-gap');
+  it('writes the drill receipt under the work dir by default', () => {
+    if (!fs.existsSync('/tmp/feed-private.pem')) {
+      const { privateKey } = crypto.generateKeyPairSync('ed25519');
+      fs.writeFileSync('/tmp/feed-private.pem', privateKey.export({ type: 'pkcs8', format: 'pem' }));
+    }
+    const env = { ...process.env, FEED_SIGNING_PRIVATE_KEY: fs.readFileSync('/tmp/feed-private.pem', 'utf8') };
+    const before = fs.readdirSync(path.join(repo, 'receipts')).filter((f) => f.startsWith('drill-'));
+    const out = execSync('node scripts/loop-drill.mjs --json', { cwd: repo, env, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const after = fs.readdirSync(path.join(repo, 'receipts')).filter((f) => f.startsWith('drill-'));
+    expect(after).toEqual(before);
+
+    const result = JSON.parse(out.trim().split('\n').pop()!) as { status: string; work: string; receipt: string };
+    expect(result.status).toBe('pass');
+    expect(result.receipt.startsWith(result.work + path.sep)).toBe(true);
+    expect(fs.existsSync(result.receipt)).toBe(true);
+  });
+
+  it('fails when the fixture has no heal delta', () => {    const fixtureRoot = path.join(repo, 'tests', 'fixtures', 'payload-gap');
     const expected = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'expected-rules.json'), 'utf8')) as { addEndpoints: string[] };
     const route = expected.addEndpoints[0];
     if (!route) throw new Error('payload-gap fixture has no expected route');

@@ -89,6 +89,22 @@ describe('ledger gate', () => {
     expect(r.findings).toContain('live receipt missing provenance: live-e2e');
   });
 
+  it('fails when the live receipt timestamp is missing or invalid', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'receipts', 'live-0.0.204.json');
+    fs.writeFileSync(p, JSON.stringify({ ...(JSON.parse(fs.readFileSync(p, 'utf8')) as { at: string }), at: 'not-a-date' }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('live receipt has a missing or invalid timestamp');
+  });
+
+  it('fails when the live receipt artifactHash does not match the shipped artifact', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'receipts', 'live-0.0.204.json');
+    fs.writeFileSync(p, JSON.stringify({ ...(JSON.parse(fs.readFileSync(p, 'utf8')) as { artifactHash: string }), artifactHash: 'sha256:deadbeef' }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('live receipt artifactHash does not match config/generated-rules.json');
+  });
+
   it('fails when the feed healHash matches no receipt', async () => {
     const f = fixture();
     const p = path.join(f.root, 'feed', 'manifest.json');
