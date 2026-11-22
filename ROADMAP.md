@@ -293,7 +293,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       missing or unreadable `--candidates` file instead of silently healing without it.
 
 ### Wave 59 — Coverage & registry
-- [ ] `fix(match): guard malformed URLs` — `decodeURIComponent` throws on `/api/ad/%ZZ`.
+- [x] `fix(match): guard malformed URLs` — `decodeURIComponent` threw on `/api/ad/%ZZ`;
+      a malformed encoding now falls back to matching the raw path instead of
+      escaping `matchRoute`.
 - [ ] `fix(hook): never skip callback on intercept throw` — `electron-hook.ts:218,237`.
 - [ ] `feat(audit): audit absolute ad URLs` — regex only sees `/api/`-prefixed literals.
 - [ ] `feat(dom): derive selectors from the registry` — 5 hardcoded vs 56 registered.
