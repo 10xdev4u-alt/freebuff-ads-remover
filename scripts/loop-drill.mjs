@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 const args = process.argv.slice(2);
 const jsonMode = args.includes('--json');
 const payloadDir = args.includes('--payload') ? args[args.indexOf('--payload')+1] : null;
+const receiptOut = args.includes('--receipt-out') ? args[args.indexOf('--receipt-out')+1] : null;
 
 function fail(stage, msg) { console.error('DRILL FAIL [' + stage + ']:', msg); process.exit(1); }
 function log(o) { if (jsonMode) console.log(JSON.stringify(o)); else console.log(o); }
@@ -52,11 +53,12 @@ const healExit = (() => {
 if (healExit !== 0) fail('heal', 'self-heal exited ' + healExit);
 
 const artifact = JSON.parse(fs.readFileSync(genRules, 'utf8'));
-if (!Array.isArray(artifact.addEndpoints) || artifact.addEndpoints.length === 0) {
-  // empty delta is acceptable only if audit had no gaps; for a drill we want a gap
-  // In fixture mode, payload-gap may already be healed; treat empty as warn
-  console.error('DRILL WARN: empty delta');
-}
+const delta = (Array.isArray(artifact.addEndpoints) ? artifact.addEndpoints.length : 0)
+  + (artifact.addSelectors && typeof artifact.addSelectors === 'object' ? Object.keys(artifact.addSelectors).length : 0);
+// A drill exists to prove the loop finds a real gap. An empty delta means the
+// fixture was already healed or the audit saw nothing, and passing that off as
+// a drill result is exactly the tautology this gate exists to catch.
+if (delta === 0) fail('heal', 'empty heal delta');
 
 // Stage 3: feed-build + sign
 const manifest = path.join(work, 'manifest.json');
@@ -82,8 +84,12 @@ try {
 const feedRules = path.join(cfgDir, 'feed-rules.json');
 if (!fs.existsSync(feedRules)) fail('feed-sync', 'feed-rules.json not created');
 
-// write drill receipt
-const drillReceipt = { at: new Date().toISOString(), stage: 'complete', payload: srcDir, healHash: artifact.addEndpoints?.length ? 'non-empty' : 'empty', provenance: 'drill' };
-fs.writeFileSync(path.join(repoRoot, 'receipts', 'drill-' + new Date().toISOString().slice(0,10) + '.json'), JSON.stringify(drillReceipt, null, 2));
+// write drill receipt to a temp path by default: the drill must not dirty the
+// repo it runs against.
+let healReceipt = {};
+try { healReceipt = JSON.parse(fs.readFileSync(receipt, 'utf8')); } catch {}
+const drillReceiptPath = receiptOut || path.join(work, 'drill-receipt.json');
+const drillReceipt = { at: new Date().toISOString(), stage: 'complete', payload: srcDir, healHash: healReceipt.artifactHash || 'unknown', delta, provenance: 'drill' };
+fs.writeFileSync(drillReceiptPath, JSON.stringify(drillReceipt, null, 2));
 
-log({ status: 'pass', work, drillRoute, healExit });
+log({ status: 'pass', work, drillRoute, healExit, delta, receipt: drillReceiptPath });
