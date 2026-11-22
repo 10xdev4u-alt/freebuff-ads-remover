@@ -4,17 +4,32 @@ import { PerformanceMonitor } from '../src/performance.js';
 import { DEFAULT_CONFIG } from '../src/types.js';
 import { Logger } from '../src/logger.js';
 
+// Wall-clock assertions flake on a loaded CI runner: one descheduled batch can
+// blow a per-call budget even though the code is fast. Take the best of several
+// batches after a warmup so a single noisy sample cannot fail the run, while a
+// real regression (every batch slow) still does.
+function bestAverage(ops: number, runs: number, fn: (i: number) => void): number {
+  let best = Infinity;
+  for (let r = 0; r < runs; r++) {
+    const start = performance.now();
+    for (let i = 0; i < ops; i++) fn(i);
+    const avg = (performance.now() - start) / ops;
+    if (avg < best) best = avg;
+  }
+  return best;
+}
+
 describe('Performance Benchmarks', () => {
   it('intercepts requests under 1ms', () => {
     const logger = new Logger('error', false);
     const interceptor = new AdInterceptor(DEFAULT_CONFIG, logger);
 
-    const start = performance.now();
     for (let i = 0; i < 1000; i++) {
       interceptor.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
     }
-    const elapsed = performance.now() - start;
-    const perRequest = elapsed / 1000;
+    const perRequest = bestAverage(1000, 5, () => {
+      interceptor.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
+    });
     expect(perRequest).toBeLessThan(1);
   });
 
@@ -23,19 +38,20 @@ describe('Performance Benchmarks', () => {
     const monitor = new PerformanceMonitor();
     const interceptor = new AdInterceptor(DEFAULT_CONFIG, logger);
 
-    const start = performance.now();
-    for (let i = 0; i < 10000; i++) {
-      const latency = Math.random() * 0.5;
-      const blocked = i % 2 === 0;
-      monitor.recordRequest(latency, blocked);
+    for (let i = 0; i < 1000; i++) {
+      monitor.recordRequest(0.1, i % 2 === 0);
       interceptor.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
     }
-    const elapsed = performance.now() - start;
-    expect(elapsed).toBeLessThan(3000);
+    monitor.reset();
+    const perRequest = bestAverage(10000, 3, (i) => {
+      monitor.recordRequest(Math.random() * 0.5, i % 2 === 0);
+      interceptor.intercept('http://127.0.0.1:5174/api/ad/break', 'POST');
+    });
+    expect(perRequest).toBeLessThan(0.3);
 
     const metrics = monitor.getMetrics();
-    expect(metrics.totalRequests).toBe(10000);
-    expect(metrics.blockedRequests).toBe(5000);
+    expect(metrics.totalRequests).toBe(10000 * 3);
+    expect(metrics.blockedRequests).toBe(5000 * 3);
     expect(metrics.averageLatencyMs).toBeLessThan(1);
   });
 
@@ -44,11 +60,10 @@ describe('Performance Benchmarks', () => {
     const { CssInjector } = await import('../src/css-injector.js');
     const injector = new CssInjector(DEFAULT_CONFIG, logger);
 
-    const start = performance.now();
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 100; i++) injector.updateConfig(DEFAULT_CONFIG);
+    const perCall = bestAverage(100, 5, () => {
       injector.updateConfig(DEFAULT_CONFIG);
-    }
-    const elapsed = performance.now() - start;
-    expect(elapsed).toBeLessThan(100);
+    });
+    expect(perCall).toBeLessThan(1);
   });
 });
