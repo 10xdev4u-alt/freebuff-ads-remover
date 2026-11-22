@@ -292,4 +292,30 @@ describe('ElectronHook', () => {
     hooked.activate(mockSession);
     expect(dashboard.activate).not.toHaveBeenCalled();
   });
+
+  it('still calls the callback when intercept throws', () => {
+    const onBeforeRequestMock = vi.fn();
+    const mockSession = {
+      defaultSession: {
+        webRequest: {
+          onBeforeRequest: onBeforeRequestMock,
+        },
+      },
+    };
+    const spy = vi.spyOn(interceptor, 'intercept').mockImplementation(() => {
+      throw new Error('boom');
+    });
+    try {
+      hook.activate(mockSession);
+      const listener = onBeforeRequestMock.mock.calls[0]?.[1] as (
+        details: { url: string; method: string },
+        callback: (response: { cancel?: boolean }) => void,
+      ) => void;
+      const callback = vi.fn();
+      listener({ url: 'https://freebuff.com/api/v1/ads/impression', method: 'POST' }, callback);
+      expect(callback).toHaveBeenCalledWith({});
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

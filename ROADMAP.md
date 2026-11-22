@@ -296,7 +296,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] `fix(match): guard malformed URLs` — `decodeURIComponent` threw on `/api/ad/%ZZ`;
       a malformed encoding now falls back to matching the raw path instead of
       escaping `matchRoute`.
-- [ ] `fix(hook): never skip callback on intercept throw` — `electron-hook.ts:218,237`.
+- [x] `fix(hook): never skip callback on intercept throw` — `electron-hook.ts` let an
+      `intercept` throw skip the Electron callback, hanging the request; both the
+      first-arm and re-arm listeners now share a handler that always calls back.
 - [ ] `feat(audit): audit absolute ad URLs` — regex only sees `/api/`-prefixed literals.
 - [ ] `feat(dom): derive selectors from the registry` — 5 hardcoded vs 56 registered.
 - [ ] `feat(block): block third-party ad hosts`.

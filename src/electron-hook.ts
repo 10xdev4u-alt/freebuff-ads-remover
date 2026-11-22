@@ -196,6 +196,29 @@ export class ElectronHook {
     }
   }
 
+  private handleBeforeRequest(
+    tracker: ReturnType<typeof createChainTracker>,
+    d: { id?: number; url: string; method?: string },
+    callback: (response: { cancel?: boolean }) => void,
+  ): void {
+    if (d.id !== undefined && tracker.isAdChain(d.id)) {
+      callback({ cancel: true });
+      return;
+    }
+    try {
+      const result = this.interceptor.intercept(d.url, d.method ?? 'GET');
+      if (d.id !== undefined) tracker.record(d.id, d.url);
+      callback(result.blocked ? { cancel: true } : {});
+    } catch (e) {
+      // Electron waits on this callback; skipping it hangs the request.
+      this.logger.error('Intercept threw; allowing request so the callback is not skipped', {
+        url: d.url,
+        error: String(e),
+      });
+      callback({});
+    }
+  }
+
   private hookSession(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return;
     const session = raw as ElectronSessionLike;
@@ -210,14 +233,7 @@ export class ElectronHook {
       this.chainTrackers.set(session, tracker);
       const attach = webRequest.onBeforeRequest.bind(webRequest);
       attach({ urls: ['*://*/*'] }, (details, callback) => {
-        const d = details as { id?: number; url: string; method?: string };
-        if (d.id !== undefined && tracker.isAdChain(d.id)) {
-          callback({ cancel: true });
-          return;
-        }
-        const result = this.interceptor.intercept(d.url, d.method ?? 'GET');
-        if (d.id !== undefined) tracker.record(d.id, d.url);
-        callback(result.blocked ? { cancel: true } : {});
+        this.handleBeforeRequest(tracker, details, callback);
       });
       this.logger.debug('Session re-armed', { sessions: this.sessions.size });
       return;
@@ -229,14 +245,7 @@ export class ElectronHook {
     this.chainTrackers.set(session, tracker);
     const attach = webRequest.onBeforeRequest.bind(webRequest);
     attach({ urls: ['*://*/*'] }, (details, callback) => {
-      const d = details as { id?: number; url: string; method?: string };
-      if (d.id !== undefined && tracker.isAdChain(d.id)) {
-        callback({ cancel: true });
-        return;
-      }
-      const result = this.interceptor.intercept(d.url, d.method ?? 'GET');
-      if (d.id !== undefined) tracker.record(d.id, d.url);
-      callback(result.blocked ? { cancel: true } : {});
+      this.handleBeforeRequest(tracker, details, callback);
     });
     if (typeof webRequest.onHeadersReceived === 'function') {
       webRequest.onHeadersReceived((details: unknown, callback: (r: unknown) => void) => {
