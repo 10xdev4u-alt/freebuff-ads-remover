@@ -18,7 +18,8 @@ export function matchRoute(url: string, pattern: string): boolean {
     let pathname = url;
     try { pathname = new URL(url).pathname; } catch { /* keep */ }
     const cp = pattern.toLowerCase();
-    const cu = decodeURIComponent(pathname).toLowerCase();
+    let cu = pathname.toLowerCase();
+    try { cu = decodeURIComponent(pathname).toLowerCase(); } catch { /* malformed percent-encoding: match the raw path */ }
     return cu.includes(cp);
   }
   const cu = canonicalize(url);

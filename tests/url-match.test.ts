@@ -12,4 +12,9 @@ describe('url-match', () => {
   it('does not throw on bad url', () => {
     expect(() => matchRoute('not a url', '/x')).not.toThrow();
   });
+  it('does not throw on malformed percent-encoding', () => {
+    expect(() => matchRoute('http://x/api/ad/%ZZ', '/api/ad/')).not.toThrow();
+    expect(matchRoute('http://x/api/ad/%ZZ', '/api/ad/')).toBe(true);
+    expect(matchRoute('http://x/api/ad/%ZZ', '/api/other/')).toBe(false);
+  });
 });
