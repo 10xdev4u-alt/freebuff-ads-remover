@@ -1,12 +1,10 @@
 name: Heal Proof
 
 on:
+  # No `paths` filter: branch protection requires `heal-proof`, and a required
+  # check that only runs for some PRs leaves every other PR blocked on a status
+  # that never reports. Source PRs must get the real E2E.
   pull_request:
-    paths:
-      - 'config/generated-rules.json'
-      - 'receipts/**'
-      - 'feed/manifest.json'
-      - 'live-proof/index.html'
   workflow_dispatch:
   schedule:
     - cron: '0 6 * * *'
@@ -103,6 +101,7 @@ jobs:
           cat /tmp/far-e2e-extract/config/delivery-receipt.json
 
       - name: Stage live receipt on a main-based branch
+        if: github.event_name != 'pull_request'
         run: |
           V="${{ steps.payload.outputs.version }}"
           if [ ! -f "receipts/live-${V}.json" ]; then
@@ -116,6 +115,7 @@ jobs:
           cp "/tmp/far-live-receipt/live-${V}.json" receipts/
 
       - name: Publish live receipt
+        if: github.event_name != 'pull_request'
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/live-receipt

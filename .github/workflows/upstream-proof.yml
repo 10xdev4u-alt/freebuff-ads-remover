@@ -19,6 +19,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  actions: read
 
 jobs:
   audit:
@@ -61,21 +62,52 @@ jobs:
           node scripts/audit-endpoints.mjs squashfs-root/resources --json > /tmp/audit.json
           AUDIT_EXIT=$?
           set -e
+          # Exit 1 is the normal "gaps found" signal self-heal consumes. A
+          # report that does not parse is a crashed audit, not a gap list.
+          if ! node -e "JSON.parse(require('fs').readFileSync('/tmp/audit.json','utf8'))"; then
+            echo "audit produced no readable report (exit $AUDIT_EXIT)" >&2
+            cat /tmp/audit.json >&2 || true
+            exit 1
+          fi
           cat /tmp/audit.json
           echo "audit_exit=$AUDIT_EXIT" >> "$GITHUB_OUTPUT"
         id: audit
+      - name: Fetch inbound candidates
+        id: inbound
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RID=$(gh run list --workflow inbound-triage.yml --limit 10 --json databaseId,status,conclusion --jq '[.[] | select(.status=="completed" and .conclusion=="success")][0].databaseId // empty')
+          if [ -z "$RID" ]; then
+            echo "no completed inbound-triage run found; cannot heal without candidates" >&2
+            exit 1
+          fi
+          mkdir -p inbound
+          if ! gh run download "$RID" --name inbound-candidates --dir inbound; then
+            echo "inbound-triage run $RID carried no downloadable candidates artifact" >&2
+            exit 1
+          fi
+          CAND=$(find inbound -name candidates.json -type f -print -quit)
+          if [ -z "$CAND" ]; then
+            echo "downloaded artifact did not contain candidates.json" >&2
+            exit 1
+          fi
+          echo "path=$CAND" >> "$GITHUB_OUTPUT"
       - name: Self-heal
         id: heal
         run: |
+          V="${{ steps.ver.outputs.version }}"
+          ARGS=(--resources squashfs-root/resources --out config/generated-rules.json --receipt "receipts/heal-${V}.json" --payload-version "$V" --provenance machine --markdown /tmp/heal.md --json)
+          if [ -n "${{ steps.inbound.outputs.path }}" ]; then ARGS+=(--candidates "${{ steps.inbound.outputs.path }}"); fi
           set +e
-          node scripts/self-heal.mjs --resources squashfs-root/resources --out config/generated-rules.json --receipt receipts/heal-${{ steps.ver.outputs.version }}.json --payload-version ${{ steps.ver.outputs.version }} --provenance machine --candidates inbound/candidates.json --markdown /tmp/heal.md --json > /tmp/heal.json
+          node scripts/self-heal.mjs "${ARGS[@]}" > /tmp/heal.json
           HEAL_EXIT=$?
           set -e
           cat /tmp/heal.json
           echo "exit=$HEAL_EXIT" >> "$GITHUB_OUTPUT"
           if [ -s config/generated-rules.json ] && node -e "const d=require('./config/generated-rules.json');process.exit((d.addEndpoints||[]).length||Object.keys(d.addSelectors||{}).length?0:1)"; then echo "has_delta=true" >> "$GITHUB_OUTPUT"; else echo "has_delta=false" >> "$GITHUB_OUTPUT"; fi
           if [ "$HEAL_EXIT" -ne 0 ]; then
-            echo "self-heal rejected the payload (exit $HEAL_EXIT)" >&2
+            echo "self-heal failed (exit $HEAL_EXIT)" >&2
             cat /tmp/heal.json >&2 || true
             exit 1
           fi

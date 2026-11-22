@@ -34,12 +34,23 @@ jobs:
       - run: npm ci && npm run build
       - name: Aggregate
         run: |
+          mkdir -p inbound
           if [ -f "${{ github.event.inputs.envelopes || 'inbound/envelopes.json' }}" ]; then
             node scripts/inbound-aggregate.mjs --input "${{ github.event.inputs.envelopes || 'inbound/envelopes.json' }}" --out inbound/candidates.json
           else
             echo '{"generatedAt":"","candidates":[]}' > inbound/candidates.json
           fi
+      - name: Upload candidates
+        uses: actions/upload-artifact@v4
+        with:
+          name: inbound-candidates
+          path: inbound/candidates.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Open triage issue if candidates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           node -e "
             const fs=require('fs');
@@ -50,4 +61,4 @@ jobs:
               console.log('candidates='+c.candidates.length);
             } else console.log('candidates=0');
           "
-          if [ -s /tmp/issue.md ]; then gh issue create --title "Inbound candidate routes" --body-file /tmp/issue.md || true; fi
+          if [ -s /tmp/issue.md ]; then gh issue create --title "Inbound candidate routes" --body-file /tmp/issue.md; fi
