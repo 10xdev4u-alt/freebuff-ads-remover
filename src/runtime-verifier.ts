@@ -6,7 +6,8 @@
  * stack through `webContents.debugger` (the main-process CDP API that the
  * upstream `--remote-debugging-port` fuse cannot disable) and confirms that
  * ad routes actually fail with `net::ERR_BLOCKED_BY_CLIENT` while control
- * routes actually reach the orchestrator.
+ * routes actually reach the orchestrator (a 4xx answer still proves the
+ * request was not blocked; a 5xx means the app itself is erroring).
  *
  * Fail-open: if attach/evaluate throws, the report records `pass:false` with a
  * reason; the host app is never crashed.
@@ -287,9 +288,14 @@ export class RuntimeVerifier {
             // wait for the final response instead of failing on the 3xx.
             if (typeof status === 'number' && status >= 300 && status < 400) return;
             cleanup();
-            // A control route that answers 5xx is not reachable: accepting it
-            // would let every live receipt go green while the app is broken.
-            if (typeof status === 'number' && status >= 200 && status < 300) {
+            // A control proves the blocker did not swallow first-party traffic,
+            // so any answer from the app's own server counts as reached. The
+            // pinned controls are not 2xx on a packaged launch: `/healthz`
+            // answers 401 (its launch-id cookie is scoped to /api) and
+            // `/api/account/usage` is a hosted route the local orchestrator
+            // answers 404. A 5xx is different — the server itself is erroring,
+            // so the app is broken and promoted rules must roll back.
+            if (typeof status === 'number' && status >= 200 && status < 500) {
               resolve({ route, kind, outcome: 'reached' });
             } else {
               resolve({ route, kind, outcome: 'failed-other', detail: `HTTP ${String(status ?? 'unknown')}` });

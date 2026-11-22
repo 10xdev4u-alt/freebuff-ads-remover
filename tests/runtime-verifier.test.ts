@@ -71,7 +71,7 @@ describe('RuntimeVerifier', () => {
     expect(r.probes.find((p) => p.kind === 'control')?.outcome).toBe('reached');
   });
 
-  it('rejects a non-2xx control response', async () => {
+  it('rejects a 5xx control response', async () => {
     const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const wc = makeContents('http://127.0.0.1:5174/x');
     const v = new RuntimeVerifier(logger as any, { timeoutMs: 200, probeRoutes: ['/api/ad/policy'], controlRoutes: ['/healthz'], concurrency: 2 });
@@ -91,6 +91,27 @@ describe('RuntimeVerifier', () => {
     expect(r.pass).toBe(false);
     expect(r.reason).toBe('control-not-reached');
     expect(r.probes.find((p) => p.kind === 'control')?.outcome).toBe('failed-other');
+  });
+
+  it('accepts a 4xx control response as reached', async () => {
+    const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const wc = makeContents('http://127.0.0.1:5174/x');
+    const v = new RuntimeVerifier(logger as any, { timeoutMs: 200, probeRoutes: ['/api/ad/policy'], controlRoutes: ['/healthz'], concurrency: 2 });
+    v.attachAll([wc]);
+    const dbg = wc.debugger as any;
+    const runPromise = v.run();
+    await new Promise((r) => setTimeout(r, 20));
+    const evalCalls = (dbg.sendCommand).mock.calls.filter((c: any[]) => c[0] === 'Runtime.evaluate');
+    const adUrl = evalCalls[0]?.[1]?.expression?.match(/fetch\("([^"]+)"/)?.[1];
+    const controlUrl = evalCalls[1]?.[1]?.expression?.match(/fetch\("([^"]+)"/)?.[1];
+    dbg.emit('Network.requestWillBeSent', { requestId: 'req-ad', request: { url: adUrl } });
+    dbg.emit('Network.loadingFailed', { requestId: 'req-ad', errorText: 'net::ERR_BLOCKED_BY_CLIENT' });
+    await new Promise((r) => setTimeout(r, 20));
+    dbg.emit('Network.requestWillBeSent', { requestId: 'req-ctl', request: { url: controlUrl } });
+    dbg.emit('Network.responseReceived', { requestId: 'req-ctl', response: { status: 401 } });
+    const r = await runPromise;
+    expect(r.pass).toBe(true);
+    expect(r.probes.find((p) => p.kind === 'control')?.outcome).toBe('reached');
   });
 
   it('fail-open on attach failure', () => {

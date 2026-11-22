@@ -254,6 +254,10 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       selects by `at`, requires `pass` and `provenance`, and fails without one.
 - [x] `test(drill): assert a real heal delta and write to temp` — `loop-drill.mjs` fails on an
       empty delta and writes its receipt under the temp work dir.
+- [x] `fix(verifier): stop over-claiming control health` — a control answers 401 (`/healthz`,
+      launch-id cookie scoped to /api) or 404 (`/api/account/usage`, a hosted route) on a
+      packaged launch, so requiring 2xx turned `heal-proof` red on `main`. Accept any
+      non-5xx answer as reached; a 5xx still fails and rolls back promoted rules.
 
 ### Wave 58 — Make truth apply to shipped code
 - [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.
