@@ -8,12 +8,12 @@
  * Exposes window.__farBuffDomArmor = { version, stats, removeNow, teardown }.
  */
 
+import { AD_CSS_SELECTORS } from './types.js';
+
+// Derived from the registry so a selector added to AD_CSS_SELECTORS reaches the
+// DOM remover without a second hardcoded list drifting behind it.
 export const DOM_REMOVAL_SELECTORS: string[] = [
-  'a.sponsored-ad',
-  'a.ad-card',
-  '[data-ad-surface]',
-  '.ad-banner',
-  '.ad-showcase',
+  ...new Set(Object.values(AD_CSS_SELECTORS).flat()),
 ];
 
 export interface DomRemoverOptions {

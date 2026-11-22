@@ -20,6 +20,16 @@ describe('dom-remover', () => {
     expect(s).toContain('removeChild');
   });
 
+  it('derives selectors from the registry, not a hardcoded list', () => {
+    const s = buildDomRemoverFromSelectors();
+    const m = s.match(/var selectors = (\[.*?\]);/s);
+    const selectors = JSON.parse(String(m ? m[1] : '[]')) as string[];
+    expect(selectors).toContain('[class*="sponsorBreak"]');
+    expect(selectors).toContain('a.sponsored-ad');
+    expect(selectors).toContain('[data-ad-surface="billboard"]');
+    expect(selectors).toContain('.ad-content');
+  });
+
   it('escapes selectors safely via JSON', () => {
     const s = buildDomRemoverScript({ selectors: ['a"b'], debug: false });
     const m = s.match(/var selectors = (\[.*?\]);/s);

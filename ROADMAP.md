@@ -103,8 +103,8 @@ the Deprecated section.
 - [ ] Add per-surface CSS scoping to avoid over-hiding.
 - [ ] Dark/light theme-aware hiding (avoid layout shift).
 - [ ] Prevent ad placeholder skeleton flicker (reserve space collapse).
-- [ ] Derive DOM selectors from the registry: 5 are hardcoded in
-      `src/dom-remover.ts:11-17` while `src/types.ts:315-403` registers 56. → Wave 59
+- [x] Derive DOM selectors from the registry: `src/dom-remover.ts` hardcoded 5 while
+      `src/types.ts` registers 56; the remover now flattens `AD_CSS_SELECTORS`. → Wave 59
 
 ## 4. Coverage — script layer
 
