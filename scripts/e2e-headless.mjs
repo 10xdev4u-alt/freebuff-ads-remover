@@ -3,6 +3,8 @@
  * Headless end-to-end verification of the Freebuff Ads Remover against a real
  * Freebuff AppImage. Extracts the AppImage, patches it, launches Electron
  * under xvfb, and asserts the in-app RuntimeVerifier reports pass:true.
+ * With --feed it applies the signed feed to the extracted config first, the
+ * way the launcher does, and probes the routes that feed delivered.
  *
  * Usage:
  *   node scripts/e2e-headless.mjs --appimage <path> [--extract-dir <dir>] [--timeout <ms>]
@@ -13,9 +15,10 @@
  */
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { spawn, execSync } from 'node:child_process';
+import { spawn, execSync, execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { copyFileSync, readFileSync } from 'node:fs';
+import { applyFeed } from './feed-apply.mjs';
 
 const args = process.argv.slice(2);
 function get(flag) {
@@ -119,8 +122,31 @@ if (genRules && existsSync(genRules)) {
   writeFileSync(join(configDir, 'config.json'), JSON.stringify(cfg, null, 2));
 }
 
+// Apply the signed feed exactly as the launcher does, then probe the routes it
+// delivered. `--feed` used to only set a config field nothing reads, so the
+// workflow's "feed was applied" guard could never pass and the flag proved
+// nothing.
+if (feed) {
+  let applied;
+  try {
+    applied = applyFeed({
+      manifest: process.env.FREEBUFF_FEED_URL,
+      configDir,
+      publicKey: process.env.FREEBUFF_FEED_PUBLIC_KEY,
+      previousPublicKey: process.env.FREEBUFF_FEED_PREVIOUS_PUBLIC_KEY || '',
+    });
+  } catch (e) {
+    console.error('feed apply failed:', e.message);
+    process.exit(1);
+  }
+  if (applied.extraEndpoints.length) {
+    cfg.verify.probeRoutes = [...new Set([...cfg.verify.probeRoutes, ...applied.extraEndpoints])];
+    writeFileSync(join(configDir, 'config.json'), JSON.stringify(cfg, null, 2));
+  }
+  console.log(JSON.stringify({ feed: 'applied', healHash: applied.receipt.healHash, extraEndpoints: applied.extraEndpoints.length }));
+}
+
 // Patch
-const { execFileSync } = await import('node:child_process');
 try {
   execFileSync('node', [join(process.cwd(), 'scripts', 'patch-freebuff-app.mjs'), resources], { stdio: 'inherit' });
 } catch (e) {

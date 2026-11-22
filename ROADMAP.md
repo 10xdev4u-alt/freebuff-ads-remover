@@ -258,6 +258,10 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       launch-id cookie scoped to /api) or 404 (`/api/account/usage`, a hosted route) on a
       packaged launch, so requiring 2xx turned `heal-proof` red on `main`. Accept any
       non-5xx answer as reached; a 5xx still fails and rolls back promoted rules.
+- [x] `fix(e2e): actually apply the signed feed` — `--feed` only set a config field nothing
+      reads, so `heal-proof`'s "feed was applied" guard could never pass. `scripts/feed-apply.mjs`
+      runs the launcher's `feed-sync.mjs` invocation, requires the delivery receipt, and the
+      harness probes the routes the feed delivered.
 
 ### Wave 58 — Make truth apply to shipped code
 - [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.
