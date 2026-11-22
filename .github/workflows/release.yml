@@ -125,5 +125,15 @@ jobs:
             node scripts/fetch-latest-appimage.mjs --version ${{ steps.payload.outputs.version }} --out /tmp/freebuff.AppImage
           fi
           chmod +x /tmp/freebuff.AppImage
+      - name: Decide promotion assertion
+        id: promote
+        run: |
+          N=$(node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('config/generated-rules.json','utf8'));const n=(Array.isArray(a.addEndpoints)?a.addEndpoints.length:0)+Object.keys(a.addSelectors||{}).length;console.log(n)")
+          if [ "$N" -gt 0 ]; then
+            echo "flag=--promote" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+            echo "artifact carries no healed rules; skipping --promote"
+          fi
       - name: Run headless E2E with healed artifact
-        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json --promote --timeout 240000
+        run: node scripts/e2e-headless.mjs --appimage /tmp/freebuff.AppImage --generated-rules config/generated-rules.json ${{ steps.promote.outputs.flag }} --timeout 240000

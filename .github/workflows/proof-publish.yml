@@ -27,13 +27,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci && npm run build
-      - name: Require live receipt
-        run: |
-          if ! ls receipts/live-*.json >/dev/null 2>&1; then echo 'no live receipt'; exit 1; fi
-      - name: Generate live-proof page
-        run: |
-          mkdir -p live-proof
-          node -e "const fs=require('fs');const crypto=require('crypto');const receipts=fs.readdirSync('receipts').filter(f=>f.startsWith('live-')&&f.endsWith('.json'));const latest=receipts.sort().pop();const r=latest?JSON.parse(fs.readFileSync('receipts/'+latest,'utf8')):{};const html='<!doctype html><html><body><h1>Live proof</h1><pre>'+JSON.stringify(r,null,2)+'</pre></body></html>';fs.writeFileSync('live-proof/index.html',html);"
+      - name: Publish newest passing live receipt
+        run: node scripts/pick-live-receipt.mjs --receipts receipts --out live-proof/index.html
       - name: Open proof PR
         uses: peter-evans/create-pull-request@v6
         with:
