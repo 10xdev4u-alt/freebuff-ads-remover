@@ -304,7 +304,8 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [ ] `feat(block): block third-party ad hosts`.
 - [ ] `test(corpus): assert surface classifications` — all ads labelled `sponsorBreak`;
       the gate ignores `surface`.
-- [ ] `test(proof): cover the zero-coverage proof modules`.
+- [x] `test(proof): cover the zero-coverage proof modules` — `autopilot`, `dom-probe`,
+      `install-id`, `miss-report`, `outcome-report` and `trust-report` now have tests.
 - [ ] `test: ratchet coverage toward 85%`.
 - [ ] `fix(proof): verify the landing-page claims`.
 - [ ] `test: de-flake the timing benchmarks`.
