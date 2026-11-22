@@ -24,6 +24,23 @@ if (!resources || !out) {
   process.exit(2);
 }
 
+// Candidates are an explicit input, not an optional extra: a path that was
+// passed but cannot be read means the inbound loop is broken, and silently
+// healing without it would hide that.
+let candidates = null;
+if (candidatesPath) {
+  if (!fs.existsSync(candidatesPath)) {
+    console.error('candidates file missing:', candidatesPath);
+    process.exit(1);
+  }
+  try {
+    candidates = JSON.parse(fs.readFileSync(candidatesPath, 'utf8'));
+  } catch (e) {
+    console.error('candidates file unreadable:', candidatesPath, e.message);
+    process.exit(1);
+  }
+}
+
 const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const corpusDir = path.join(repoRoot, 'corpus');
 
@@ -51,11 +68,8 @@ if (payloadVersion) {
 }
 
 const missing = (auditJson.routes?.missing ?? []).map((r) => (typeof r === 'string' ? r : r.route)).filter(Boolean);
-if (candidatesPath && fs.existsSync(candidatesPath)) {
-  try {
-    const c = JSON.parse(fs.readFileSync(candidatesPath, 'utf8'));
-    for (const cand of (c.candidates ?? [])) { if (cand.route && !missing.includes(cand.route)) missing.push(cand.route); }
-  } catch { /* ignore */ }
+if (candidates) {
+  for (const cand of (candidates.candidates ?? [])) { if (cand.route && !missing.includes(cand.route)) missing.push(cand.route); }
 }
 
 // 2. Load existing artifact for cumulative merge.

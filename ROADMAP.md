@@ -269,9 +269,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       finite-age check.
 
 ### Wave 58 — Make truth apply to shipped code
-- [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.
+- [x] `ci: require real E2E on source PRs` — branch protection requires `heal-proof`, so its
+      `paths` filter left any PR that did not touch a proof path blocked on a status that
+      never reported. The filter is gone: every PR now runs the real E2E.
 - [x] `fix(verify): require a real block reason` — any fetch rejection is labelled BLOCKED.
-- [ ] `ci: close the fail-open paths` — `|| true` / `set +e` hide audit and heal failures.
+- [x] `ci: close the fail-open paths` — `release.yml` no longer swallows a missing
+      corpus/receipts/docs/LICENSE/CHANGELOG, `inbound-triage.yml` no longer swallows a
+      failed issue creation, and `upstream-proof.yml` fails when the audit emits no readable
+      report instead of only recording the exit code.
 - [x] `test(verifier): cover negative paths` — happy-path mocks only.
 - [x] `fix(e2e): exercise the signed feed` — `--feed` is wired to an empty url/key.
 - [x] `fix(ci): pin the E2E payload version` — a `||` fallback can test a different binary
@@ -282,8 +287,10 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       no-op PR daily.
 - [x] `ci: serialize the loop workflows` — four crons race on release day.
 - [x] `ci: alert when the heal gate fails` — a rejected heal leaks ads silently.
-- [ ] `fix(loop): connect inbound candidates to heal` — the candidates file is never
-      committed or uploaded.
+- [x] `fix(loop): connect inbound candidates to heal` — `inbound-triage.yml` uploads
+      `inbound/candidates.json` as an artifact, `upstream-proof.yml` downloads the latest
+      successful run's artifact and passes it to `self-heal`, and `self-heal` now fails on a
+      missing or unreadable `--candidates` file instead of silently healing without it.
 
 ### Wave 59 — Coverage & registry
 - [ ] `fix(match): guard malformed URLs` — `decodeURIComponent` throws on `/api/ad/%ZZ`.

@@ -56,14 +56,14 @@ jobs:
           cp -r scripts release/scripts
           cp -r bin release/bin
           cp -r config release/config
-          cp -r corpus release/corpus 2>/dev/null || true
-          cp -r receipts release/receipts 2>/dev/null || true
-          cp -r docs release/docs 2>/dev/null || true
+          cp -r corpus release/corpus
+          cp -r receipts release/receipts
+          cp -r docs release/docs
           cp package.json release/package.json
           cp package-lock.json release/package-lock.json
           cp README.md release/README.md
-          cp LICENSE release/LICENSE 2>/dev/null || true
-          cp CHANGELOG.md release/CHANGELOG.md 2>/dev/null || true
+          cp LICENSE release/LICENSE
+          cp CHANGELOG.md release/CHANGELOG.md
           cd release && tar -czf ../freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz . && cd ..
 
       - name: Generate checksums
