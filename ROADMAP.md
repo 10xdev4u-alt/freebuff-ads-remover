@@ -160,7 +160,7 @@ the Deprecated section.
       72/73/60/71.5 baseline). → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [ ] Golden-file tests for audit output.
-- [ ] Self-test the ledger gate with negative fixtures. → Wave 57
+- [x] Self-test the ledger gate with negative fixtures. → Wave 57
 
 ## 9. CI / automation / scale
 
@@ -241,17 +241,19 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `scripts/feed-sync.mjs:66-68` can strand a truncated rules file forever.
 
 ### Wave 57 — Make the gates tell the truth
-- [ ] `fix(ledger): require passing live evidence` — `check-ledger.mjs:109-125` ignores
-      `pass`, so a recorded failure passes the ledger.
-- [ ] `fix(feed): bind healHash to the published artifact` — `feed-build.mjs:23-25` falls
-      back to any receipt; the chain is tautological.
-- [ ] `fix(e2e): fail on empty promotion` — `e2e-headless.mjs:233-246` treats
-      "nothing to promote" as a pass.
-- [ ] `test(ledger): self-test the gate` — no negative tests exist for `check-ledger.mjs`.
-- [ ] `fix(proof): publish the newest verified receipt` — `proof-publish.yml:28` picks by
-      filename, not `at`, and never checks `pass`.
-- [ ] `test(drill): assert a real heal delta and write to temp` — `loop-drill.mjs:54-59,86-87`
-      tolerates an empty delta and dirties the repo.
+- [x] `fix(ledger): require passing live evidence` — `ledger-check.mjs` fails on a missing
+      live receipt, a non-passing one, or one with no probes; `check-ledger.mjs` is a thin
+      CLI over the importable gate.
+- [x] `fix(feed): bind healHash to the published artifact` — `feed-build.mjs` refuses a
+      manifest unless a receipt matches the artifact bytes and records a passing gate.
+- [x] `fix(e2e): fail on empty promotion` — `e2e-headless.mjs --promote` exits 1 when no rule
+      is promoted; `heal-proof.yml`/`release.yml` pass the flag only for a non-empty artifact.
+- [x] `test(ledger): self-test the gate` — `tests/check-ledger.test.ts` covers the happy path
+      and eleven negative fixtures.
+- [x] `fix(proof): publish the newest verified receipt` — `scripts/pick-live-receipt.mjs`
+      selects by `at`, requires `pass` and `provenance`, and fails without one.
+- [x] `test(drill): assert a real heal delta and write to temp` — `loop-drill.mjs` fails on an
+      empty delta and writes its receipt under the temp work dir.
 
 ### Wave 58 — Make truth apply to shipped code
 - [ ] `ci: require real E2E on source PRs` — `ci.yml` has no E2E job.
