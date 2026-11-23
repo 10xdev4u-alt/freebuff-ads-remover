@@ -8,7 +8,10 @@ const repo = process.cwd();
 const script = path.join(repo, 'scripts', 'update-corpus.mjs');
 
 beforeAll(() => {
-  if (!fs.existsSync(path.join(repo, 'dist', 'candidates.js'))) {
+  if (
+    !fs.existsSync(path.join(repo, 'dist', 'candidates.js')) ||
+    !fs.existsSync(path.join(repo, 'dist', 'surface.js'))
+  ) {
     execFileSync('npm', ['run', 'build'], { cwd: repo, stdio: 'inherit' });
   }
 });

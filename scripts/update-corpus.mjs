@@ -16,6 +16,7 @@ if (!resources) { console.error('usage: update-corpus.mjs --resources <dir> [--v
 // Loaded only after arg validation so a missing --resources exits 2 without
 // requiring a prior build.
 const { classifyRoute } = await import('../dist/candidates.js');
+const { classifyEndpoint } = await import('../dist/surface.js');
 
 // Load existing corpus for additive-superset check
 let existingAds = new Set();
@@ -65,7 +66,7 @@ for (const a of existingAds) if (!ads.has(a)) { console.error('DROPPED golden ad
 
 const sourceFor = (p) => existingSource.get(p) || `upstream-audit@${version}`;
 const entries = [
-  ...[...ads].map((p) => ({ path: p, label: 'ad', surface: 'sponsorBreak', source: sourceFor(p) })),
+  ...[...ads].map((p) => ({ path: p, label: 'ad', surface: classifyEndpoint(p), source: sourceFor(p) })),
   ...[...controls].map((p) => ({ path: p, label: 'control', surface: null, source: sourceFor(p) })),
 ];
 

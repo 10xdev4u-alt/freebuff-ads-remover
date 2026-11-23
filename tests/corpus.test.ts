@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadCorpus, verifyCorpus } from '../src/corpus.js';
+import { classifyEndpoint } from '../src/surface.js';
 
 describe('corpus', () => {
   it('loads and verifies golden corpus', () => {
@@ -11,6 +12,14 @@ describe('corpus', () => {
     expect(entries.length).toBe(manifest.entries);
     expect(manifest.ads).toBeGreaterThan(0);
     expect(verifyCorpus(dir)).toBe(true);
+  });
+  it('labels every ad with its classified surface', () => {
+    const dir = path.join(process.cwd(), 'corpus');
+    const { entries } = loadCorpus(dir);
+    for (const e of entries) {
+      if (e.label === 'ad') expect(e.surface).toBe(classifyEndpoint(e.path));
+      else expect(e.surface).toBeNull();
+    }
   });
   it('fails on tampered hash', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'corp-'));
