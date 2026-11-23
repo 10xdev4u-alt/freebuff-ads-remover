@@ -47,7 +47,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        # Vitest resolves undici 8, which requires Node >=22.19. Node 20 is
+        # still exercised by upstream-proof's build/audit/e2e path.
+        node-version: [22, 24]
     steps:
       - uses: actions/checkout@v4
 

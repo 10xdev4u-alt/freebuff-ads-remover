@@ -169,9 +169,10 @@ the Deprecated section.
       (`upstream-proof.yml:4-5,41-105`).
 - [ ] Auto-bump version on audit-clean release: `release.yml:40-47` only asserts
       tag == `package.json`; nothing bumps it. → Wave 61 (policy-gated)
-- [x] Matrix testing across Node 20/22: `engines.node >=20` is unverified; `ci.yml` pins 22
-      and `upstream-proof.yml` pins 20, but no job tests both. The `node-matrix` job in
-      `.github/workflows/ci.yml` runs typecheck + tests on 20 and 22. → Wave 60
+- [x] Matrix testing across Node versions: the dev toolchain needs >=22.19 (Vitest resolves
+      `undici` 8), so `ci.yml`'s `node-matrix` runs typecheck + tests on 22 and 24. The
+      user-facing runtime floor stays >=20 and is exercised by `upstream-proof.yml`
+      (build + audit + headless E2E). → Wave 60
 - [x] Dependabot for all deps: npm only (`.github/dependabot.yml`); the `github-actions`
       ecosystem is now tracked too. → Wave 60
 - [x] Signed releases (cosign) for the extension bundle: keyless signing of the tarball,
@@ -339,7 +340,7 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] `ci: cosign the release tarball` — keyless sign + verify steps in `release.yml`.
 - [x] `ci: reproducible release tarball` — sorted entries, pinned mtime/owner, `gzip -n`.
 - [x] `ci: dependabot for GitHub Actions` — `.github/dependabot.yml`.
-- [x] `ci: Node 20/22 test matrix` — `node-matrix` job in `ci.yml`.
+- [x] `ci: Node 22/24 test matrix` — `node-matrix` job in `ci.yml`; Node 20 stays covered by `upstream-proof`.
 - [ ] `docs: ad-surface issue template`.
 - [ ] `ci: gate PRs on audit deltas`.
 - [ ] `fix(launcher): sanitize Electron env vars`.

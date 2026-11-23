@@ -213,6 +213,9 @@ AppImage builds. Verified live on `0.0.169`, `0.0.170` and `0.0.186`; the launch
 
 ## Development
 
+Node.js >= 22.19 is required for the dev toolchain (Vitest resolves `undici` 8,
+which refuses older Node); Node.js >= 20 still works for the launcher patch step.
+
 ```bash
 npm install
 npm run build
