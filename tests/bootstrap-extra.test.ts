@@ -125,6 +125,8 @@ describe('bootstrap extra', () => {
     const { session } = fakeSession();
     expect(activate(session, undefined)).toBe(true);
     fs.rmSync(path.join(dir, 'config.json'), { force: true });
+    // Close the first activation's config watcher so it does not leak.
+    deactivate();
     expect(() => activate(session, undefined)).not.toThrow();
   });
 

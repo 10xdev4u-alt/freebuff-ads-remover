@@ -66,7 +66,7 @@ describe('classifyRoute', () => {
   });
 
   it('ignores a module that does not look ad-related', () => {
-    const result = classifyRoute('/api/user/me', { module: 'user-profile' });
+    const result = classifyRoute('/api/chat/history', { module: 'user-profile' });
     expect(result.signals).not.toContain('module:user-profile');
   });
 });

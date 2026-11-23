@@ -9,6 +9,7 @@ let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fb-cfg-'));
   process.env.FREEBUFF_CONFIG_DIR = dir;
+  delete process.env.FREEBUFF_PROFILE;
 });
 
 afterEach(() => {

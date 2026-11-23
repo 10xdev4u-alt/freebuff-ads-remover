@@ -55,9 +55,11 @@ function makeApp(opts: { userData?: string; getPathThrows?: boolean } = {}) {
     emit: (event: string, ...args: unknown[]) => {
       for (const l of listeners.get(event) ?? []) l(...args);
     },
-    getPath: opts.getPathThrows
-      ? () => { throw new Error('nope'); }
-      : () => opts.userData,
+    getPath: vi.fn(
+      opts.getPathThrows
+        ? () => { throw new Error('nope'); }
+        : () => opts.userData,
+    ),
   };
 }
 
@@ -147,15 +149,16 @@ describe('ElectronHook extra', () => {
 
     redirectListener({ id: 7, redirectURL: 'https://freebuff.com/api/v1/ads/impression' });
     const callback = vi.fn();
-    requestListener({ id: 7, url: 'https://freebuff.com/api/ad/break', method: 'GET' }, callback);
+    // Neutral URL: only the flagged redirect chain can cause this cancel.
+    requestListener({ id: 7, url: 'https://freebuff.com/landing', method: 'GET' }, callback);
     expect(callback).toHaveBeenCalledWith({ cancel: true });
 
     completedListener({ id: 7 });
     errorListener({ id: 7 });
     // After completion the chain is forgotten, so the same id is judged on its URL.
     const callback2 = vi.fn();
-    requestListener({ id: 7, url: 'https://freebuff.com/api/ad/break', method: 'GET' }, callback2);
-    expect(callback2).toHaveBeenCalledWith({ cancel: true });
+    requestListener({ id: 7, url: 'https://freebuff.com/landing', method: 'GET' }, callback2);
+    expect(callback2).toHaveBeenCalledWith({});
   });
 
   it('cancels a 3xx redirect to an ad URL and allows other responses', () => {
@@ -219,7 +222,9 @@ describe('ElectronHook extra', () => {
     expect(() => { hook.activate(sessionModule, { app, webContents: { getAllWebContents: () => [] } }); }).not.toThrow();
 
     const throwingApp = makeApp({ getPathThrows: true });
-    expect(() => { hook.activate({ defaultSession: makeSession() }, { app: throwingApp, webContents: { getAllWebContents: () => [] } }); }).not.toThrow();
+    const throwingHook = new ElectronHook(interceptor, cssInjector, logger);
+    expect(() => { throwingHook.activate({ defaultSession: makeSession() }, { app: throwingApp, webContents: { getAllWebContents: () => [] } }); }).not.toThrow();
+    expect(throwingApp.getPath).toHaveBeenCalled();
   });
 
   it('injects the DOM remover script when domRemoval is enabled', () => {

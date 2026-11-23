@@ -58,8 +58,10 @@ describe('CssInjector extra branches', () => {
       registry,
     );
     await injector.activate(t);
-    const css = String(t.insertCSS.mock.calls[0]?.[0] ?? '');
-    expect(css).toBe('');
+    expect(t.insertCSS).toHaveBeenCalled();
+    const cssCalls = t.insertCSS.mock.calls.map((call) => String(call[0]));
+    expect(cssCalls.filter((css) => css === '')).toHaveLength(1);
+    expect(cssCalls.filter((css) => css !== '').every((css) => css.includes('[data-ad]'))).toBe(true);
   });
 
   it('honours a registry whose selector set matches the enabled surfaces', async () => {

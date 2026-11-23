@@ -37,6 +37,7 @@ describe('RuleRegistry', () => {
 
   it('applies endpoints, hosts and selectors without duplicates', () => {
     const reg = new RuleRegistry();
+    const version = reg.current().version;
     const next = reg.apply({
       addEndpoints: ['/api/ad/new', '/api/ad/new'],
       addHosts: ['ads.example.com', 'ads.example.com'],
@@ -49,7 +50,7 @@ describe('RuleRegistry', () => {
     const billboard = next.selectors.billboard ?? [];
     expect(billboard).toContain('[data-ad]');
     expect(billboard).toContain('[data-extra]');
-    expect(next.version).toBe(reg.current().version);
+    expect(next.version).toBe(version + 1);
     expect(next.hash).toBe(hashRuleSet(next));
   });
 

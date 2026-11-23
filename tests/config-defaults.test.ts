@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,6 +6,12 @@ import { getConfigDir, getConfigPath, loadConfig, saveConfig, watchConfig } from
 
 const oldDir = process.env.FREEBUFF_CONFIG_DIR;
 const oldProfile = process.env.FREEBUFF_PROFILE;
+
+beforeEach(() => {
+  // A profile inherited from the developer shell would redirect getConfigDir()
+  // away from the per-test FREEBUFF_CONFIG_DIR.
+  delete process.env.FREEBUFF_PROFILE;
+});
 
 afterEach(() => {
   if (oldDir === undefined) delete process.env.FREEBUFF_CONFIG_DIR;
