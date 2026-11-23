@@ -104,6 +104,11 @@ describe('isFirstPartyHost', () => {
     expect(isFirstPartyHost('freebuff.com')).toBe(true);
     expect(isFirstPartyHost('www.freebuff.com')).toBe(true);
     expect(isFirstPartyHost('api.freebuff.com')).toBe(true);
+    // Freebuff 0.0.205 serves its API from www.codebuff.com; the app's own
+    // FIRST_PARTY_APP_DOMAINS list both hosts.
+    expect(isFirstPartyHost('codebuff.com')).toBe(true);
+    expect(isFirstPartyHost('www.codebuff.com')).toBe(true);
+    expect(isFirstPartyHost('api.codebuff.com')).toBe(true);
     expect(isFirstPartyHost('localhost')).toBe(true);
     expect(isFirstPartyHost('127.0.0.1')).toBe(true);
   });
