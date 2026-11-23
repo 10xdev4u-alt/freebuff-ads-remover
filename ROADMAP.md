@@ -169,14 +169,17 @@ the Deprecated section.
       (`upstream-proof.yml:4-5,41-105`).
 - [ ] Auto-bump version on audit-clean release: `release.yml:40-47` only asserts
       tag == `package.json`; nothing bumps it. → Wave 61 (policy-gated)
-- [ ] Matrix testing across Node 20/22: `engines.node >=20` is unverified; `ci.yml` pins 22
-      and `upstream-proof.yml` pins 20, but no job tests both. → Wave 60
-- [~] Dependabot for all deps: npm only (`.github/dependabot.yml`); the `github-actions`
-      ecosystem is absent. → Wave 60
-- [ ] Signed releases (cosign) for the extension bundle: only SHA256SUMS today; the
-      Ed25519 feed signature is a different system. → Wave 60
-- [ ] SBOM generation. → Wave 60
-- [ ] Reproducible builds: `release.yml:67` uses bare `tar -czf`. → Wave 60
+- [x] Matrix testing across Node 20/22: `engines.node >=20` is unverified; `ci.yml` pins 22
+      and `upstream-proof.yml` pins 20, but no job tests both. The `node-matrix` job in
+      `.github/workflows/ci.yml` runs typecheck + tests on 20 and 22. → Wave 60
+- [x] Dependabot for all deps: npm only (`.github/dependabot.yml`); the `github-actions`
+      ecosystem is now tracked too. → Wave 60
+- [x] Signed releases (cosign) for the extension bundle: keyless signing of the tarball,
+      with the signature and certificate attached to the GitHub release. → Wave 60
+- [x] SBOM generation: `scripts/gen-sbom.mjs` emits an SPDX 2.3 document; `npm run sbom`.
+      → Wave 60
+- [x] Reproducible builds: the release tarball pins entry order, mtime and ownership and
+      uses a timestamp-free gzip header (`release.yml`). → Wave 60
 - [x] Release artifacts attached to GitHub releases (`release.yml:52-84`).
 
 ## 10. Anti-detection & privacy
@@ -331,11 +334,12 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the best of several batches, so one descheduled CI sample cannot fail them.
 
 ### Wave 60 — Release trust & contribution gates
-- [ ] `ci: SBOM in release`.
-- [ ] `ci: cosign the release tarball`.
-- [ ] `ci: reproducible release tarball`.
-- [ ] `ci: dependabot for GitHub Actions`.
-- [ ] `ci: Node 20/22 test matrix`.
+- [x] `ci: SBOM in release` — `scripts/gen-sbom.mjs` writes an SPDX 2.3 document into the
+      bundle and attaches it to the GitHub release.
+- [x] `ci: cosign the release tarball` — keyless sign + verify steps in `release.yml`.
+- [x] `ci: reproducible release tarball` — sorted entries, pinned mtime/owner, `gzip -n`.
+- [x] `ci: dependabot for GitHub Actions` — `.github/dependabot.yml`.
+- [x] `ci: Node 20/22 test matrix` — `node-matrix` job in `ci.yml`.
 - [ ] `docs: ad-surface issue template`.
 - [ ] `ci: gate PRs on audit deltas`.
 - [ ] `fix(launcher): sanitize Electron env vars`.
