@@ -63,9 +63,20 @@ if (sources.length === 0) {
 
 // ---- Endpoint audit ----
 const routes = new Set();
+// Absolute URLs are collected separately: the path-only regex below cannot see
+// `https://host/api/ad/x`, so a host-based ad call is invisible unless it is
+// scanned on its own.
+const absoluteLiterals = new Set();
 for (const src of sources) {
   for (const m of src.matchAll(/["'`](\/api\/[a-zA-Z0-9/_:${}.-]*)/g)) {
     routes.add(m[1].replace(/\$\{[^}]*\}/g, ':param'));
+  }
+  for (const m of src.matchAll(/https?:\/\/[^\s"'`<>\\)]+/g)) {
+    const raw = m[0].replace(/[.,;:]$/, '').replace(/\$\{[^}]*\}/g, ':param');
+    try {
+      const u = new URL(raw);
+      if (u.pathname && u.pathname !== '/') absoluteLiterals.add(raw);
+    } catch { /* not a URL */ }
   }
 }
 let isAdRoute;
@@ -85,6 +96,17 @@ const classifications = {};
 for (const r of routes) classifications[r] = classifyRoute(r);
 const candidateRoutes = [...routes].filter((r) => classifications[r].candidate).sort();
 const adRoutes = [...new Set([... [...routes].filter((r) => isAdRoute(r)), ...candidateRoutes])].sort();
+// An absolute URL is an ad route only when its pathname is an `/api/` route the
+// path scan would have recognized. Classifying the full URL would let query
+// strings and host tokens (`?utm_campaign=`, `docs.example.com/guide/ad-blocking`)
+// create bogus gaps, and a control route on a third-party host would bypass the
+// path-only control checks in self-heal and delta-gate.
+const absoluteAdUrls = [...absoluteLiterals].filter((url) => {
+  let path = null;
+  try { path = new URL(url).pathname; } catch { return false; }
+  if (!path.startsWith('/api/')) return false;
+  return isAdRoute(path) || classifyRoute(path).candidate;
+}).sort();
 
 let registry = null;
 try {
@@ -99,10 +121,15 @@ try {
 const interceptor = new AdInterceptor(DEFAULT_CONFIG, {
   debug() {}, info() {}, warn() {}, error() {},
 }, undefined, undefined, registry || undefined);
-const results = adRoutes.map((route) => ({
+const pathResults = adRoutes.map((route) => ({
   route,
   blocked: interceptor.intercept(`http://127.0.0.1:5174${route}`, 'POST').blocked,
 }));
+const absoluteResults = absoluteAdUrls.map((url) => ({
+  route: url,
+  blocked: interceptor.intercept(url, 'POST').blocked,
+}));
+const results = [...pathResults, ...absoluteResults];
 
 const missing = results.filter((r) => !r.blocked);
 for (const r of results) {
@@ -217,7 +244,7 @@ const changedClassification = [...routes].filter((r) => {
 }).sort();
 
 const summary = {
-  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing, candidates: candidateRoutes, classifications },
+  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing, candidates: candidateRoutes, absolute: absoluteAdUrls, classifications },
   dom: { total: selectorLiterals.size, covered: selectorLiterals.size - domGaps.length, gaps: domGaps },
   css: { total: cssAdClasses.size, covered: cssAdClasses.size - cssGaps.length, gaps: cssGaps },
   baseline: { newRoutes, changedClassification },
