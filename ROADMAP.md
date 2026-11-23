@@ -299,7 +299,10 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] `fix(hook): never skip callback on intercept throw` — `electron-hook.ts` let an
       `intercept` throw skip the Electron callback, hanging the request; both the
       first-arm and re-arm listeners now share a handler that always calls back.
-- [ ] `feat(audit): audit absolute ad URLs` — regex only sees `/api/`-prefixed literals.
+- [x] `feat(audit): audit absolute ad URLs` — the scan only matched literals beginning
+      with `/api/`, so a host-based call such as `https://ads.example.com/api/ad/break`
+      was invisible; absolute URLs are now classified by pathname plus host and join
+      `routes.missing` so the loop can heal them.
 - [x] `feat(dom): derive selectors from the registry` — the remover flattened 5
       hardcoded selectors while `src/types.ts` registers 56; selectors are now
       derived from the registry.
