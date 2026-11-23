@@ -95,8 +95,14 @@ cosign verify-blob \
 
 The tarball is reproducible: entries are sorted and the mtime, owner and gzip
 header are pinned, so repacking the same tree at the same commit produces
-identical bytes (`tar --sort=name --mtime='@0' --owner=0 --group=0
---numeric-owner -cf - . | gzip -n`). Regenerate the SBOM with `npm run sbom`.
+identical bytes. From inside the unpacked `release/` directory:
+
+```bash
+tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - . \
+  | gzip -n > ../freebuff-ads-remover-<tag>.tar.gz
+```
+
+Regenerate the SBOM with `npm run sbom -- --commit "$(git rev-parse HEAD)"`.
 
 ## How it works
 

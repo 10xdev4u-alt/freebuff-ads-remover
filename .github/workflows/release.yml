@@ -54,7 +54,7 @@ jobs:
       - name: Generate SBOM
         run: |
           CREATED=$(git show -s --format=%cI "${GITHUB_SHA}")
-          node scripts/gen-sbom.mjs --out sbom.spdx.json --created "$CREATED"
+          node scripts/gen-sbom.mjs --out sbom.spdx.json --created "$CREATED" --commit "${GITHUB_SHA}"
 
       - name: Pack release bundle
         run: |
@@ -105,7 +105,7 @@ jobs:
             --certificate "${TARBALL}.pem" \
             --signature "${TARBALL}.sig" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/${{ steps.tag.outputs.tag }}" \
+            --certificate-identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@${{ github.ref }}" \
             "${TARBALL}"
 
       - name: Create GitHub Release
@@ -146,7 +146,7 @@ jobs:
               --certificate freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz.pem \
               --signature freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz.sig \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-              --certificate-identity https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@refs/tags/${{ steps.tag.outputs.tag }} \
+              --certificate-identity https://github.com/10xdev4u-alt/freebuff-ads-remover/.github/workflows/release.yml@refs/tags/${{ steps.tag.outputs.tag }} \
               freebuff-ads-remover-${{ steps.tag.outputs.tag }}.tar.gz
             ```
 

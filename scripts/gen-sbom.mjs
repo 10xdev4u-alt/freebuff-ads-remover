@@ -19,6 +19,7 @@ function arg(name, fallback) {
 
 const out = arg('out', 'sbom.spdx.json');
 const created = arg('created', '1970-01-01T00:00:00Z');
+const commit = arg('commit', '');
 
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
@@ -96,10 +97,10 @@ const document = {
   dataLicense: 'CC0-1.0',
   SPDXID: 'SPDXRef-DOCUMENT',
   name: `${pkg.name}-${pkg.version}`,
-  documentNamespace: `https://spdx.org/spdxdocs/${pkg.name}-${pkg.version}`,
+  documentNamespace: `https://spdx.org/spdxdocs/${pkg.name}-${pkg.version}${commit ? `-${commit}` : ''}`,
   creationInfo: {
     created,
-    creators: [`Tool: gen-sbom.mjs`, `Organization: ${pkg.author ?? pkg.name}`],
+    creators: ['Tool: gen-sbom.mjs'],
   },
   packages,
   relationships,
