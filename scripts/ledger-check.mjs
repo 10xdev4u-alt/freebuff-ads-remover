@@ -6,7 +6,9 @@ const PINNED_PUBLIC_KEY = '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAXPPjDp264
 
 function defaultRunVitest(root) {
   try {
-    return { code: 0, out: execSync('npx vitest run 2>&1', { cwd: root, encoding: 'utf8' }) };
+    // Coverage is on because the landing page states a coverage figure; the
+    // ledger cannot verify a claim it never measures.
+    return { code: 0, out: execSync('npx vitest run --coverage 2>&1', { cwd: root, encoding: 'utf8' }) };
   } catch (e) {
     return { code: e.status ?? 1, out: String(e.stdout || '') + String(e.stderr || '') };
   }
@@ -154,12 +156,13 @@ export async function checkLedger(root, deps = {}) {
   }
 
   // Live receipt: the shipped artifact must be backed by a passing live-e2e run.
+  let latestLive = null;
   const liveReceipts = receiptList(root, receiptsDir)
     .filter((r) => r.file.startsWith('live-') && r.ok);
   if (liveReceipts.length === 0) {
     fail('no live-e2e receipt present (run e2e-headless --feed to generate)');
   } else {
-    const latestLive = liveReceipts
+    latestLive = liveReceipts
       .slice()
       .sort((a, c) => String(c.value.at || '').localeCompare(String(a.value.at || '')))[0].value;
     if (latestLive.payloadVersion === null || latestLive.payloadVersion === undefined) {
@@ -207,8 +210,40 @@ export async function checkLedger(root, deps = {}) {
     }
   }
 
-  // Live proof page must exist
-  if (!exists('live-proof/index.html')) fail('live-proof/index.html missing');
+  // Live proof page must exist and embed a real receipt: CI publishes it from
+  // receipts/, so a page matching no committed receipt is a hand-written claim.
+  if (!exists('live-proof/index.html')) {
+    fail('live-proof/index.html missing');
+  } else {
+    const lp = read('live-proof/index.html');
+    const embedded = lp.match(/<pre>([\s\S]*?)<\/pre>/);
+    if (!embedded) {
+      fail('live-proof page has no embedded receipt');
+    } else {
+      let value = null;
+      try { value = JSON.parse(embedded[1]); } catch { fail('live-proof receipt is not valid JSON'); }
+      if (value) {
+        // Compare the page's own claims field-by-field, not just the two values
+        // a copyist would lift from the public receipt: a page that copies
+        // `at`/`artifactHash` but fabricates `pass` or `probes` must not match.
+        const real = value.pass === true
+          && value.provenance === 'live-e2e'
+          && receiptList(root, receiptsDir).some((r) => r.ok
+            && r.file.startsWith('live-')
+            && r.value.at === value.at
+            && r.value.artifactHash === value.artifactHash
+            && r.value.pass === value.pass
+            && r.value.provenance === value.provenance
+            && r.value.payloadVersion === value.payloadVersion
+            && r.value.probes === value.probes
+            && r.value.corpusHash === value.corpusHash);
+        if (!real) fail('live-proof page does not match a committed passing live-e2e receipt');
+        else if (value.corpusHash && value.corpusHash !== 'sha256:' + hash) {
+          warn('live-proof page describes an older corpus; the nightly publish refreshes it');
+        }
+      }
+    }
+  }
 
   // Version drift: README badge == package.json == top CHANGELOG
   const pkg = readJson(path.join(root, 'package.json'));
@@ -220,6 +255,64 @@ export async function checkLedger(root, deps = {}) {
     const changelog = read('CHANGELOG.md');
     const changelogTop = changelog.match(/## \[(\d+\.\d+\.\d+)\]/);
     if (changelogTop && changelogTop[1] !== pkgVersion) fail(`CHANGELOG top ${changelogTop[1]} != package ${pkgVersion}`);
+  }
+
+  // Landing page claims. The page states facts a visitor cannot check; the
+  // ledger is what makes them trustworthy, so each is verified against the same
+  // source of truth used above.
+  if (pkg.ok && (!pkg.value || !pkg.value.version)) fail('package.json has no version');
+  if (pkg.ok && pkg.value && pkg.value.version) {
+    const pkgVersion = pkg.value.version;
+    const pill = landing.match(/class="ver-pill">v(\d+\.\d+\.\d+)</);
+    if (!pill) fail('landing version pill not found');
+    else if (pill[1] !== pkgVersion) fail(`landing version pill v${pill[1]} != package ${pkgVersion}`);
+    const eyebrow = landing.match(/v(\d+\.\d+\.\d+) · verified against Freebuff (\d+\.\d+\.\d+)/);
+    if (!eyebrow) fail('landing eyebrow version/payload not found');
+    else {
+      if (eyebrow[1] !== pkgVersion) fail(`landing eyebrow version v${eyebrow[1]} != package ${pkgVersion}`);
+      if (latestLive && eyebrow[2] !== latestLive.payloadVersion) {
+        fail(`landing payload version ${eyebrow[2]} != live receipt ${latestLive.payloadVersion}`);
+      }
+    }
+  }
+  const heroTests = landing.match(/<strong>(\d+) tests<\/strong>/);
+  if (!heroTests) fail('landing hero test count not found');
+  else if (parseInt(heroTests[1], 10) !== testCount) {
+    fail(`landing hero test count ${heroTests[1]} != actual ${testCount}`);
+  }
+  let corpusAdCount = 0;
+  let corpusParsed = true;
+  try {
+    const entries = fs.readFileSync(path.join(root, 'corpus', 'golden.jsonl'), 'utf8')
+      .trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+    corpusAdCount = entries.filter((e) => e.label === 'ad').length;
+  } catch { corpusParsed = false; }
+  if (!corpusParsed) fail('corpus/golden.jsonl is not valid JSONL');
+  const heroRoutes = landing.match(/<strong>(\d+)\/(\d+)<\/strong> ad routes blocked/);
+  if (!heroRoutes) fail('landing ad-route claim not found');
+  else if (parseInt(heroRoutes[1], 10) !== corpusAdCount || parseInt(heroRoutes[2], 10) !== corpusAdCount) {
+    fail(`landing ad-route claim ${heroRoutes[1]}/${heroRoutes[2]} != corpus ${corpusAdCount}/${corpusAdCount}`);
+  }
+  // Coverage: the page prints a percentage, so the run must produce one. Both
+  // forms are required; a reformat that drops one must fail rather than skip.
+  const landingCovText = landing.match(/coverage (\d+(?:\.\d+)?)% lines/);
+  const landingCovObj = landing.match(/coverage:\{lines:(\d+(?:\.\d+)?),branches:(\d+(?:\.\d+)?)\}/);
+  if (!landingCovText) fail('landing coverage text not found');
+  if (!landingCovObj) fail('landing coverage object not found');
+  if (landingCovText && landingCovObj) {
+    const actualLines = clean.match(/Lines\s*:\s*([\d.]+)%/);
+    const actualBranches = clean.match(/Branches\s*:\s*([\d.]+)%/);
+    if (!actualLines || !actualBranches) {
+      fail('landing states a coverage figure but the test run produced no coverage report');
+    } else {
+      const linesPct = Math.round(parseFloat(actualLines[1]) * 10) / 10;
+      const branchesPct = Math.round(parseFloat(actualBranches[1]) * 10) / 10;
+      if (parseFloat(landingCovText[1]) !== linesPct) {
+        fail(`landing coverage lines ${landingCovText[1]} != actual ${linesPct}`);
+      }
+      if (parseFloat(landingCovObj[1]) !== linesPct) fail(`landing coverage.lines ${landingCovObj[1]} != actual ${linesPct}`);
+      if (parseFloat(landingCovObj[2]) !== branchesPct) fail(`landing coverage.branches ${landingCovObj[2]} != actual ${branchesPct}`);
+    }
   }
 
   return { ok: findings.length === 0, findings, warnings };
