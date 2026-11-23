@@ -52,7 +52,7 @@ export const NOT_AD_SEGMENTS = new Set<string>([
 
 export const CORE_ROUTES = CONTROL_ROUTES;
 
-export const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', '::1', 'localhost', 'freebuff.com', 'www.freebuff.com']);
+export const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', '::1', 'localhost', 'freebuff.com', 'www.freebuff.com', 'codebuff.com', 'www.codebuff.com']);
 
 /**
  * Normalize a host entry to a bare, lowercase hostname. Accepts a hostname, an

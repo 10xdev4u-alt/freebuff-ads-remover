@@ -1,14 +1,16 @@
 {
   "version": 1,
-  "generatedAt": "2026-11-18T07:47:40.507Z",
-  "payloadVersion": "0.0.204",
+  "generatedAt": "2026-11-23T16:56:19.872Z",
+  "payloadVersion": "0.0.205",
   "routes": [
     "/api/chat",
     "/api/v1/freebuff/session/admission",
     "/api/v1/freebuff/models",
     "/api/v1/freebuff/device-keys",
+    "/api/",
     "/api/v1/cloud/skills",
     "/api/v1/web-search",
+    "/api/v1/generate-image",
     "/api/v1/web-fetch",
     "/api/v1/docs-search",
     "/api/v1/gravity-index",
@@ -35,7 +37,6 @@
     "/api/v1/ads/prefs",
     "/api/v1/cloud/history",
     "/api/realtime/ticket",
-    "/api/",
     "/api/storage/",
     "/api/v1/freebuff/byok:param",
     "/api/v1/cloud/agent-credentials:param",
@@ -56,10 +57,13 @@
     "/api/telemetry/funnel",
     "/api/app/restarting-for-update",
     "/api/app/restart",
+    "/api/diagnostics/error-screen",
     "/api/diagnostics/renderer-error",
     "/api/diagnostics/renderer-health",
     "/api/diagnostics/app-memory",
     "/api/diagnostics/renderer-boot",
+    "/api/desktop-notifications/stream",
+    "/api/desktop-notifications/read",
     "/api/events",
     "/api/ad/",
     "/api/terminal"
@@ -93,6 +97,13 @@
         "below-threshold"
       ]
     },
+    "/api/": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
     "/api/v1/cloud/skills": {
       "candidate": false,
       "confidence": 0,
@@ -101,6 +112,13 @@
       ]
     },
     "/api/v1/web-search": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/v1/generate-image": {
       "candidate": false,
       "confidence": 0,
       "signals": [
@@ -289,13 +307,6 @@
         "below-threshold"
       ]
     },
-    "/api/": {
-      "candidate": false,
-      "confidence": 0,
-      "signals": [
-        "below-threshold"
-      ]
-    },
     "/api/storage/": {
       "candidate": false,
       "confidence": 0,
@@ -436,6 +447,13 @@
         "below-threshold"
       ]
     },
+    "/api/diagnostics/error-screen": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
     "/api/diagnostics/renderer-error": {
       "candidate": false,
       "confidence": 0,
@@ -458,6 +476,20 @@
       ]
     },
     "/api/diagnostics/renderer-boot": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/desktop-notifications/stream": {
+      "candidate": false,
+      "confidence": 0,
+      "signals": [
+        "below-threshold"
+      ]
+    },
+    "/api/desktop-notifications/read": {
       "candidate": false,
       "confidence": 0,
       "signals": [
