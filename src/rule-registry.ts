@@ -6,6 +6,7 @@ import path from 'node:path';
 export interface RuleSet {
   version: number;
   endpoints: string[];
+  hosts: string[];
   selectors: Record<string, string[]>;
   source: string;
   hash: string;
@@ -13,19 +14,21 @@ export interface RuleSet {
 
 export interface RuleDelta {
   addEndpoints: string[];
+  addHosts?: string[];
   addSelectors: Record<string, string[]>;
   source: string;
 }
 
-export function hashRuleSet(rs: { endpoints: string[]; selectors: Record<string, string[]> }): string {
-  const canonical = JSON.stringify({ endpoints: [...rs.endpoints].sort(), selectors: rs.selectors });
+export function hashRuleSet(rs: { endpoints: string[]; hosts?: string[]; selectors: Record<string, string[]> }): string {
+  const canonical = JSON.stringify({ endpoints: [...rs.endpoints].sort(), hosts: [...(rs.hosts ?? [])].sort(), selectors: rs.selectors });
   return crypto.createHash('sha256').update(canonical).digest('hex');
 }
 
 export function baseRuleSet(): RuleSet {
   const endpoints = [...AD_ENDPOINTS];
   const selectors = { ...AD_CSS_SELECTORS } as Record<string, string[]>;
-  return { version: 1, endpoints, selectors, source: 'static', hash: hashRuleSet({ endpoints, selectors }) };
+  const hosts: string[] = [];
+  return { version: 1, endpoints, hosts, selectors, source: 'static', hash: hashRuleSet({ endpoints, hosts, selectors }) };
 }
 
 export class RuleRegistry {
@@ -33,7 +36,11 @@ export class RuleRegistry {
   private history: RuleSet[] = [];
 
   constructor(initial?: RuleSet) {
-    this.currentSet = initial ? { ...initial } : baseRuleSet();
+    // Old rules.json files predate host rules; normalize so a missing field is an
+    // empty list rather than a crash on first read.
+    this.currentSet = initial
+      ? { ...initial, hosts: Array.isArray(initial.hosts) ? [...initial.hosts] : [] }
+      : baseRuleSet();
   }
 
   current(): RuleSet {
@@ -43,6 +50,8 @@ export class RuleRegistry {
   apply(delta: RuleDelta): RuleSet {
     const endpoints = [...this.currentSet.endpoints];
     for (const e of delta.addEndpoints) if (!endpoints.includes(e)) endpoints.push(e);
+    const hosts = Array.isArray(this.currentSet.hosts) ? [...this.currentSet.hosts] : [];
+    for (const h of delta.addHosts ?? []) if (!hosts.includes(h)) hosts.push(h);
     const selectors: Record<string, string[]> = { ...this.currentSet.selectors };
     for (const [k, v] of Object.entries(delta.addSelectors)) {
       selectors[k] = [...(selectors[k] ?? []), ...v.filter((x) => !(selectors[k] ?? []).includes(x))];
@@ -50,6 +59,7 @@ export class RuleRegistry {
     const next: RuleSet = {
       version: this.currentSet.version + 1,
       endpoints,
+      hosts,
       selectors,
       source: delta.source,
       hash: '',
@@ -82,7 +92,7 @@ export class RuleRegistry {
     if (!fs.existsSync(prevPath)) return null;
     try {
       const rs = JSON.parse(fs.readFileSync(prevPath, 'utf8')) as RuleSet;
-      this.currentSet = rs;
+      this.currentSet = { ...rs, hosts: Array.isArray(rs.hosts) ? rs.hosts : [] };
       return rs;
     } catch { return null; }
   }

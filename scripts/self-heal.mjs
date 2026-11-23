@@ -67,7 +67,21 @@ if (payloadVersion) {
   }
 }
 
-const missing = (auditJson.routes?.missing ?? []).map((r) => (typeof r === 'string' ? r : r.route)).filter(Boolean);
+// Host candidates are origins (`https://ads.example.com/`) discovered by the
+// audit. They are healed as host rules, not endpoints: an endpoint rule for an
+// origin only prefix-matches that one URL and would leave the rest of the host
+// unblocked. Filter every URL on a candidate host out of the endpoint gaps so
+// the host rule subsumes them.
+const hostCandidates = (auditJson.routes?.hostCandidates ?? [])
+  .map((r) => (typeof r === 'string' ? r : r.route))
+  .filter(Boolean);
+const hostGaps = [...new Set(hostCandidates.map((origin) => {
+  try { return new URL(origin).hostname.toLowerCase().replace(/\.$/, ''); } catch { return origin.toLowerCase().replace(/\.$/, ''); }
+}))].filter(Boolean);
+const hostPrefix = (route) => hostCandidates.some((origin) => route === origin || route.startsWith(origin));
+const missing = (auditJson.routes?.missing ?? [])
+  .map((r) => (typeof r === 'string' ? r : r.route))
+  .filter((r) => Boolean(r) && !hostPrefix(r));
 if (candidates) {
   for (const cand of (candidates.candidates ?? [])) { if (cand.route && !missing.includes(cand.route)) missing.push(cand.route); }
 }
@@ -90,12 +104,14 @@ if (existing) {
   fs.writeFileSync(path.join(configDir, 'rules.json'), JSON.stringify(r.current(), null, 2));
 }
 
-const result = runAutopilot({ routes: { missing } }, corpusDir, true, configDir);
+const result = runAutopilot({ routes: { missing, hosts: hostGaps } }, corpusDir, true, configDir);
 
 // 4. Build cumulative delta.
 const newDelta = result.delta || { addEndpoints: [], addSelectors: {}, source: 'ci-healed' };
+const mergedHosts = [...new Set([...(existing?.addHosts ?? []), ...(newDelta.addHosts ?? [])])];
 const merged = {
   addEndpoints: [...new Set([...(existing?.addEndpoints ?? []), ...(newDelta.addEndpoints ?? [])])],
+  ...(mergedHosts.length > 0 ? { addHosts: mergedHosts } : {}),
   addSelectors: { ...(existing?.addSelectors ?? {}), ...(newDelta.addSelectors ?? {}) },
   source: `ci-healed:${auditJson.freebuffVersion ?? 'unknown'}`,
 };
@@ -106,6 +122,13 @@ for (const r of merged.addEndpoints) {
   const segs = r.toLowerCase().split('/').map((seg) => seg.split('?')[0]).filter(Boolean);
   if (segs.some((seg) => ['admission','threads','thread','reload','profile','survey-events'].includes(seg))) { console.error('protected segment in delta:', r); process.exit(1); }
 }
+// 4c. host rules must never target Freebuff itself.
+try {
+  const { isFirstPartyHost } = await import(path.join(repoRoot, 'dist', 'candidates.js'));
+  for (const h of mergedHosts) {
+    if (isFirstPartyHost(h)) { console.error('first-party host in delta:', h); process.exit(1); }
+  }
+} catch { /* candidates module unavailable: delta-gate still guards this */ }
 // 5. maxPromotedRules guard.
 if (merged.addEndpoints.length > maxPromoted) {
   console.error(`maxPromotedRules exceeded: ${merged.addEndpoints.length} > ${maxPromoted}`);
@@ -126,6 +149,7 @@ const receipt = {
   corpusHash,
   artifactHash,
   addedEndpoints: newDelta.addEndpoints ?? [],
+  addedHosts: newDelta.addHosts ?? [],
   addedSelectors: newDelta.addSelectors ?? {},
   gate: { pass, recall: gate.recall, precision: gate.precision, missed: gate.missed ?? [], fps: gate.fps ?? [] },
   domGaps: auditJson.dom?.gaps ?? [],
@@ -149,6 +173,7 @@ const markdown = `# Heal receipt
 - **artifactHash:** ${receipt.artifactHash}
 - **gate:** pass=${receipt.gate.pass} recall=${receipt.gate.recall} precision=${receipt.gate.precision} missed=${receipt.gate.missed.length} fps=${receipt.gate.fps.length}
 - **addedEndpoints:** ${receipt.addedEndpoints.join(', ') || '(none)'}
+- **addedHosts:** ${receipt.addedHosts.join(', ') || '(none)'}
 - **addedSelectors:** ${Object.keys(receipt.addedSelectors).length}
 - **domGaps:** ${receipt.domGaps.join(', ') || '(none)'}
 - **at:** ${receipt.at}

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 export interface FeedRuleDelta {
   addEndpoints?: string[];
+  addHosts?: string[];
   addSelectors?: Record<string, string[]>;
   source?: string;
 }

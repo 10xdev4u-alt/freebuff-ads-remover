@@ -55,7 +55,9 @@ case-insensitive. First-party Freebuff hosts (`freebuff.com` and its subdomains,
 
 The default is empty because Freebuff 0.0.204 serves every ad from first-party
 hosts. `scripts/audit-endpoints.mjs` reports non-first-party hosts that serve
-ad-shaped routes under `routes.hostCandidates`; add one here when it appears.
+ad-shaped routes under `routes.hostCandidates`; the self-heal loop promotes one
+into the shipped rule set (`config/generated-rules.json`) as a host rule, and
+you can also list it here to block it immediately.
 
 ### `cssFallback` (default: `true`)
 

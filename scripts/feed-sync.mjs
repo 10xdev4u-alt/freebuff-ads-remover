@@ -73,6 +73,9 @@ if (fs.existsSync(feedRulesPath)) {
 const entries = Array.isArray(manifest.entries) ? manifest.entries : [];
 const merged = {
   addEndpoints: [...new Set(entries.flatMap((e) => e.rules?.addEndpoints ?? []))],
+  ...(entries.some((e) => (e.rules?.addHosts ?? []).length > 0)
+    ? { addHosts: [...new Set(entries.flatMap((e) => e.rules?.addHosts ?? []))] }
+    : {}),
   addSelectors: Object.assign({}, ...entries.map((e) => e.rules?.addSelectors ?? {})),
   source: `feed:${entries.map((e) => e.healHash).join(',')}`,
   healHash: entries.map((e) => e.healHash).join(','),

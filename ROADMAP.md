@@ -310,8 +310,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       blocked regardless of path, so ad assets whose URLs are not ad-shaped are
       stopped too. First-party hosts are exempt, so the app's own remote auction
       cannot be swallowed; the audit reports non-first-party hosts serving
-      ad-shaped routes under `routes.hostCandidates`. Empty by default: 0.0.204
-      serves every ad from first-party hosts.
+      ad-shaped routes under `routes.hostCandidates`, and self-heal promotes one
+      into a host rule (`addHosts`) rather than a bogus origin endpoint. Empty by
+      default: 0.0.204 serves every ad from first-party hosts.
 - [x] `test(corpus): assert surface classifications` — every ad was labelled
       `sponsorBreak`; `classifyEndpoint` is now shared and the corpus carries the
       classified surface, with a test asserting each entry.

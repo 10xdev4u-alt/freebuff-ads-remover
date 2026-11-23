@@ -1,5 +1,5 @@
 import { loadCorpus } from './corpus.js';
-import { CORE_ROUTES, NOT_AD_SEGMENTS } from './candidates.js';
+import { CORE_ROUTES, NOT_AD_SEGMENTS, isFirstPartyHost } from './candidates.js';
 import type { RuleDelta } from './rule-registry.js';
 import { RuleRegistry } from './rule-registry.js';
 import { AdInterceptor } from './interceptor.js';
@@ -24,6 +24,17 @@ export function verifyDelta(
   });
   if (protectedCollision) {
     return { pass: false, reason: 'protected-route-collision', recall: 0, precision: 0, missed: [], fps: [] };
+  }
+
+  // A host rule must never target Freebuff itself: that would block the app's
+  // own traffic. The interceptor also exempts first-party hosts at match time,
+  // so this gate is defence in depth, not the only guard.
+  const hostCollision = (delta.addHosts ?? []).some((h) => {
+    const bare = h.trim().toLowerCase();
+    return isFirstPartyHost(bare) || bare.includes('/') || bare.includes('?');
+  });
+  if (hostCollision) {
+    return { pass: false, reason: 'protected-host-collision', recall: 0, precision: 0, missed: [], fps: [] };
   }
 
   // Apply delta to a candidate registry (clone).

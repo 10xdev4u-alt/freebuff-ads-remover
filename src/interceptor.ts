@@ -7,7 +7,7 @@ import { ShadowCapture } from './shadow-capture.js';
 import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
 import { isAdRoute, normalizeRoute } from './ad-heuristics.js';
-import { classifyRoute, isFirstPartyHost } from './candidates.js';
+import { classifyRoute, isFirstPartyHost, normalizeHost } from './candidates.js';
 import { classifyEndpoint } from './surface.js';
 import { hashedInstallId } from './install-id.js';
 import type { MissLog } from './miss-log.js';
@@ -195,19 +195,26 @@ export class AdInterceptor {
   /**
    * The configured ad host a URL belongs to, or null. Accepts a bare hostname
    * (`ads.example.com`) or an origin (`https://ads.example.com/`). First-party
-   * hosts never match, even if configured.
+   * hosts never match, even if configured. Healed host rules carried by the
+   * rule registry count as configured, so a host promoted by the loop blocks
+   * without a manual config edit.
    */
   private hostMatch(url: string): string | null {
     let host = '';
     try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
     if (!host || isFirstPartyHost(host)) return null;
-    const hosts: string[] = this.config.adHosts;
-    for (const raw of hosts) {
-      const withoutScheme = raw.toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '');
-      const entry = (withoutScheme.split('/')[0] ?? '').replace(/:\d+$/, '');
-      if (entry && host === entry) return entry;
+    const norm = normalizeHost(host);
+    if (!norm) return null;
+    const targets = new Set<string>();
+    for (const raw of this.config.adHosts) {
+      const n = normalizeHost(raw);
+      if (n) targets.add(n);
     }
-    return null;
+    for (const raw of this.registry?.current().hosts ?? []) {
+      const n = normalizeHost(raw);
+      if (n) targets.add(n);
+    }
+    return targets.has(norm) ? norm : null;
   }
 
   private recordBlock(url: string, method: string, surface: AdSurface, stage: AdStage, endpoint: string, captureStart: number, dryRun: boolean): void {

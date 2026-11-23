@@ -38,6 +38,7 @@ const manifest = {
     healHash: latest.artifactHash,
     rules: {
       addEndpoints: artifact.addEndpoints ?? [],
+      ...(Array.isArray(artifact.addHosts) && artifact.addHosts.length > 0 ? { addHosts: artifact.addHosts } : {}),
       addSelectors: artifact.addSelectors ?? {},
       source: artifact.source ?? 'feed',
     },

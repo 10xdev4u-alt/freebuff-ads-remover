@@ -52,7 +52,29 @@ export const NOT_AD_SEGMENTS = new Set<string>([
 
 export const CORE_ROUTES = CONTROL_ROUTES;
 
-export const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', 'localhost', 'freebuff.com', 'www.freebuff.com']);
+export const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', '::1', 'localhost', 'freebuff.com', 'www.freebuff.com']);
+
+/**
+ * Normalize a host entry to a bare, lowercase hostname. Accepts a hostname, an
+ * origin, or a URL, and strips brackets, ports, trailing dots, and any path.
+ * A trailing dot is a valid FQDN spelling (`ads.example.com.` is the same host
+ * as `ads.example.com`), so leaving it in place would let a block be evaded by
+ * writing the host with a dot.
+ */
+export function normalizeHost(raw: string): string {
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) return '';
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//.test(trimmed) ? trimmed : 'http://' + trimmed;
+  try {
+    const u = new URL(withScheme);
+    let h = u.hostname.toLowerCase();
+    if (h.startsWith('[') && h.endsWith(']')) h = h.slice(1, -1);
+    return h.replace(/\.$/, '');
+  } catch {
+    const first = trimmed.split(/[/?#]/)[0] ?? '';
+    return first.replace(/\.$/, '');
+  }
+}
 
 /**
  * Whether a host belongs to Freebuff itself. Subdomains count (`api.freebuff.com`
@@ -61,7 +83,8 @@ export const FIRST_PARTY_HOSTS = new Set(['127.0.0.1', 'localhost', 'freebuff.co
  * that keeps a misconfigured ad-host entry from breaking the app.
  */
 export function isFirstPartyHost(host: string): boolean {
-  const h = host.toLowerCase().replace(/^\[|\]$/g, '').replace(/:\d+$/, '');
+  const h = normalizeHost(host);
+  if (!h) return false;
   if (FIRST_PARTY_HOSTS.has(h)) return true;
   for (const base of FIRST_PARTY_HOSTS) {
     if (base.includes('.') && (h === base || h.endsWith('.' + base))) return true;
