@@ -22,23 +22,32 @@ function makeFixture() {
   const corpus = '{"path":"/api/ad/x","label":"ad"}\n';
   const corpusHash = sha(corpus);
   const now = new Date().toISOString();
+  const liveReceipt = { at: now, payloadVersion: '0.0.204', provenance: 'live-e2e', pass: true, probes: 5, artifactHash };
   write('README.md', 'npm test # vitest, 1 tests\n![version-1.2.3-blue](x)\n');
-  write('index.html', `✓ 1 tests passed · 1 files hash:'${artifactHash}'`);
+  write('index.html', [
+    '<span class="ver-pill">v1.2.3</span>',
+    '<span class="eyebrow">v1.2.3 · verified against Freebuff 0.0.204</span>',
+    '<strong>1 tests</strong>',
+    '<strong>1/1</strong> ad routes blocked',
+    `✓ 1 tests passed · 1 files hash:'${artifactHash}'`,
+    '<span>coverage 50% lines</span>',
+    'coverage:{lines:50,branches:40}',
+  ].join('\n'));
   write('tests/a.test.ts', '');
   write('corpus/golden.jsonl', corpus);
   write('corpus/manifest.json', JSON.stringify({ version: 1, freebuffVersion: '0.0.204', sha256: corpusHash.replace('sha256:', '') }));
   write('config/generated-rules.json', artifactText);
   write('config/endpoint-baseline.json', JSON.stringify({ version: 1, generatedAt: now, payloadVersion: '0.0.204', routes: ['/api/chat'] }));
-  write('receipts/live-0.0.204.json', JSON.stringify({ at: now, payloadVersion: '0.0.204', provenance: 'live-e2e', pass: true, probes: 5, artifactHash }));
+  write('receipts/live-0.0.204.json', JSON.stringify(liveReceipt));
   write('feed/manifest.json', JSON.stringify({ version: 1, generatedAt: now, entries: [{ healHash: artifactHash, rules: artifact }], rollbackTo: null }));
-  write('live-proof/index.html', '<html></html>');
+  write('live-proof/index.html', `<pre>${JSON.stringify(liveReceipt, null, 2)}</pre>`);
   write('package.json', JSON.stringify({ version: '1.2.3' }));
   write('CHANGELOG.md', '## [1.2.3] 2026-01-01\n');
-  return { root, artifactHash, artifactText, corpus, corpusHash, now };
+  return { root, artifactHash, artifactText, corpus, corpusHash, now, liveReceipt };
 }
 
 const deps = {
-  runVitest: () => ({ code: 0, out: 'Tests 1 passed' }),
+  runVitest: () => ({ code: 0, out: 'Tests 1 passed\nLines : 50.00%\nBranches : 40.00%' }),
   verifyManifest: () => true,
 };
 
@@ -161,5 +170,78 @@ describe('ledger gate', () => {
     const f = fixture();
     const r = await checkLedger(f.root, { ...deps, verifyManifest: () => false });
     expect(r.findings).toContain('feed manifest signature invalid');
+  });
+
+  it('fails when the landing version pill is stale', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('class="ver-pill">v1.2.3<', 'class="ver-pill">v9.9.9<'));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing version pill v9.9.9 != package 1.2.3');
+  });
+
+  it('fails when the landing hero test count is stale', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('<strong>1 tests</strong>', '<strong>2 tests</strong>'));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing hero test count 2 != actual 1');
+  });
+
+  it('fails when the landing ad-route claim is stale', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('<strong>1/1</strong> ad routes blocked', '<strong>2/2</strong> ad routes blocked'));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing ad-route claim 2/2 != corpus 1/1');
+  });
+
+  it('fails when the landing coverage figure is stale', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('coverage 50% lines', 'coverage 99% lines'));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing coverage lines 99 != actual 50');
+  });
+
+  it('fails when the landing coverage object is stale', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('coverage:{lines:50,branches:40}', 'coverage:{lines:50,branches:99}'));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing coverage.branches 99 != actual 40');
+  });
+
+  it('fails when the landing states coverage but the run reports none', async () => {
+    const f = fixture();
+    const r = await checkLedger(f.root, { ...deps, runVitest: () => ({ code: 0, out: 'Tests 1 passed' }) });
+    expect(r.findings).toContain('landing states a coverage figure but the test run produced no coverage report');
+  });
+
+  it('fails when the landing payload version is stale', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('verified against Freebuff 0.0.204', 'verified against Freebuff 0.0.203'));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing payload version 0.0.203 != live receipt 0.0.204');
+  });
+
+  it('fails when the live-proof page embeds a receipt that was never committed', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'live-proof', 'index.html');
+    const receipt = { ...f.liveReceipt, at: '2026-02-02T00:00:00.000Z' };
+    fs.writeFileSync(p, `<pre>${JSON.stringify(receipt, null, 2)}</pre>`);
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('live-proof page does not match a committed passing live-e2e receipt');
+  });
+
+  it('warns when the live-proof page describes an older corpus', async () => {
+    const f = fixture();
+    const receipt = { ...f.liveReceipt, corpusHash: 'sha256:older' };
+    fs.writeFileSync(path.join(f.root, 'receipts', 'live-0.0.204.json'), JSON.stringify(receipt));
+    fs.writeFileSync(path.join(f.root, 'live-proof', 'index.html'), `<pre>${JSON.stringify(receipt, null, 2)}</pre>`);
+    const r = await checkLedger(f.root, deps);
+    expect(r.ok).toBe(true);
+    expect(r.warnings).toContain('live-proof page describes an older corpus; the nightly publish refreshes it');
   });
 });

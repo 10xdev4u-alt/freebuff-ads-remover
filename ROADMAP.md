@@ -300,7 +300,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `intercept` throw skip the Electron callback, hanging the request; both the
       first-arm and re-arm listeners now share a handler that always calls back.
 - [ ] `feat(audit): audit absolute ad URLs` — regex only sees `/api/`-prefixed literals.
-- [ ] `feat(dom): derive selectors from the registry` — 5 hardcoded vs 56 registered.
+- [x] `feat(dom): derive selectors from the registry` — the remover flattened 5
+      hardcoded selectors while `src/types.ts` registers 56; selectors are now
+      derived from the registry.
 - [ ] `feat(block): block third-party ad hosts`.
 - [x] `test(corpus): assert surface classifications` — every ad was labelled
       `sponsorBreak`; `classifyEndpoint` is now shared and the corpus carries the
@@ -308,7 +310,11 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] `test(proof): cover the zero-coverage proof modules` — `autopilot`, `dom-probe`,
       `install-id`, `miss-report`, `outcome-report` and `trust-report` now have tests.
 - [ ] `test: ratchet coverage toward 85%`.
-- [ ] `fix(proof): verify the landing-page claims`.
+- [x] `fix(proof): verify the landing-page claims` — the ledger now checks the
+      version pill and eyebrow against `package.json` and the live receipt, the
+      hero test count, the `N/N ad routes blocked` figure against the corpus ad
+      count, and both coverage figures against the vitest run; the live-proof page
+      must embed a committed passing live-e2e receipt.
 - [x] `test: de-flake the timing benchmarks` — wall-clock budgets now warm up and take
       the best of several batches, so one descheduled CI sample cannot fail them.
 
