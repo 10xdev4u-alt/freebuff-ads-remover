@@ -129,4 +129,51 @@ The extension intercepts at the **Electron session level** using `session.webReq
 
 1. **Network layer**: Block all `/api/ad/*`, `/api/ads/*`, and `/api/v1/ads/agentic/offer` requests
 2. **CSS fallback**: Hide ad containers as safety net
+
+## 11. Version Delta: 0.0.204 -> 0.0.205 (2026-11-23)
+
+Verified by extracting both AppImages (`--appimage-extract`) and diffing the payload trees,
+then confirming with `scripts/audit-endpoints.mjs`.
+
+**Ad-surface verdict: no regression.** Both versions report 15/15 ad routes blocked, the same 15
+ad candidates, 1/1 app ad selectors covered, and the same 50/57 CSS classes (the 7 unmatched
+`.ad-cta*` / `.inline-link-ad*` classes are unchanged review items). `electron/ad-context.cjs`
+is byte-identical, and the renderer's `ads:context` bridge is present and unchanged.
+
+| Area | 0.0.204 | 0.0.205 |
+|---|---|---|
+| Resources tree | 233 files / 190 MB | 235 files / 311 MB |
+| `orchestrator/orchestrator.js` | 10,911,110 B | 10,971,250 B |
+| `app.asar` | 21,685,395 B | 21,754,119 B |
+| Build identity | `commitSha`, `builtAt` | adds `apiOrigin=https://www.codebuff.com`, `webOrigin=https://freebuff.com` |
+
+**Non-ad deltas that matter**
+
+- Four new first-party routes, none ad-shaped: `/api/v1/generate-image`,
+  `/api/diagnostics/error-screen`, `/api/desktop-notifications/stream`,
+  `/api/desktop-notifications/read`.
+- New Electron modules: `cloud-notifications.cjs` (localhost SSE notifications),
+  `secret-service.cjs` (freedesktop keyring read for browser import),
+  `build-backend.cjs` (staging-only host overrides).
+- Removed notification IPC: `notify:needsYou`, `notify:openNeedsYou`, `window:requestAttention`,
+  `window:clearAttention`. This was 0.0.204's sponsored-run "needs you" nag; its removal is
+  the only ad-related change in the release.
+- `resources/node/node` now ships a bundled Node runtime (126 MB), which is why the payload
+  grew by ~120 MB.
+
+**Audit blind spots (pre-existing, both versions).** Two paid-placement surfaces are invisible
+to the heuristic audit and were left out of this adoption on purpose:
+
+1. `/api/v1/gravity-index` is a recommendation endpoint whose response carries tracked
+   advertiser links (`recommendation.click_url`), but its path has no ad token.
+2. The orchestrator hardcodes destination URLs with `utm_medium=paid` / `bfcid={bfcid}`
+   (e.g. `https://app.coderabbit.ai/?utm_source=freebuff&utm_medium=paid_display...`). The
+   ad signals live entirely in the query string, which the audit strips before classification.
+
+Both should be revisited as product decisions, not folded into a version bump.
+
+**Adoption result.** `self-heal` against the 0.0.205 resources produced a passing heal gate
+with a zero-rule delta (artifact hash unchanged), and the headless live E2E passed all 42
+corpus probes. Corpus `golden.jsonl` stayed byte-identical; only the manifest version,
+endpoint baseline, receipts, and landing claim moved to 0.0.205.
 3. **Config-driven**: Toggle individual surfaces via JSON config
