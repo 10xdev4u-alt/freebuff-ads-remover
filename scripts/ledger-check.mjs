@@ -223,12 +223,20 @@ export async function checkLedger(root, deps = {}) {
       let value = null;
       try { value = JSON.parse(embedded[1]); } catch { fail('live-proof receipt is not valid JSON'); }
       if (value) {
-        const real = receiptList(root, receiptsDir).some((r) => r.ok
-          && r.file.startsWith('live-')
-          && r.value.pass === true
-          && r.value.provenance === 'live-e2e'
-          && r.value.at === value.at
-          && r.value.artifactHash === value.artifactHash);
+        // Compare the page's own claims field-by-field, not just the two values
+        // a copyist would lift from the public receipt: a page that copies
+        // `at`/`artifactHash` but fabricates `pass` or `probes` must not match.
+        const real = value.pass === true
+          && value.provenance === 'live-e2e'
+          && receiptList(root, receiptsDir).some((r) => r.ok
+            && r.file.startsWith('live-')
+            && r.value.at === value.at
+            && r.value.artifactHash === value.artifactHash
+            && r.value.pass === value.pass
+            && r.value.provenance === value.provenance
+            && r.value.payloadVersion === value.payloadVersion
+            && r.value.probes === value.probes
+            && r.value.corpusHash === value.corpusHash);
         if (!real) fail('live-proof page does not match a committed passing live-e2e receipt');
         else if (value.corpusHash && value.corpusHash !== 'sha256:' + hash) {
           warn('live-proof page describes an older corpus; the nightly publish refreshes it');
@@ -252,6 +260,7 @@ export async function checkLedger(root, deps = {}) {
   // Landing page claims. The page states facts a visitor cannot check; the
   // ledger is what makes them trustworthy, so each is verified against the same
   // source of truth used above.
+  if (pkg.ok && (!pkg.value || !pkg.value.version)) fail('package.json has no version');
   if (pkg.ok && pkg.value && pkg.value.version) {
     const pkgVersion = pkg.value.version;
     const pill = landing.match(/class="ver-pill">v(\d+\.\d+\.\d+)</);
@@ -272,20 +281,25 @@ export async function checkLedger(root, deps = {}) {
     fail(`landing hero test count ${heroTests[1]} != actual ${testCount}`);
   }
   let corpusAdCount = 0;
+  let corpusParsed = true;
   try {
     const entries = fs.readFileSync(path.join(root, 'corpus', 'golden.jsonl'), 'utf8')
       .trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
     corpusAdCount = entries.filter((e) => e.label === 'ad').length;
-  } catch { /* corpus problems are reported elsewhere */ }
+  } catch { corpusParsed = false; }
+  if (!corpusParsed) fail('corpus/golden.jsonl is not valid JSONL');
   const heroRoutes = landing.match(/<strong>(\d+)\/(\d+)<\/strong> ad routes blocked/);
   if (!heroRoutes) fail('landing ad-route claim not found');
   else if (parseInt(heroRoutes[1], 10) !== corpusAdCount || parseInt(heroRoutes[2], 10) !== corpusAdCount) {
     fail(`landing ad-route claim ${heroRoutes[1]}/${heroRoutes[2]} != corpus ${corpusAdCount}/${corpusAdCount}`);
   }
-  // Coverage: the page prints a percentage, so the run must produce one.
+  // Coverage: the page prints a percentage, so the run must produce one. Both
+  // forms are required; a reformat that drops one must fail rather than skip.
   const landingCovText = landing.match(/coverage (\d+(?:\.\d+)?)% lines/);
   const landingCovObj = landing.match(/coverage:\{lines:(\d+(?:\.\d+)?),branches:(\d+(?:\.\d+)?)\}/);
-  if (landingCovText || landingCovObj) {
+  if (!landingCovText) fail('landing coverage text not found');
+  if (!landingCovObj) fail('landing coverage object not found');
+  if (landingCovText && landingCovObj) {
     const actualLines = clean.match(/Lines\s*:\s*([\d.]+)%/);
     const actualBranches = clean.match(/Branches\s*:\s*([\d.]+)%/);
     if (!actualLines || !actualBranches) {
@@ -293,13 +307,11 @@ export async function checkLedger(root, deps = {}) {
     } else {
       const linesPct = Math.round(parseFloat(actualLines[1]) * 10) / 10;
       const branchesPct = Math.round(parseFloat(actualBranches[1]) * 10) / 10;
-      if (landingCovText && parseFloat(landingCovText[1]) !== linesPct) {
+      if (parseFloat(landingCovText[1]) !== linesPct) {
         fail(`landing coverage lines ${landingCovText[1]} != actual ${linesPct}`);
       }
-      if (landingCovObj) {
-        if (parseFloat(landingCovObj[1]) !== linesPct) fail(`landing coverage.lines ${landingCovObj[1]} != actual ${linesPct}`);
-        if (parseFloat(landingCovObj[2]) !== branchesPct) fail(`landing coverage.branches ${landingCovObj[2]} != actual ${branchesPct}`);
-      }
+      if (parseFloat(landingCovObj[1]) !== linesPct) fail(`landing coverage.lines ${landingCovObj[1]} != actual ${linesPct}`);
+      if (parseFloat(landingCovObj[2]) !== branchesPct) fail(`landing coverage.branches ${landingCovObj[2]} != actual ${branchesPct}`);
     }
   }
 

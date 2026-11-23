@@ -244,4 +244,35 @@ describe('ledger gate', () => {
     expect(r.ok).toBe(true);
     expect(r.warnings).toContain('live-proof page describes an older corpus; the nightly publish refreshes it');
   });
+
+  it('fails when the live-proof page copies a receipt id but lies about the result', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'live-proof', 'index.html');
+    const receipt = { ...f.liveReceipt, pass: false, probes: 0 };
+    fs.writeFileSync(p, `<pre>${JSON.stringify(receipt, null, 2)}</pre>`);
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('live-proof page does not match a committed passing live-e2e receipt');
+  });
+
+  it('fails when the landing coverage text is missing', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('<span>coverage 50% lines</span>', ''));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing coverage text not found');
+  });
+
+  it('fails when package.json has no version', async () => {
+    const f = fixture();
+    fs.writeFileSync(path.join(f.root, 'package.json'), JSON.stringify({ name: 'x' }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('package.json has no version');
+  });
+
+  it('fails when the corpus is not valid JSONL', async () => {
+    const f = fixture();
+    fs.writeFileSync(path.join(f.root, 'corpus', 'golden.jsonl'), '{"path":"/api/ad/x","label":"ad"}\nnot-json\n');
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('corpus/golden.jsonl is not valid JSONL');
+  });
 });
