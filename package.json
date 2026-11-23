@@ -26,6 +26,7 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json",
     "prepare": "husky || true",
     "audit": "node scripts/audit-endpoints.mjs",
+    "sbom": "node scripts/gen-sbom.mjs --out sbom.spdx.json",
     "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md",
     "ledger:check": "node scripts/check-ledger.mjs",
     "release:check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run ledger:check && npm run docs:check"
