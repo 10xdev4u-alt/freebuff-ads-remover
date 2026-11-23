@@ -54,6 +54,7 @@ if (healExit !== 0) fail('heal', 'self-heal exited ' + healExit);
 
 const artifact = JSON.parse(fs.readFileSync(genRules, 'utf8'));
 const delta = (Array.isArray(artifact.addEndpoints) ? artifact.addEndpoints.length : 0)
+  + (Array.isArray(artifact.addHosts) ? artifact.addHosts.length : 0)
   + (artifact.addSelectors && typeof artifact.addSelectors === 'object' ? Object.keys(artifact.addSelectors).length : 0);
 // A drill exists to prove the loop finds a real gap. An empty delta means the
 // fixture was already healed or the audit saw nothing, and passing that off as

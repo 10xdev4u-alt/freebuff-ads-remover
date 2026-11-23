@@ -105,7 +105,7 @@ jobs:
           set -e
           cat /tmp/heal.json
           echo "exit=$HEAL_EXIT" >> "$GITHUB_OUTPUT"
-          if [ -s config/generated-rules.json ] && node -e "const d=require('./config/generated-rules.json');process.exit((d.addEndpoints||[]).length||Object.keys(d.addSelectors||{}).length?0:1)"; then echo "has_delta=true" >> "$GITHUB_OUTPUT"; else echo "has_delta=false" >> "$GITHUB_OUTPUT"; fi
+          if [ -s config/generated-rules.json ] && node -e "const d=require('./config/generated-rules.json');process.exit((d.addEndpoints||[]).length||(d.addHosts||[]).length||Object.keys(d.addSelectors||{}).length?0:1)"; then echo "has_delta=true" >> "$GITHUB_OUTPUT"; else echo "has_delta=false" >> "$GITHUB_OUTPUT"; fi
           if [ "$HEAL_EXIT" -ne 0 ]; then
             echo "self-heal failed (exit $HEAL_EXIT)" >&2
             cat /tmp/heal.json >&2 || true

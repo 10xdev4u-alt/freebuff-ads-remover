@@ -81,7 +81,7 @@ the Deprecated section.
 - [ ] Handle ad requests with query-string variants (`?placement=...`).
 - [ ] Handle ad requests with trailing slashes / case differences.
 - [ ] Normalize duplicate slashes in paths (`/api//ad//break` slips through today). → Wave 59
-- [ ] Block by host in addition to path (allowlist of ad hosts). → Wave 59
+- [x] Block by host in addition to path (allowlist of ad hosts). → Wave 59
 - [ ] Block by request body content (sponsored task payloads).
 - [ ] Block redirect chains that land on ad endpoints.
 - [ ] Block prefetch/preload of ad assets.
@@ -306,7 +306,13 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] `feat(dom): derive selectors from the registry` — the remover flattened 5
       hardcoded selectors while `src/types.ts` registers 56; selectors are now
       derived from the registry.
-- [ ] `feat(block): block third-party ad hosts`.
+- [x] `feat(block): block third-party ad hosts` — a configured `adHosts` entry is
+      blocked regardless of path, so ad assets whose URLs are not ad-shaped are
+      stopped too. First-party hosts are exempt, so the app's own remote auction
+      cannot be swallowed; the audit reports non-first-party hosts serving
+      ad-shaped routes under `routes.hostCandidates`, and self-heal promotes one
+      into a host rule (`addHosts`) rather than a bogus origin endpoint. Empty by
+      default: 0.0.204 serves every ad from first-party hosts.
 - [x] `test(corpus): assert surface classifications` — every ad was labelled
       `sponsorBreak`; `classifyEndpoint` is now shared and the corpus carries the
       classified surface, with a test asserting each entry.

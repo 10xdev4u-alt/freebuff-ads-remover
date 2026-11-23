@@ -1,16 +1,17 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, beforeAll } from 'vitest';
 
 const repo = path.resolve(__dirname, '..');
 const fixture = path.join(repo, 'tests', 'fixtures', 'payload-absolute', 'resources');
 
-type Audit = { routes: { absolute: string[]; missing: string[] }; pass: boolean };
+type Audit = { routes: { absolute: string[]; hostCandidates: string[]; missing: string[] }; pass: boolean };
 
-function runAudit(): Audit {
+function runAudit(extraArgs = ''): Audit {
   try {
-    const out = execSync(`node scripts/audit-endpoints.mjs ${JSON.stringify(fixture)} --json`, { cwd: repo, encoding: 'utf8' });
+    const out = execSync(`node scripts/audit-endpoints.mjs ${JSON.stringify(fixture)} --json${extraArgs}`, { cwd: repo, encoding: 'utf8' });
     return JSON.parse(out) as Audit;
   } catch (e) {
     // Exit 1 is the normal "gaps found" signal; anything without a stdout report
@@ -58,5 +59,35 @@ describe('audit absolute ad URLs', () => {
     const audit = runAudit();
     expect(audit.routes.absolute).not.toContain('https://vendor.com/api/account/usage?ad=1');
     expect(audit.routes.missing).not.toContain('https://vendor.com/api/account/usage?ad=1');
+  });
+
+  it('reports a non-first-party ad host as a host candidate', () => {
+    const audit = runAudit();
+    expect(audit.routes.hostCandidates).toContain('https://ads.example.com/');
+    expect(audit.routes.missing).toContain('https://ads.example.com/');
+  });
+
+  it('does not report a first-party ad host as a host candidate', () => {
+    const audit = runAudit();
+    expect(audit.routes.hostCandidates).not.toContain('https://freebuff.com/');
+  });
+
+  it('clears the host gap once the healed artifact carries the host rule', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'far-host-rules-'));
+    const rulesPath = path.join(dir, 'rules.json');
+    fs.writeFileSync(rulesPath, JSON.stringify({
+      addEndpoints: [],
+      addHosts: ['ads.example.com'],
+      addSelectors: {},
+      source: 'ci-healed:test',
+    }));
+    try {
+      const audit = runAudit(` --generated-rules=${JSON.stringify(rulesPath)}`);
+      expect(audit.routes.missing).not.toContain('https://ads.example.com/');
+      expect(audit.routes.missing).not.toContain('https://ads.example.com/api/ad/wave59-absolute');
+      expect(audit.pass).toBe(true);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

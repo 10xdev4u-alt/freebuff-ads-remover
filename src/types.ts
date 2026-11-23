@@ -126,6 +126,14 @@ export interface ExtensionConfig {
   preset: 'strict' | 'balanced' | 'minimal' | null;
   enabled: boolean;
   blockTracking: boolean;
+  /**
+   * Hostnames blocked regardless of path. Empty by default: Freebuff 0.0.204
+   * serves every ad from first-party hosts, so there is no third-party ad host
+   * to list. `scripts/audit-endpoints.mjs` reports non-first-party hosts that
+   * serve ad-shaped routes under `routes.hostCandidates` so a real one can be
+   * added here when it appears. First-party hosts are never blocked.
+   */
+  adHosts: string[];
   network: { partitionPattern: string };
   cssFallback: boolean;
   cssFallbackHosted: boolean;
@@ -239,6 +247,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   preset: null,
   enabled: true,
   blockTracking: true,
+  adHosts: [],
   network: { partitionPattern: '^freebuff-' },
   cssFallback: true,
   cssFallbackHosted: false,

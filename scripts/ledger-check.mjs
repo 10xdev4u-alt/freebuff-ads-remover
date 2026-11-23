@@ -85,7 +85,7 @@ export async function checkLedger(root, deps = {}) {
     const parsed = readJson(artifactPath);
     if (parsed.ok) artifact = parsed.value;
   }
-  const hasHeal = !!artifact && ((Array.isArray(artifact.addEndpoints) && artifact.addEndpoints.length > 0) || (artifact.addSelectors && Object.keys(artifact.addSelectors).length > 0));
+  const hasHeal = !!artifact && ((Array.isArray(artifact.addEndpoints) && artifact.addEndpoints.length > 0) || (Array.isArray(artifact.addHosts) && artifact.addHosts.length > 0) || (artifact.addSelectors && Object.keys(artifact.addSelectors).length > 0));
   if (hasHeal) {
     if (!exists(receiptsDir)) fail('heal receipt required but receipts/ missing');
     const artifactHash = 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(artifactPath)).digest('hex');

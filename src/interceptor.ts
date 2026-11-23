@@ -1,4 +1,4 @@
-import type { InterceptResult, AdSurface, AdPattern } from './types.js';
+import type { InterceptResult, AdSurface, AdPattern, AdStage } from './types.js';
 import { AD_ENDPOINTS, PLACEMENT_IDS, TRACKING_ENDPOINTS, stageForEndpoint } from './types.js';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
@@ -7,7 +7,7 @@ import { ShadowCapture } from './shadow-capture.js';
 import type { BlockLog } from './block-log.js';
 import { matchRoute } from './url-match.js';
 import { isAdRoute, normalizeRoute } from './ad-heuristics.js';
-import { classifyRoute } from './candidates.js';
+import { classifyRoute, isFirstPartyHost, normalizeHost } from './candidates.js';
 import { classifyEndpoint } from './surface.js';
 import { hashedInstallId } from './install-id.js';
 import type { MissLog } from './miss-log.js';
@@ -128,36 +128,33 @@ export class AdInterceptor {
       return { blocked: false };
     }
 
+    // Host allowlist: a configured ad host is blocked regardless of path. This
+    // is the only way to stop ad assets whose paths are not ad-shaped. First
+    // party hosts are exempt, so a misconfigured entry cannot break the app.
+    const hostBlock = this.hostMatch(url);
+    if (hostBlock) {
+      const result: InterceptResult = {
+        blocked: true,
+        reason: `Ad host: ${hostBlock}`,
+        surface: 'sponsorBreak',
+        endpoint: hostBlock,
+        stage: 'inventory',
+      };
+      this.recordBlock(url, method, 'sponsorBreak', 'inventory', hostBlock, captureStart, dryRun);
+      if (dryRun) return { blocked: false };
+      return result;
+    }
+
     for (const pattern of this.patterns) {
       if (this.matches(url, pattern.pattern)) {
-        this.blockCount++;
-        this.stats?.record({
-          stage: pattern.stage,
-          surface: pattern.surface,
-          endpoint: pattern.pattern,
-        });
-        this.logger.debug(`Blocked ad request: ${url}`, {
-          surface: pattern.surface,
-          endpoint: pattern.pattern,
-          stage: pattern.stage,
-        });
-        const result = {
+        const result: InterceptResult = {
           blocked: true,
           reason: `Ad surface: ${pattern.surface}`,
           surface: pattern.surface,
           endpoint: pattern.pattern,
           stage: pattern.stage,
         };
-        if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
-          const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
-          (shadow as ShadowCapture).record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: !dryRun, surface: pattern.surface, stage: pattern.stage, endpoint: pattern.pattern }, ms: Date.now() - captureStart });
-        }
-        if (this.blockLog) {
-          this.blockLog.append({ v: 1, at: Date.now(), stage: pattern.stage, surface: pattern.surface, endpoint: pattern.pattern, session: 'default' });
-        }
-        if (this.outcomeLog && this.registry && this.registry.current().source.startsWith('feed')) {
-          this.outcomeLog.append({ v: 1, at: Date.now(), healHash: this.registry.current().source, route: url, suppressed: true });
-        }
+        this.recordBlock(url, method, pattern.surface, pattern.stage, pattern.pattern, captureStart, dryRun);
         if (dryRun) return { blocked: false };
         return result;
       }
@@ -195,8 +192,50 @@ export class AdInterceptor {
     return matchRoute(url, pattern);
   }
 
+  /**
+   * The configured ad host a URL belongs to, or null. Accepts a bare hostname
+   * (`ads.example.com`) or an origin (`https://ads.example.com/`). First-party
+   * hosts never match, even if configured. Healed host rules carried by the
+   * rule registry count as configured, so a host promoted by the loop blocks
+   * without a manual config edit.
+   */
+  private hostMatch(url: string): string | null {
+    let host = '';
+    try { host = new URL(url).hostname.toLowerCase(); } catch { return null; }
+    if (!host || isFirstPartyHost(host)) return null;
+    const norm = normalizeHost(host);
+    if (!norm) return null;
+    const targets = new Set<string>();
+    for (const raw of this.config.adHosts) {
+      const n = normalizeHost(raw);
+      if (n) targets.add(n);
+    }
+    for (const raw of this.registry?.current().hosts ?? []) {
+      const n = normalizeHost(raw);
+      if (n) targets.add(n);
+    }
+    return targets.has(norm) ? norm : null;
+  }
+
+  private recordBlock(url: string, method: string, surface: AdSurface, stage: AdStage, endpoint: string, captureStart: number, dryRun: boolean): void {
+    this.blockCount++;
+    this.stats?.record({ stage, surface, endpoint });
+    this.logger.debug(`Blocked ad request: ${url}`, { surface, endpoint, stage });
+    const shadow = this.shadow;
+    if (shadow && shadow.isEnabled() && shadow.shouldCapture()) {
+      const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
+      shadow.record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: !dryRun, surface, stage, endpoint }, ms: Date.now() - captureStart });
+    }
+    if (this.blockLog) {
+      this.blockLog.append({ v: 1, at: Date.now(), stage, surface, endpoint, session: 'default' });
+    }
+    if (this.outcomeLog && this.registry && this.registry.current().source.startsWith('feed')) {
+      this.outcomeLog.append({ v: 1, at: Date.now(), healHash: this.registry.current().source, route: url, suppressed: true });
+    }
+  }
+
   isAdUrl(url: string): boolean {
-    return this.patterns.some((p) => this.matches(url, p.pattern));
+    return this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
   }
 
   private isTracking(url: string): boolean {

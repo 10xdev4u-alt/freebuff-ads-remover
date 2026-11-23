@@ -81,9 +81,10 @@ for (const src of sources) {
 }
 let isAdRoute;
 let classifyRoute;
+let isFirstPartyHost;
 try {
   isAdRoute = require('../dist/ad-heuristics.js').isAdRoute;
-  classifyRoute = require('../dist/candidates.js').classifyRoute;
+  ({ classifyRoute, isFirstPartyHost } = require('../dist/candidates.js'));
 } catch {
   const AD_ROUTE = /(^|\/)ad(s)?\//i;
   const AD_EXTRA = /ad-density|display-ad|sponsored-survey|creative-image/i;
@@ -91,6 +92,7 @@ try {
   const IGNORE = new Set(['/api/ad/']);
   isAdRoute = (r) => !IGNORE.has(r) && !NOT_AD.test(r) && (AD_ROUTE.test(r) || AD_EXTRA.test(r));
   classifyRoute = (r) => ({ candidate: isAdRoute(r), confidence: isAdRoute(r) ? 0.9 : 0, signals: isAdRoute(r) ? ['heuristic'] : ['below-threshold'] });
+  isFirstPartyHost = () => false;
 }
 const classifications = {};
 for (const r of routes) classifications[r] = classifyRoute(r);
@@ -107,6 +109,16 @@ const absoluteAdUrls = [...absoluteLiterals].filter((url) => {
   if (!path.startsWith('/api/')) return false;
   return isAdRoute(path) || classifyRoute(path).candidate;
 }).sort();
+// Host-level discovery: a non-first-party host serving an ad-shaped route is a
+// candidate for the ad-host allowlist. Reported as an origin so the loop can
+// add it as a host rule. First-party hosts are never candidates, so the app's
+// own remote auction (`https://freebuff.com/api/v1/ads/...`) stays allowed.
+const hostCandidates = [...new Set(absoluteAdUrls.flatMap((url) => {
+  try {
+    const u = new URL(url);
+    return isFirstPartyHost(u.hostname) ? [] : [u.origin + '/'];
+  } catch { return []; }
+}))].sort();
 
 let registry = null;
 try {
@@ -129,7 +141,11 @@ const absoluteResults = absoluteAdUrls.map((url) => ({
   route: url,
   blocked: interceptor.intercept(url, 'POST').blocked,
 }));
-const results = [...pathResults, ...absoluteResults];
+const hostResults = hostCandidates.map((route) => ({
+  route,
+  blocked: interceptor.intercept(route, 'POST').blocked,
+}));
+const results = [...pathResults, ...absoluteResults, ...hostResults];
 
 const missing = results.filter((r) => !r.blocked);
 for (const r of results) {
@@ -244,7 +260,7 @@ const changedClassification = [...routes].filter((r) => {
 }).sort();
 
 const summary = {
-  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing, candidates: candidateRoutes, absolute: absoluteAdUrls, classifications },
+  routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing, candidates: candidateRoutes, absolute: absoluteAdUrls, hostCandidates, classifications },
   dom: { total: selectorLiterals.size, covered: selectorLiterals.size - domGaps.length, gaps: domGaps },
   css: { total: cssAdClasses.size, covered: cssAdClasses.size - cssGaps.length, gaps: cssGaps },
   baseline: { newRoutes, changedClassification },

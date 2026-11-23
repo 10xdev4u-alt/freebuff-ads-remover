@@ -6,13 +6,16 @@ import { getConfigDir } from './config.js';
 export interface AutopilotResult { delta: unknown; gate: { pass: boolean; recall: number; precision: number; missed?: string[]; fps?: string[]; reason?: string | undefined }; promoted: boolean }
 
 export function runAutopilot(
-  audit: { routes?: { missing?: string[] } },
+  audit: { routes?: { missing?: string[]; hosts?: string[] } },
   corpusDir: string,
   dryRun: boolean,
   configDir?: string,
 ): AutopilotResult {
   const dir = configDir || getConfigDir();
-  const gaps = (audit.routes?.missing ?? []).map((r: string) => ({ route: r }));
+  const gaps = [
+    ...(audit.routes?.missing ?? []).map((r: string) => ({ route: r })),
+    ...(audit.routes?.hosts ?? []).map((host: string) => ({ host })),
+  ];
   const delta = synthesizeDelta(gaps, 'audit');
   const registry = RuleRegistry.load(dir) ?? new RuleRegistry();
   const gate = delta ? verifyDelta(delta, registry, corpusDir) : { pass: true, reason: undefined, recall: 1, precision: 1, missed: [], fps: [] };
