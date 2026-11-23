@@ -10,6 +10,7 @@ Location: `~/.config/freebuff-ads-remover/config.json`
 {
   "enabled": true,
   "blockTracking": true,
+  "adHosts": [],
   "cssFallback": true,
   "dashboard": true,
   "surfaces": {
@@ -43,6 +44,18 @@ equivalents). Set to `false` to let those through so the ad server still
 sees analytics from an ad-free client — useful for comparing dashboards.
 Ad delivery, policy, slot, creative and proposal routes stay blocked either
 way.
+
+### `adHosts` (default: `[]`)
+
+A list of hostnames blocked regardless of path, for ad assets whose URL is not
+ad-shaped (an image or script on an ad CDN). Entries are hostnames
+(`ads.example.com`) or origins (`https://ads.example.com/`); matching is
+case-insensitive. First-party Freebuff hosts (`freebuff.com` and its subdomains,
+`localhost`, `127.0.0.1`) are never blocked, even if listed.
+
+The default is empty because Freebuff 0.0.204 serves every ad from first-party
+hosts. `scripts/audit-endpoints.mjs` reports non-first-party hosts that serve
+ad-shaped routes under `routes.hostCandidates`; add one here when it appears.
 
 ### `cssFallback` (default: `true`)
 

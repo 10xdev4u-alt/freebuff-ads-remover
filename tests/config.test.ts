@@ -43,6 +43,7 @@ describe('loadConfig', () => {
       expect(config.cssFallback).toBe(true);
       expect(config.dashboard).toBe(true);
       expect(config.logLevel).toBe('info');
+      expect(config.adHosts).toEqual([]);
     } finally {
       restore();
     }
@@ -56,6 +57,18 @@ describe('loadConfig', () => {
       const config = loadConfig();
       expect(config.enabled).toBe(false);
       expect(config.logLevel).toBe('debug');
+    } finally {
+      restore();
+    }
+  });
+
+  it('loads the ad host allowlist from disk', () => {
+    const dir = testDirs[0]!;
+    writeConfig(dir, { adHosts: ['ads.example.com'] });
+    const restore = useTestHome(dir);
+    try {
+      const config = loadConfig();
+      expect(config.adHosts).toEqual(['ads.example.com']);
     } finally {
       restore();
     }

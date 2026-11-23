@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 const repo = path.resolve(__dirname, '..');
 const fixture = path.join(repo, 'tests', 'fixtures', 'payload-absolute', 'resources');
 
-type Audit = { routes: { absolute: string[]; missing: string[] }; pass: boolean };
+type Audit = { routes: { absolute: string[]; hostCandidates: string[]; missing: string[] }; pass: boolean };
 
 function runAudit(): Audit {
   try {
@@ -58,5 +58,16 @@ describe('audit absolute ad URLs', () => {
     const audit = runAudit();
     expect(audit.routes.absolute).not.toContain('https://vendor.com/api/account/usage?ad=1');
     expect(audit.routes.missing).not.toContain('https://vendor.com/api/account/usage?ad=1');
+  });
+
+  it('reports a non-first-party ad host as a host candidate', () => {
+    const audit = runAudit();
+    expect(audit.routes.hostCandidates).toContain('https://ads.example.com/');
+    expect(audit.routes.missing).toContain('https://ads.example.com/');
+  });
+
+  it('does not report a first-party ad host as a host candidate', () => {
+    const audit = runAudit();
+    expect(audit.routes.hostCandidates).not.toContain('https://freebuff.com/');
   });
 });
