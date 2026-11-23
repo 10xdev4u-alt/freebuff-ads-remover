@@ -70,11 +70,41 @@ After a Freebuff update, check that no ad route slipped through:
 
 ```bash
 npm run audit -- /tmp/freebuff-ads-remover-extract/squashfs-root/resources
-# -> 38/38 ad routes blocked
+# -> 15/15 ad routes blocked
 ```
 
 It scrapes every `/api/...` route out of the new orchestrator and renderer bundle,
 keeps the ad-related ones, and fails with the list of any the interceptor misses.
+
+### Verifying a release tarball
+
+GitHub releases attach the bundle `freebuff-ads-remover-<tag>.tar.gz`, a keyless
+cosign signature (`<tarball>.sig`), the signing certificate (`<tarball>.pem`),
+`SHA256SUMS`, and an SPDX 2.3 bill of materials (`sbom.spdx.json`).
+
+```bash
+sha256sum -c SHA256SUMS
+
+cosign verify-blob \
+  --certificate freebuff-ads-remover-<tag>.tar.gz.pem \
+  --signature freebuff-ads-remover-<tag>.tar.gz.sig \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity https://github.com/10xdev4u-alt/freebuff-ads-remover/.github/workflows/release.yml@refs/tags/<tag> \
+  freebuff-ads-remover-<tag>.tar.gz
+```
+
+The tarball is reproducible: entries are sorted and the mtime, owner and gzip
+header are pinned, so repacking the same tree at the same commit produces
+identical bytes. From inside the unpacked `release/` directory:
+
+```bash
+tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - . \
+  | gzip -n > ../freebuff-ads-remover-<tag>.tar.gz
+```
+
+Regenerate the SBOM with `npm run sbom`. A manually dispatched release signs with
+its workflow ref (for example `refs/heads/main`) rather than the tag input, so
+verify it against that ref instead of `refs/tags/<tag>`.
 
 ## How it works
 
@@ -179,11 +209,14 @@ AppImage builds. Verified live on `0.0.169`, `0.0.170` and `0.0.186`; the launch
 | [Configuration](docs/CONFIGURATION.md) | Every config key, per-surface table |
 | [Architecture](docs/ARCHITECTURE.md) | Components, data flow, updater survival |
 | [Research](docs/RESEARCH.md) | Reverse-engineering notes |
-| [Changelog](CHANGELOG.md) | Release history (current: `1.26.0`) |
+| [Changelog](CHANGELOG.md) | Release history (current: `1.27.0`) |
 | [Security](SECURITY.md) | Supported versions, private reporting |
 | [Live site](https://10xdev4u-alt.github.io/freebuff-ads-remover/) | Landing page with interactive shield demo |
 
 ## Development
+
+Node.js >= 22.19 is required for the dev toolchain (Vitest resolves `undici` 8,
+which refuses older Node); Node.js >= 20 still works for the launcher patch step.
 
 ```bash
 npm install
