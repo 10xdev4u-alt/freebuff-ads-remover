@@ -12,8 +12,6 @@ on:
 
 permissions:
   contents: write
-  # Keyless cosign signing uses the workflow's OIDC token.
-  id-token: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -24,6 +22,11 @@ jobs:
     needs: verify-artifact
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Keyless cosign signing needs an OIDC token; the verify-artifact job does
+    # not sign anything and must not be able to mint one.
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +57,7 @@ jobs:
       - name: Generate SBOM
         run: |
           CREATED=$(git show -s --format=%cI "${GITHUB_SHA}")
-          node scripts/gen-sbom.mjs --out sbom.spdx.json --created "$CREATED" --commit "${GITHUB_SHA}"
+          node scripts/gen-sbom.mjs --out sbom.spdx.json --created "$CREATED"
 
       - name: Pack release bundle
         run: |

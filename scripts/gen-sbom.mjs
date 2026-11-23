@@ -7,6 +7,7 @@
 // job uses the tagged commit's date) when a real timestamp is wanted.
 
 import { readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,8 +19,12 @@ function arg(name, fallback) {
 }
 
 const out = arg('out', 'sbom.spdx.json');
-const created = arg('created', '1970-01-01T00:00:00Z');
-const commit = arg('commit', '');
+// SPDX 2.3 requires YYYY-MM-DDThh:mm:ssZ; git's %cI can carry an offset.
+function normalizeCreated(value) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+const created = normalizeCreated(arg('created', '1970-01-01T00:00:00Z'));
 
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
@@ -34,7 +39,9 @@ function licenseOf(entry) {
 }
 
 function purlOf(name, version) {
-  return `pkg:npm/${name}@${version}`;
+  // npm PURLs percent-encode the scope's `@` (`pkg:npm/%40scope/name@1.0.0`).
+  const encoded = name.split('/').map(encodeURIComponent).join('/');
+  return `pkg:npm/${encoded}@${version}`;
 }
 
 function downloadOf(entry) {
@@ -92,12 +99,19 @@ const relationships = [
   })),
 ];
 
+// A distinct namespace per document version: identical inputs hash identically,
+// changed dependencies change the namespace.
+const contentDigest = createHash('sha256')
+  .update(JSON.stringify({ packages, relationships }))
+  .digest('hex')
+  .slice(0, 16);
+
 const document = {
   spdxVersion: 'SPDX-2.3',
   dataLicense: 'CC0-1.0',
   SPDXID: 'SPDXRef-DOCUMENT',
   name: `${pkg.name}-${pkg.version}`,
-  documentNamespace: `https://spdx.org/spdxdocs/${pkg.name}-${pkg.version}${commit ? `-${commit}` : ''}`,
+  documentNamespace: `https://spdx.org/spdxdocs/${pkg.name}-${pkg.version}-${contentDigest}`,
   creationInfo: {
     created,
     creators: ['Tool: gen-sbom.mjs'],

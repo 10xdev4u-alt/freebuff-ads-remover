@@ -102,7 +102,9 @@ tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - . \
   | gzip -n > ../freebuff-ads-remover-<tag>.tar.gz
 ```
 
-Regenerate the SBOM with `npm run sbom -- --commit "$(git rev-parse HEAD)"`.
+Regenerate the SBOM with `npm run sbom`. A manually dispatched release signs with
+its workflow ref (for example `refs/heads/main`) rather than the tag input, so
+verify it against that ref instead of `refs/tags/<tag>`.
 
 ## How it works
 
