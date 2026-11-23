@@ -217,9 +217,19 @@ describe('GhostRuntime', () => {
     const originalOn = ipc.on;
     rt.activate(ipc);
     expect(ipc.on).not.toBe(originalOn);
+
     rt.updateConfig({ enabled: true, preset: 'paranoid' });
     expect(rt.report()).toEqual({ enabled: true, preset: 'paranoid', active: true });
+    // The IPC binding must survive the deactivate/reactivate cycle.
+    expect(ipc.on).not.toBe(originalOn);
+
+    const seen: unknown[] = [];
+    ipc.on('c', (_event: unknown, payload: unknown) => { seen.push(payload); });
+    ipc.listener('c')!({}, { adSlot: 1, slotId: 'secret' });
+    expect(seen).toEqual([{ adSlot: 1, slotId: '[redacted]' }]);
+
     rt.updateConfig({ enabled: false, preset: 'paranoid' });
     expect(rt.report().active).toBe(false);
+    expect(ipc.on).toBe(originalOn);
   });
 });
