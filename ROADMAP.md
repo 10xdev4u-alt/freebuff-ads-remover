@@ -302,8 +302,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [ ] `feat(audit): audit absolute ad URLs` — regex only sees `/api/`-prefixed literals.
 - [ ] `feat(dom): derive selectors from the registry` — 5 hardcoded vs 56 registered.
 - [ ] `feat(block): block third-party ad hosts`.
-- [ ] `test(corpus): assert surface classifications` — all ads labelled `sponsorBreak`;
-      the gate ignores `surface`.
+- [x] `test(corpus): assert surface classifications` — every ad was labelled
+      `sponsorBreak`; `classifyEndpoint` is now shared and the corpus carries the
+      classified surface, with a test asserting each entry.
 - [x] `test(proof): cover the zero-coverage proof modules` — `autopilot`, `dom-probe`,
       `install-id`, `miss-report`, `outcome-report` and `trust-report` now have tests.
 - [ ] `test: ratchet coverage toward 85%`.
