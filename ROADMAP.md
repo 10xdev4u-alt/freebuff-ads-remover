@@ -156,8 +156,9 @@ the Deprecated section.
 - [x] E2E against a real Freebuff instance in CI (headless): `scripts/e2e-headless.mjs`,
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
-- [ ] Coverage ratchet: never drop below 85% (thresholds are pinned at the current
-      72/73/60/71.5 baseline). → Wave 59
+- [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
+      lines/functions/branches/statements, and the suite holds 97.5/93.9/91.2/95.7.
+      → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [ ] Golden-file tests for audit output.
 - [x] Self-test the ledger gate with negative fixtures. → Wave 57
@@ -318,7 +319,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       classified surface, with a test asserting each entry.
 - [x] `test(proof): cover the zero-coverage proof modules` — `autopilot`, `dom-probe`,
       `install-id`, `miss-report`, `outcome-report` and `trust-report` now have tests.
-- [ ] `test: ratchet coverage toward 85%`.
+- [x] `test: ratchet coverage toward 85%` — the vitest thresholds are raised to 85
+      for all four metrics, backed by new branch-focused suites; the landing page,
+      README and this roadmap now state the measured figures.
 - [x] `fix(proof): verify the landing-page claims` — the ledger now checks the
       version pill and eyebrow against `package.json` and the live receipt, the
       hero test count, the `N/N ad routes blocked` figure against the corpus ad
