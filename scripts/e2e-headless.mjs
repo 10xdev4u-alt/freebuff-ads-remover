@@ -166,16 +166,35 @@ rmSync(stateDir, { recursive: true, force: true });
 mkdirSync(profileDir, { recursive: true });
 mkdirSync(stateDir, { recursive: true });
 
+// Mirror scripts/launch-freebuff.sh's sanitize_env so the app under test sees
+// the same environment a real launch would hand it.
+const SANITIZED_ENV_VARS = [
+  'ELECTRON_RUN_AS_NODE',
+  'ELECTRON_NO_ASAR',
+  'ELECTRON_OVERRIDE_DIST_PATH',
+  'ELECTRON_INSTALL_PLATFORM',
+  'ELECTRON_INSTALL_ARCH',
+  'ELECTRON_DEBUG_DRAGON',
+  'ELECTRON_FORCE_WINDOW_MENU_BAR',
+  'ELECTRON_TRASH',
+  'ELECTRON_ENABLE_LOGGING',
+  'ELECTRON_LOG_FILE',
+  'ELECTRON_LOG_ASAR_READS',
+  'ELECTRON_ENABLE_STACK_DUMPING',
+  'NODE_OPTIONS',
+  'NODE_PATH',
+  'LD_PRELOAD',
+];
+
 const child = spawn(
   'xvfb-run',
   ['-a', electronBin, '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--ozone-platform=x11', `--user-data-dir=${profileDir}`],
   {
-    env: {
-      ...process.env,
-      FREEBUFF_CONFIG_DIR: configDir,
-      FREEBUFF_DESKTOP_STATE_PATH: stateDir,
-      ELECTRON_RUN_AS_NODE: '',
-    },
+    env: (() => {
+      const env = { ...process.env, FREEBUFF_CONFIG_DIR: configDir, FREEBUFF_DESKTOP_STATE_PATH: stateDir };
+      for (const name of SANITIZED_ENV_VARS) delete env[name];
+      return env;
+    })(),
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true,
   },
