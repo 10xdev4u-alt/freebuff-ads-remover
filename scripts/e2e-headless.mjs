@@ -15,7 +15,7 @@
  */
 import { existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { spawn, execSync, execFileSync } from 'node:child_process';
+import { spawn, execSync, execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { copyFileSync, readFileSync } from 'node:fs';
 import { applyFeed } from './feed-apply.mjs';
@@ -254,6 +254,17 @@ for (let i = 0; i < 30 && !exited; i++) {
 }
 if (!healthy) fail('Verify service never became healthy');
 
+// The verify service only proves a socket is listening. Confirm bootstrap
+// reached its success path and wrote its load receipt for this boot.
+const loadCheck = spawnSync(
+  process.execPath,
+  [join(process.cwd(), 'scripts', 'check-runtime-load.mjs'), `--dir=${configDir}`, '--max-age-ms=300000'],
+  { encoding: 'utf8' },
+);
+if (loadCheck.status !== 0) {
+  fail(`Extension load was not confirmed: ${(loadCheck.stderr || loadCheck.stdout || '').trim()}`);
+}
+
 // Run verification (retry until pass or timeout)
 let report = null;
 const verifyDeadline = Date.now() + Math.min(timeout, 30000);
@@ -337,10 +348,11 @@ try {
     provenance: 'live-e2e',
     artifactHash: 'sha256:' + crypto.createHash('sha256').update(existsSync(join(process.cwd(), 'config', 'generated-rules.json')) ? readFileSync(join(process.cwd(), 'config', 'generated-rules.json')) : Buffer.from(JSON.stringify(report))).digest('hex'),
     gate: { pass: report.pass },
+    loadConfirmed: true,
   };
   const name = 'live-' + (pv || Date.now()) + '.json';
   writeFileSync(join(receiptsDir, name), JSON.stringify(receipt, null, 2));
 } catch (e) { console.error('receipt write failed:', e.message); process.exit(1); }
 
-console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote, expectPromoted: expectPromoted || null }, null, 2));
+console.log(JSON.stringify({ status: 'pass', targets: report.targets, probes: report.probes.length, promoted: promote, expectPromoted: expectPromoted || null, loaded: true }, null, 2));
 process.exit(0);

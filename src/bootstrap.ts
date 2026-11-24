@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { mkdirSync, writeFileSync, renameSync, rmSync } from 'node:fs';
 import { loadConfig, watchConfig, getConfigDir } from './config.js';
 import { Logger } from './logger.js';
 import { AdInterceptor } from './interceptor.js';
@@ -69,8 +70,40 @@ let verifyService: VerifyServiceHandle | null = null;
 let verifyTimer: ReturnType<typeof setTimeout> | null = null;
 const crashGuard = createCrashGuard();
 
+// Machine-readable proof that activate() reached its success path. The load
+// marker in app.asar only shows the loader was present; the launcher's
+// pre-exec check cannot see a boot it has not started yet. This receipt is
+// written by bootstrap itself and consumed by scripts/check-runtime-load.mjs
+// (and by the headless E2E). It is a diagnostic claim, never an ad-blocking
+// gate: PID reuse and clock skew mean freshness + liveness reduce false
+// positives rather than eliminate them.
+function loadReceiptPath(): string {
+  return path.join(getConfigDir(), 'load-receipt.json');
+}
+
+function clearLoadReceipt(): void {
+  try {
+    rmSync(loadReceiptPath(), { force: true });
+  } catch { /* diagnostic file only */ }
+}
+
+function writeLoadReceipt(): void {
+  try {
+    const dir = getConfigDir();
+    mkdirSync(dir, { recursive: true });
+    const target = loadReceiptPath();
+    const tmp = `${target}.tmp-${String(process.pid)}`;
+    writeFileSync(tmp, JSON.stringify({ status: 'loaded', at: new Date().toISOString(), pid: process.pid, version: loadPackageVersion() }), 'utf8');
+    renameSync(tmp, target);
+  } catch { /* never fail activation over a receipt */ }
+}
+
+
 export function activate(session?: unknown, electronApi?: ElectronApi): boolean {
   try {
+    // A refused or failed activation must not leave a receipt that claims the
+    // previous launch succeeded.
+    clearLoadReceipt();
     if (!crashGuard.shouldActivate()) {
       console.warn('[freebuff-ads-remover] Crash loop detected; extension disabled. Reset crash count to retry.');
       return false;
@@ -187,6 +220,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       logger?.setLogToFile(newConfig.logToFile);
     });
     logger.info('Freebuff Ads Remover activated successfully');
+    writeLoadReceipt();
     return true;
   } catch (err) {
     console.error('[freebuff-ads-remover] Activation failed:', err);
@@ -196,6 +230,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
 
 export function deactivate(): void {
   try {
+    clearLoadReceipt();
     crashGuard.markCleanExit();
     if (verifyTimer) clearTimeout(verifyTimer);
     verifyService?.close().catch(() => {});

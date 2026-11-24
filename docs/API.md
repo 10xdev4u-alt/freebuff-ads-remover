@@ -77,6 +77,9 @@
 - const `verifyService`
 - const `verifyTimer`
 - const `crashGuard`
+- function `loadReceiptPath`
+- function `clearLoadReceipt`
+- function `writeLoadReceipt`
 - function `activate`
 - function `deactivate`
 - function `getStats`
