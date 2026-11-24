@@ -196,7 +196,7 @@ export function watchConfig(onChange: (config: Config) => void, profileId?: stri
 
   const watcher = watch(configDir, (eventType, filename) => {
     if (filename === 'config.json' && eventType === 'change') {
-      onChange(loadConfig());
+      onChange(loadConfig(profileId));
     }
   });
 
