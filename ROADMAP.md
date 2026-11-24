@@ -352,7 +352,11 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `NODE_OPTIONS`/`NODE_PATH`/`LD_PRELOAD` before any helper or `exec`; the headless
       E2E launcher mirrors the same deny list, and `tests/launcher-env.test.ts` proves
       neither leaks.
-- [ ] `feat(bootstrap): confirm extension load on boot`.
+- [x] `feat(bootstrap): confirm extension load on boot` — `activate()` writes
+      `load-receipt.json` (status/pid/version/at) in the profile-aware config dir,
+      `deactivate()` and a refused activation clear it, and `scripts/check-runtime-load.mjs`
+      fails on a missing/stale/dead/corrupt receipt. The headless E2E asserts it and
+      records `loadConfirmed`/`loaded`.
 - [x] `fix(config): honor profile in the watcher` — `watchConfig` reloads `loadConfig(profileId)`
       (`src/config.ts:199`); `tests/config-profile-watch.test.ts`.
 - [ ] `build: harden the page-client sanitizer guard`.
