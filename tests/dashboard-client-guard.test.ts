@@ -50,6 +50,42 @@ describe('sanitizePageClient', () => {
     expect(result.findings).toEqual([]);
   });
 
+  it('removes every marker, including CRLF line endings', () => {
+    const crlf = sanitizePageClient(`${MARKER}\r\n${MARKER}\r\n${BODY}`);
+    expect(crlf.markersRemoved).toBe(2);
+    expect(crlf.code).toBe(BODY);
+    expect(crlf.findings).toEqual([]);
+
+    const lf = sanitizePageClient(`${MARKER}\n${MARKER}\n${BODY}`);
+    expect(lf.markersRemoved).toBe(2);
+    expect(lf.code).toBe(BODY);
+    expect(lf.findings).toEqual([]);
+  });
+
+  it('rejects Node-only globals even inside function bodies', () => {
+    const result = sanitizePageClient(`${BODY}\nfunction leak() { return process.env.SECRET; }\nconst buf = Buffer.from('x');`);
+    const findings = result.findings.join('\n');
+    expect(findings).toContain('`process` reference');
+    expect(findings).toContain('`Buffer` reference');
+  });
+
+  it('rejects globalThis access to module globals', () => {
+    const result = sanitizePageClient(`${BODY}\nglobalThis.require('fs');`);
+    expect(result.findings.join('\n')).toContain('globalThis.require');
+  });
+
+  it('rejects dynamic import() and import.meta', () => {
+    const dynamic = sanitizePageClient(`${BODY}\nimport('fs');`);
+    expect(dynamic.findings.join('\n')).toContain('dynamic import()');
+    const meta = sanitizePageClient(`${BODY}\nconst base = import.meta.url;`);
+    expect(meta.findings.join('\n')).toContain('import.meta');
+  });
+
+  it('does not flag names the script binds itself', () => {
+    const result = sanitizePageClient(`${BODY}\nconst require = 1;\nmodule: for (;;) { break module; }`);
+    expect(result.findings).toEqual([]);
+  });
+
   it('fails closed on a syntax error instead of trusting the regexes', () => {
     const result = sanitizePageClient('const = ;');
     expect(result.findings.join('\n')).toContain('parse error');
@@ -64,19 +100,30 @@ describe('sanitizePageClient', () => {
 });
 
 describe('smokeTestPageClient', () => {
-  it('accepts a script that defines the shield api in a bare context', () => {
-    expect(smokeTestPageClient(BODY)).toEqual({ ok: true });
+  it('accepts a script that defines the shield api in a bare context', async () => {
+    expect(await smokeTestPageClient(BODY)).toEqual({ ok: true });
   });
 
-  it('rejects a script that throws in the page context', () => {
-    const result = smokeTestPageClient("throw new Error('boom');");
+  it('rejects a script that throws in the page context', async () => {
+    const result = await smokeTestPageClient("throw new Error('boom');");
     expect(result.ok).toBe(false);
     expect(result.error).toContain('boom');
   });
 
-  it('rejects a script that never registers the api', () => {
-    const result = smokeTestPageClient('const notTheShield = 1;');
+  it('rejects a script that never registers the api', async () => {
+    const result = await smokeTestPageClient('const notTheShield = 1;');
     expect(result.ok).toBe(false);
     expect(result.error).toContain('farBuffShield');
+  });
+
+  it('reports an async failure instead of calling the script page-safe', async () => {
+    const result = await smokeTestPageClient("Promise.reject(new Error('async boom'));");
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('async');
+  });
+
+  it('rejects a dynamic import in the page context', async () => {
+    const result = await smokeTestPageClient("import('fs');");
+    expect(result.ok).toBe(false);
   });
 });

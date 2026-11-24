@@ -10,4 +10,4 @@ export interface PageClientSmokeResult {
 }
 
 export function sanitizePageClient(source: string): PageClientSanitizeResult;
-export function smokeTestPageClient(code: string): PageClientSmokeResult;
+export function smokeTestPageClient(code: string): Promise<PageClientSmokeResult>;

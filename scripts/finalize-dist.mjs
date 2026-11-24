@@ -8,14 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { sanitizePageClient, smokeTestPageClient } from './page-client-guard.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-writeFileSync(join(root, 'dist', 'package.json'), '{"type":"commonjs"}\n', 'utf8');
 
 const stale = join(root, 'dist', 'index.cjs');
 if (existsSync(stale)) {
   rmSync(stale);
 }
-
-console.log('[build] dist/package.json -> {"type":"commonjs"}');
 
 // dist/dashboard-client.js is evaluated verbatim inside the Freebuff page via
 // executeJavaScript, so it must be a classic script with no module system
@@ -34,11 +31,16 @@ for (const finding of findings) {
 }
 if (findings.length > 0) process.exit(1);
 
-const smoke = smokeTestPageClient(sanitized);
+const smoke = await smokeTestPageClient(sanitized);
 if (!smoke.ok) {
   console.error(`[build] dashboard-client.js failed its page-context smoke test: ${smoke.error ?? 'unknown error'}`);
   process.exit(1);
 }
+
+// Only publish dist/package.json once the client has passed validation, so a
+// failed guard does not leave a half-written dist behind.
+writeFileSync(join(root, 'dist', 'package.json'), '{"type":"commonjs"}\n', 'utf8');
+console.log('[build] dist/package.json -> {"type":"commonjs"}');
 
 if (sanitized !== original) {
   writeFileSync(clientPath, sanitized, 'utf8');

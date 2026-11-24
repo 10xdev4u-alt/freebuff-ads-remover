@@ -24,10 +24,13 @@ describe.runIf(distSource.length > 0)('built dashboard client (dist fidelity)', 
   it('contains no module syntax the page could choke on', () => {
     const result = sanitizePageClient(distSource);
     expect(result.findings).toEqual([]);
+    // The built artifact must already be sanitized, not merely sanitizable.
+    expect(result.code).toBe(distSource);
   });
 
-  it('evaluates in a bare context without module globals', () => {
-    expect(smokeTestPageClient(distSource)).toEqual({ ok: true });
+  it('evaluates in a bare context without module globals', async () => {
+    const sanitized = sanitizePageClient(distSource).code;
+    expect(await smokeTestPageClient(sanitized)).toEqual({ ok: true });
   });
 
   it('registers the shield api when evaluated as a plain script', () => {
