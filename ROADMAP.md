@@ -341,11 +341,16 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] `ci: reproducible release tarball` — sorted entries, pinned mtime/owner, `gzip -n`.
 - [x] `ci: dependabot for GitHub Actions` — `.github/dependabot.yml`.
 - [x] `ci: Node 22/24 test matrix` — `node-matrix` job in `ci.yml`; Node 20 stays covered by `upstream-proof`.
-- [ ] `docs: ad-surface issue template`.
-- [ ] `ci: gate PRs on audit deltas`.
+- [x] `docs: ad-surface issue template` — `.github/ISSUE_TEMPLATE/ad-surface.md` asks for
+      payload version, surface kind, location, evidence, and expected classification.
+- [x] `ci: gate PRs on audit deltas` — `scripts/audit-delta-check.mjs` (+ `npm run audit:deltas`,
+      `ci.yml`'s `audit-delta-gate` job) runs the shipped delta through `verifyDelta` and
+      reproduces every baseline classification from `classifyRoute`, so a hand-edited
+      `config/endpoint-baseline.json` or `config/generated-rules.json` fails CI.
 - [ ] `fix(launcher): sanitize Electron env vars`.
 - [ ] `feat(bootstrap): confirm extension load on boot`.
-- [ ] `fix(config): honor profile in the watcher`.
+- [x] `fix(config): honor profile in the watcher` — `watchConfig` reloads `loadConfig(profileId)`
+      (`src/config.ts:199`); `tests/config-profile-watch.test.ts`.
 - [ ] `build: harden the page-client sanitizer guard`.
 
 ### Wave 61 — Zero manual landing (policy-gated)

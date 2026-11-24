@@ -94,3 +94,17 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run ledger:check
+
+  # The payload audit only runs on a schedule against a real AppImage. These
+  # two artifacts are the reference side of its delta, so CI checks them here.
+  audit-delta-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - run: npm run audit:deltas
