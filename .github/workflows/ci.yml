@@ -75,6 +75,10 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - run: npm run dist:test
+        env:
+          # The dist fidelity tests skip when dist/ is absent; here it must exist.
+          FAR_REQUIRE_DIST: '1'
 
       - uses: actions/upload-artifact@v4
         with:
