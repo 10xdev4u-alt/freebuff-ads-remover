@@ -218,7 +218,49 @@ release_launcher_lock() {
 # failing informational echo must not abort the launcher before exec.
 say() { echo "$@" || true; }
 
+# Environment variables that can change, break, or hijack the patched app and
+# the node/bun children it spawns. The .desktop entry launches us from the GUI
+# session, so anything exported there reaches Electron and its orchestrator
+# unless we drop it here. These have no legitimate use on this launch path:
+#   ELECTRON_RUN_AS_NODE      turns the app into a plain Node process
+#   ELECTRON_NO_ASAR          disables asar, where our patch lives
+#   ELECTRON_OVERRIDE_DIST_PATH / _INSTALL_* / _DEBUG_*  redirect the runtime
+#   ELECTRON_ENABLE_LOGGING / _LOG_FILE / _LOG_ASAR_READS / _ENABLE_STACK_DUMPING
+#                             leak internals or write to an attacker-chosen path
+#   NODE_OPTIONS / NODE_PATH  inject code or modules into every helper
+#   LD_PRELOAD                native code injection
+# Deliberately kept: HOME/PATH/XDG_*/DISPLAY/DBUS (GUI launch), LD_LIBRARY_PATH
+# (GPU/driver stacks), NODE_EXTRA_CA_CERTS (corporate-proxy trust).
+SANITIZED_ENV_VARS=(
+  ELECTRON_RUN_AS_NODE
+  ELECTRON_NO_ASAR
+  ELECTRON_OVERRIDE_DIST_PATH
+  ELECTRON_INSTALL_PLATFORM
+  ELECTRON_INSTALL_ARCH
+  ELECTRON_DEBUG_DRAGON
+  ELECTRON_FORCE_WINDOW_MENU_BAR
+  ELECTRON_TRASH
+  ELECTRON_ENABLE_LOGGING
+  ELECTRON_LOG_FILE
+  ELECTRON_LOG_ASAR_READS
+  ELECTRON_ENABLE_STACK_DUMPING
+  NODE_OPTIONS
+  NODE_PATH
+  LD_PRELOAD
+)
+
+sanitize_env() {
+  local name
+  for name in "${SANITIZED_ENV_VARS[@]}"; do
+    unset "$name" 2>/dev/null || true
+  done
+}
+
 main() {
+  # Drop hostile vars before any helper runs, so they cannot reach the node
+  # scripts below or the final exec of the Electron binary.
+  sanitize_env
+
   if command -v flock >/dev/null 2>&1; then
     exec 9>"${TMPDIR:-/tmp}/freebuff-ads-remover-$UID.lock"
     if ! flock -w 120 9; then
@@ -290,8 +332,7 @@ main() {
 
   # Electron ignores --require / NODE_OPTIONS for packaged apps; the extension
   # is loaded by patching the app payload (see scripts/patch-freebuff-app.mjs).
-  # ELECTRON_RUN_AS_NODE would turn the app into a plain Node process — drop it.
-  unset ELECTRON_RUN_AS_NODE || true
+  # Hostile Electron/node vars were already dropped by sanitize_env.
   export FREEBUFF_ADS_REMOVER_ENTRY="$EXTENSION_ENTRY"
 
   if is_appimage "$app_path"; then

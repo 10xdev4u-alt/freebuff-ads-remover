@@ -347,7 +347,11 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `ci.yml`'s `audit-delta-gate` job) runs the shipped delta through `verifyDelta` and
       reproduces every baseline classification from `classifyRoute`, so a hand-edited
       `config/endpoint-baseline.json` or `config/generated-rules.json` fails CI.
-- [ ] `fix(launcher): sanitize Electron env vars`.
+- [x] `fix(launcher): sanitize Electron env vars` — `sanitize_env` in `scripts/launch-freebuff.sh`
+      drops `ELECTRON_RUN_AS_NODE`/`ELECTRON_NO_ASAR`, runtime/log overrides, and
+      `NODE_OPTIONS`/`NODE_PATH`/`LD_PRELOAD` before any helper or `exec`; the headless
+      E2E launcher mirrors the same deny list, and `tests/launcher-env.test.ts` proves
+      neither leaks.
 - [ ] `feat(bootstrap): confirm extension load on boot`.
 - [x] `fix(config): honor profile in the watcher` — `watchConfig` reloads `loadConfig(profileId)`
       (`src/config.ts:199`); `tests/config-profile-watch.test.ts`.
