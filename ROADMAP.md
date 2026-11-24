@@ -49,24 +49,30 @@ the Deprecated section.
       `scripts/check-injection.mjs`.
 - [x] Launcher audit-at-patch-time: `scripts/launch-freebuff.sh:301-306`.
 - [x] Launcher `--repair` flag: `scripts/launch-freebuff.sh:193-202`.
-- [ ] Extension load ping: marker presence is not activation; `scripts/check-injection.mjs`
-      only checks the marker substring, so a throwing `dist/bootstrap.js` still reports a
-      clean patch. → Wave 60
+- [x] Extension load confirmation: `activate()` writes `load-receipt.json`
+      (status/pid/version/at) and `scripts/check-runtime-load.mjs` rejects a
+      missing/stale/dead/corrupt or version-mismatched receipt; headless E2E fails
+      when a boot never reached the success path (`scripts/e2e-headless.mjs:259-267`).
+      → Wave 60
 - [x] Graceful degradation: fail open to an unpatched launch
       (`scripts/launch-freebuff.sh:176-180,298`).
 - [x] Atomic patch writes: `scripts/patch-freebuff-app.mjs:130,144` (temp + same-dir rename).
 - [x] Detect Freebuff self-update mid-session: `adopt_live_payload`
-      (`scripts/launch-freebuff.sh:119-165`); the adopted copy is unverified → Wave 56.
+      (`scripts/launch-freebuff.sh:136-188`) stages the live payload and verifies the
+      copied version and `app.asar` before committing it. → Wave 56
 - [x] Handle AppImage FUSE mount expiry: the launcher never execs from a FUSE mount; it
       extracts to disk (`scripts/launch-freebuff.sh:250-261,311`).
-- [x] Survive `ELECTRON_RUN_AS_NODE`: unset at `scripts/launch-freebuff.sh:246-247`; other
-      Electron env vars still inherit → Wave 60.
+- [x] Drop hostile Electron/node env before launch: `sanitize_env` unsets 15 vars
+      (`ELECTRON_RUN_AS_NODE`, `ELECTRON_NO_ASAR`, runtime/log overrides,
+      `NODE_OPTIONS`/`NODE_PATH`/`LD_PRELOAD`) before any helper or `exec`
+      (`scripts/launch-freebuff.sh:234-257,262`). → Wave 60
 - [x] stdout/stderr EPIPE guard: `src/logger.ts:14-31,95-106` plus child fds redirected;
       the launcher's own `echo` is still exposed → Wave 56.
-- [~] Crash-loop protection: implemented (`src/crash-guard.ts`) but the sentinel is never
-      cleared on a clean exit and the threshold is checked before counting → Wave 55.
-- [ ] Checksum verification of `app.asar.orig` before restore: bare `renameSync` at
-      `scripts/patch-freebuff-app.mjs:87-90` → Wave 56.
+- [x] Crash-loop protection: `src/crash-guard.ts` consumes the sentinel exactly once
+      and resets the counter on a clean exit (`:55,65,78`). → Wave 55
+- [x] Validate `app.asar.orig` before restore: the legacy migration reads the backup's
+      main entry first, so a truncated archive aborts instead of becoming the live
+      payload (`scripts/patch-freebuff-app.mjs:87-95`). → Wave 56
 
 ## 2. Coverage — network layer
 
@@ -80,17 +86,17 @@ the Deprecated section.
 - [ ] Cover new partitions naming schemes without code changes (regex match).
 - [ ] Handle ad requests with query-string variants (`?placement=...`).
 - [ ] Handle ad requests with trailing slashes / case differences.
-- [ ] Normalize duplicate slashes in paths (`/api//ad//break` slips through today). → Wave 59
+- [x] Normalize duplicate slashes in paths (`src/url-match.ts:5` collapses runs of `/`). → Wave 59
 - [x] Block by host in addition to path (allowlist of ad hosts). → Wave 59
 - [ ] Block by request body content (sponsored task payloads).
 - [ ] Block redirect chains that land on ad endpoints.
 - [ ] Block prefetch/preload of ad assets.
-- [ ] Guard malformed URLs in matching: `decodeURIComponent` throws on `/api/ad/%ZZ`
-      (`src/url-match.ts:21`). → Wave 59
-- [ ] Never skip `callback()` when `intercept()` throws (`src/electron-hook.ts:218,237`);
-      a throw today leaves the request handling dangling. → Wave 59
-- [ ] Audit absolute ad URLs: the scan regex only sees `/api/`-prefixed literals
-      (`scripts/audit-endpoints.mjs:67`), so host-based ad URLs are invisible. → Wave 59
+- [x] Guard malformed URLs in matching: `decodeURIComponent` failures fall back to the
+      raw path (`src/url-match.ts:22`). → Wave 59
+- [x] Never skip `callback()` when `intercept()` throws: the shared handler logs and
+      calls back (`src/electron-hook.ts:209-218`). → Wave 59
+- [x] Audit absolute ad URLs: host-based literals are classified and reported under
+      `routes.missing`/`hostCandidates` (`scripts/audit-endpoints.mjs:106-148`). → Wave 59
 
 ## 3. Coverage — DOM & CSS layer
 
@@ -157,7 +163,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/93.9/91.2/95.7.
+      lines/functions/branches/statements, and the suite holds 97.1/93.8/91.3/95.4.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [ ] Golden-file tests for audit output.
@@ -204,10 +210,12 @@ the Deprecated section.
 
 ## 12. Community & scale
 
-- [ ] Issue templates for new ad surfaces (with audit output): only bug/feature/research
-      exist today. → Wave 60
-- [ ] PR template requiring audit green: no audit checkbox; `ci.yml` never runs
-      `npm run audit`. → Wave 60
+- [x] Issue template for new ad surfaces: `.github/ISSUE_TEMPLATE/ad-surface.md` asks
+      for payload version, surface kind, location, evidence and expected
+      classification. → Wave 60
+- [~] PRs gated on audit truth: `ci.yml`'s required `audit-delta-gate` reproduces every
+      baseline classification, but `.github/pull_request_template.md` still has no
+      audit checkbox. → Wave 60
 - [x] Release notes automation (`release.yml:81`, `proof-publish.yml`).
 
 ---
