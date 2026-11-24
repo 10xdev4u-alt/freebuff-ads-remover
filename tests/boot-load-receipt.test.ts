@@ -70,6 +70,15 @@ describe('boot load receipt', () => {
     expect(existsSync(join(profileDir, 'load-receipt.json'))).toBe(true);
     expect(existsSync(join(dir, 'load-receipt.json'))).toBe(false);
   });
+
+  it("treats the 'default' profile as the base directory", () => {
+    process.env.FREEBUFF_PROFILE = 'default';
+    expect(activate(fakeSession, undefined)).toBe(true);
+    expect(existsSync(join(dir, 'load-receipt.json'))).toBe(true);
+    const r = check(dir);
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('LOAD CONFIRMED');
+  });
 });
 
 describe('check-runtime-load', () => {
@@ -94,12 +103,13 @@ describe('check-runtime-load', () => {
   });
 
   it('fails when the recorded pid is dead', () => {
-    const dead = spawnSync(process.execPath, ['-e', ''], { encoding: 'utf8' });
+    // Linux pid_max caps out well below this, so the kernel can never hand it
+    // out and the liveness probe must report ESRCH/EINVAL rather than racing
+    // a reused pid.
     writeFileSync(
       join(dir, 'load-receipt.json'),
-      JSON.stringify({ status: 'loaded', at: new Date().toISOString(), pid: dead.pid, version: '0.0.0' }),
+      JSON.stringify({ status: 'loaded', at: new Date().toISOString(), pid: 2147483647, version: '0.0.0' }),
     );
-    // The recorded process has already exited, so the liveness probe must fail.
     const r = check(dir, ['--version=0.0.0']);
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('not running');
@@ -111,5 +121,42 @@ describe('check-runtime-load', () => {
     const r = check(dir, ['--version=0.0.0']);
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('old');
+  });
+
+  it('rejects a receipt whose status is not loaded', () => {
+    writeFileSync(
+      join(dir, 'load-receipt.json'),
+      JSON.stringify({ status: 'failed', at: new Date().toISOString(), pid: process.pid, version: '0.0.0' }),
+    );
+    const r = check(dir, ['--version=0.0.0']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('status is "failed"');
+  });
+
+  it('rejects a missing or unusable pid', () => {
+    writeFileSync(
+      join(dir, 'load-receipt.json'),
+      JSON.stringify({ status: 'loaded', at: new Date().toISOString(), pid: 0, version: '0.0.0' }),
+    );
+    const r = check(dir, ['--version=0.0.0']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('no usable pid');
+  });
+
+  it('rejects an unparseable timestamp', () => {
+    writeFileSync(
+      join(dir, 'load-receipt.json'),
+      JSON.stringify({ status: 'loaded', at: 'not-a-date', pid: process.pid, version: '0.0.0' }),
+    );
+    const r = check(dir, ['--version=0.0.0']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('no usable timestamp');
+  });
+
+  it('rejects a receipt written by another extension version', () => {
+    activate(fakeSession, undefined);
+    const r = check(dir, ['--version=9.9.9']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('!= 9.9.9');
   });
 });

@@ -27,8 +27,10 @@ function fail(message) {
 
 function resolveConfigDir() {
   const base = arg('dir', process.env.FREEBUFF_CONFIG_DIR || '');
+  // Mirror getConfigDir (src/config.ts:118-123): 'default' is the base dir,
+  // only other profiles get a subdirectory.
   const profile = process.env.FREEBUFF_PROFILE || '';
-  return profile ? join(base, 'profiles', profile) : base;
+  return profile && profile !== 'default' ? join(base, 'profiles', profile) : base;
 }
 
 function expectedVersion() {
@@ -72,7 +74,8 @@ if (!Number.isInteger(pid) || pid <= 0) fail(`load receipt has no usable pid: ${
 if (!pidIsAlive(pid)) fail(`load receipt pid ${pid} is not running`);
 
 const version = expectedVersion();
-if (version && receipt?.version !== version) {
+if (!version) fail('cannot determine the expected extension version (package.json missing or invalid)');
+if (receipt?.version !== version) {
   fail(`load receipt version ${JSON.stringify(receipt?.version)} != ${version}`);
 }
 
