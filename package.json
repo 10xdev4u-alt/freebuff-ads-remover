@@ -22,6 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "dist:test": "vitest run tests/dashboard-client-dist.test.ts",
     "lint": "eslint src/ tests/",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json",
     "prepare": "husky || true",
@@ -30,7 +31,7 @@
     "sbom": "node scripts/gen-sbom.mjs --out sbom.spdx.json",
     "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md",
     "ledger:check": "node scripts/check-ledger.mjs",
-    "release:check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run ledger:check && npm run docs:check"
+    "release:check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && FAR_REQUIRE_DIST=1 npm run dist:test && npm run ledger:check && npm run docs:check"
   },
   "keywords": [
     "freebuff",

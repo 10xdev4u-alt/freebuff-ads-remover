@@ -359,7 +359,13 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       records `loadConfirmed`/`loaded`.
 - [x] `fix(config): honor profile in the watcher` — `watchConfig` reloads `loadConfig(profileId)`
       (`src/config.ts:199`); `tests/config-profile-watch.test.ts`.
-- [ ] `build: harden the page-client sanitizer guard`.
+- [x] `build: harden the page-client sanitizer guard` — `scripts/page-client-guard.mjs`
+      parses `dist/dashboard-client.js` with the TypeScript AST, removes only tsc's
+      `Object.defineProperty(exports, "__esModule", ...)` marker, rejects surviving
+      `exports`/`module`/`require` references and import/export declarations, and
+      smoke-tests the result in a bare vm context; `finalize-dist.mjs` now fails when
+      tsc does not emit the client at all, and `npm run dist:test` enforces the built
+      artifact in CI (`FAR_REQUIRE_DIST=1`).
 
 ### Wave 61 — Zero manual landing (policy-gated)
 - [ ] `ci: auto-merge the bot PR train` — conflicts with `PLAN.md` non-negotiables;

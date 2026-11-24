@@ -5,6 +5,7 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sanitizePageClient, smokeTestPageClient } from './page-client-guard.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 writeFileSync(join(root, 'dist', 'package.json'), '{"type":"commonjs"}\n', 'utf8');
@@ -16,30 +17,32 @@ if (existsSync(stale)) {
 
 console.log('[build] dist/package.json -> {"type":"commonjs"}');
 
-// dist/dashboard-client.js is evaluated verbatim inside the Freebuff page
-// via executeJavaScript. tsc's CommonJS wrapper (`exports.__esModule`) would
-// throw ReferenceError there — `exports` does not exist in a page — so strip
-// it and fail the build if any other CommonJS/ESM syntax survives.
+// dist/dashboard-client.js is evaluated verbatim inside the Freebuff page via
+// executeJavaScript, so it must be a classic script with no module system
+// syntax. The guard parses the emitted file, strips only the tolerated tsc
+// marker, and rejects anything else that would throw in a page.
 const clientPath = join(root, 'dist', 'dashboard-client.js');
-if (existsSync(clientPath)) {
-  const original = readFileSync(clientPath, 'utf8');
-  const sanitized = original
-    .split('\n')
-    .filter((line) => !/^Object\.defineProperty\(exports,/.test(line.trim()))
-    .join('\n');
+if (!existsSync(clientPath)) {
+  console.error('[build] dist/dashboard-client.js is missing: tsc did not emit the page client');
+  process.exit(1);
+}
 
-  const leftovers = sanitized.match(
-    /\brequire\s*\(|\bmodule\.exports\b|^Object\.defineProperty\(exports/m,
-  );
-  if (leftovers) {
-    console.error(
-      `[build] dashboard-client.js still contains page-unsafe syntax: ${leftovers.join(', ')}`,
-    );
-    process.exit(1);
-  }
+const original = readFileSync(clientPath, 'utf8');
+const { code: sanitized, findings, markersRemoved } = sanitizePageClient(original);
+for (const finding of findings) {
+  console.error(`[build] dashboard-client.js: ${finding}`);
+}
+if (findings.length > 0) process.exit(1);
 
-  if (sanitized !== original) {
-    writeFileSync(clientPath, sanitized, 'utf8');
-    console.log('[build] dashboard-client.js sanitized for page injection');
-  }
+const smoke = smokeTestPageClient(sanitized);
+if (!smoke.ok) {
+  console.error(`[build] dashboard-client.js failed its page-context smoke test: ${smoke.error ?? 'unknown error'}`);
+  process.exit(1);
+}
+
+if (sanitized !== original) {
+  writeFileSync(clientPath, sanitized, 'utf8');
+  console.log(`[build] dashboard-client.js sanitized for page injection (${markersRemoved} CommonJS marker(s) removed)`);
+} else {
+  console.log('[build] dashboard-client.js already page-safe');
 }
