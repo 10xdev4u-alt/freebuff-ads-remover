@@ -361,11 +361,16 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       (`src/config.ts:199`); `tests/config-profile-watch.test.ts`.
 - [x] `build: harden the page-client sanitizer guard` — `scripts/page-client-guard.mjs`
       parses `dist/dashboard-client.js` with the TypeScript AST, removes only tsc's
-      `Object.defineProperty(exports, "__esModule", ...)` marker, rejects surviving
-      `exports`/`module`/`require` references and import/export declarations, and
-      smoke-tests the result in a bare vm context; `finalize-dist.mjs` now fails when
-      tsc does not emit the client at all, and `npm run dist:test` enforces the built
-      artifact in CI (`FAR_REQUIRE_DIST=1`).
+      `Object.defineProperty(exports, "__esModule", ...)` marker (whole line when it
+      stands alone), and rejects surviving `exports`/`module`/`require`/Node-global
+      references, `globalThis.<forbidden>` access, dynamic `import()`, `import.meta`,
+      and import/export declarations, while tolerating names the script binds itself.
+      The smoke test drains microtasks with an `unhandledRejection` hook and an
+      `importModuleDynamically` callback, so an async throw or dynamic import fails
+      the build instead of escaping as an unhandled rejection;
+      `finalize-dist.mjs` publishes `dist/package.json` only after validation and
+      fails when tsc does not emit the client at all, and `npm run dist:test`
+      enforces the built artifact in CI (`FAR_REQUIRE_DIST=1`).
 
 ### Wave 61 — Zero manual landing (policy-gated)
 - [ ] `ci: auto-merge the bot PR train` — conflicts with `PLAN.md` non-negotiables;
