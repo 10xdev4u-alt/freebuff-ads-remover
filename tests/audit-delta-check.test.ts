@@ -25,7 +25,7 @@ function makeFixture(): { root: string; baseline: { routes: string[]; classifica
     fs.writeFileSync(file, content);
   };
 
-  const ad = AD_ENDPOINTS[0]!;
+  const ad = AD_ENDPOINTS[0];
   const control = '/api/account/usage';
   const corpus = `${JSON.stringify({ path: ad, label: 'ad' })}\n${JSON.stringify({ path: control, label: 'control' })}\n`;
   write('corpus/golden.jsonl', corpus);
