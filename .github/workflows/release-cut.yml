@@ -1,0 +1,82 @@
+name: Release Cut
+
+on:
+  # A healed artifact, a new live receipt or a refreshed corpus can justify a
+  # release. The gate decides; this workflow only proposes the bump.
+  push:
+    branches: [main]
+    paths:
+      - 'config/generated-rules.json'
+      - 'receipts/*.json'
+      - 'corpus/golden.jsonl'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-cut
+  cancel-in-progress: false
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Evaluate release cut
+        id: gate
+        run: node scripts/release-gate.mjs --root . --github-output "$GITHUB_OUTPUT"
+
+      - name: Apply version bump
+        if: steps.gate.outputs.status == 'cut'
+        env:
+          VERSION: ${{ steps.gate.outputs.version }}
+          PAYLOAD_VERSION: ${{ steps.gate.outputs.payload-version }}
+          ARTIFACT_HASH: ${{ steps.gate.outputs.artifact-hash }}
+          RECEIPT_FILE: ${{ steps.gate.outputs.receipt-file }}
+          RECEIPT_AT: ${{ steps.gate.outputs.receipt-at }}
+        run: |
+          node scripts/bump-version.mjs --root . \
+            --version "$VERSION" \
+            --payload-version "$PAYLOAD_VERSION" \
+            --artifact-hash "$ARTIFACT_HASH" \
+            --receipt-file "$RECEIPT_FILE" \
+            --receipt-at "$RECEIPT_AT" \
+            --notes "Auto-cut from live receipt $RECEIPT_FILE (Freebuff $PAYLOAD_VERSION)." \
+            --date "$(date -u +%F)"
+
+      - name: Open release PR
+        if: steps.gate.outputs.status == 'cut'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          base: main
+          branch: ci/release-v${{ steps.gate.outputs.version }}
+          title: "chore(release): cut v${{ steps.gate.outputs.version }}"
+          commit-message: "chore(release): cut v${{ steps.gate.outputs.version }}"
+          body: |
+            Automated release bump proposed by `release-cut`.
+
+            - Next version: `${{ steps.gate.outputs.version }}` (${{ steps.gate.outputs.bump }})
+            - Payload version: `${{ steps.gate.outputs.payload-version }}`
+            - Receipt: `${{ steps.gate.outputs.receipt-file }}`
+
+            The gate re-verified the receipt against the shipped artifact and
+            corpus before writing this bump. Review, then merge; `release-tag`
+            asserts the marker against the committed receipt and pushes
+            `v${{ steps.gate.outputs.version }}`.
+
+            If another release PR is open, merge the newest version first.
+          add-paths: |
+            package.json
+            README.md
+            CHANGELOG.md
+            index.html
+            release/last-cut.json

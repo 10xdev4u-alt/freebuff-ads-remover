@@ -31,6 +31,9 @@
     "sbom": "node scripts/gen-sbom.mjs --out sbom.spdx.json",
     "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md",
     "ledger:check": "node scripts/check-ledger.mjs",
+    "release:gate": "node scripts/release-gate.mjs",
+    "release:bump": "node scripts/bump-version.mjs",
+    "release:tag:check": "node scripts/release-gate.mjs --tag",
     "release:check": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && FAR_REQUIRE_DIST=1 npm run dist:test && npm run ledger:check && npm run docs:check"
   },
   "keywords": [
