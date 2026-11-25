@@ -86,7 +86,9 @@ the Deprecated section.
 - [ ] Cover new partitions naming schemes without code changes (regex match).
 - [ ] Handle ad requests with query-string variants (`?placement=...`).
 - [ ] Handle ad requests with trailing slashes / case differences.
-- [x] Normalize duplicate slashes in paths (`src/url-match.ts:5` collapses runs of `/`). → Wave 59
+- [x] Normalize duplicate slashes in paths — `src/url-match.ts:5,9` for absolute
+      URLs and `:20-22` for the path-only branch used in production. Regression
+      tests in `tests/url-match-canonicalization.test.ts`. → Wave 59, verified Wave 62
 - [x] Block by host in addition to path (allowlist of ad hosts). → Wave 59
 - [ ] Block by request body content (sponsored task payloads).
 - [ ] Block redirect chains that land on ad endpoints.
@@ -417,6 +419,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the ledger checks marker ↔ package ↔ receipt freshness/probes/hashes/newest
       receipt. `release.yml`'s verify-artifact
       E2E now pins `FREEBUFF_PAYLOAD_VERSION`.
+
+### Wave 62 — Network matching truth
+- [x] `fix(match): collapse duplicate slashes on the path-only branch` —
+      `matchRoute` lowercased and percent-decoded URLs but only `canonicalize`
+      collapsed runs of `/`, so a production `/api//ad/break` bypassed blocking.
+      `tests/url-match-canonicalization.test.ts` covers absolute and path-only
+      URLs, query/case variants, pattern-side slashes and the already-passing
+      guards. No endpoint or AD_ENDPOINTS change.
 
 ---
 

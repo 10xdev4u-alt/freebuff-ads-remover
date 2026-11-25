@@ -17,9 +17,9 @@ export function matchRoute(url: string, pattern: string): boolean {
   if (!pattern.includes('://')) {
     let pathname = url;
     try { pathname = new URL(url).pathname; } catch { /* keep */ }
-    const cp = pattern.toLowerCase();
-    let cu = pathname.toLowerCase();
-    try { cu = decodeURIComponent(pathname).toLowerCase(); } catch { /* malformed percent-encoding: match the raw path */ }
+    const cp = pattern.toLowerCase().replace(/\/{2,}/g, '/');
+    let cu = pathname.toLowerCase().replace(/\/{2,}/g, '/');
+    try { cu = decodeURIComponent(pathname).toLowerCase().replace(/\/{2,}/g, '/'); } catch { /* malformed percent-encoding: match the raw path */ }
     return cu.includes(cp);
   }
   const cu = canonicalize(url);
