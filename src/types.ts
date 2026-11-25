@@ -34,21 +34,27 @@ export const STAGE_LABELS: Record<AdStage, string> = {
  * break-event (a delivery event) must not fall through to break (inventory).
  */
 export function stageForEndpoint(endpoint: string): AdStage {
-  if (endpoint.includes('/api/ad/proposal')) return 'bid';
-  if (endpoint.includes('/api/ad/policy')) return 'policy';
-  if (endpoint.includes('/api/ad/invitation')) return 'promo';
-  if (endpoint.includes('/api/sponsored-survey')) return 'promo';
-  if (endpoint.includes('/api/telemetry/ad-density')) return 'delivery';
-  if (endpoint.includes('/api/telemetry/display-ad')) return 'delivery';
-  if (endpoint.includes('/api/ad/display')) return 'delivery';
-  if (endpoint.includes('/api/ad/intent')) return 'inventory';
-  if (endpoint.includes('/api/ad/report')) return 'delivery';
-  if (endpoint.includes('creative-image')) return 'media';
+  // Match the normalization that `matchRoute` applies to URLs so a healed
+  // non-canonical endpoint still classifies to the same stage.
+  let path = endpoint.toLowerCase().replace(/\/{2,}/g, '/');
+  try { path = decodeURIComponent(path); } catch { /* malformed: use the raw path */ }
+  const cut = path.search(/[?#]/);
+  if (cut >= 0) path = path.slice(0, cut);
+  if (path.includes('/api/ad/proposal')) return 'bid';
+  if (path.includes('/api/ad/policy')) return 'policy';
+  if (path.includes('/api/ad/invitation')) return 'promo';
+  if (path.includes('/api/sponsored-survey')) return 'promo';
+  if (path.includes('/api/telemetry/ad-density')) return 'delivery';
+  if (path.includes('/api/telemetry/display-ad')) return 'delivery';
+  if (path.includes('/api/ad/display')) return 'delivery';
+  if (path.includes('/api/ad/intent')) return 'inventory';
+  if (path.includes('/api/ad/report')) return 'delivery';
+  if (path.includes('creative-image')) return 'media';
   if (
-    endpoint.includes('/api/ad/impression') ||
-    endpoint.includes('/api/ad/click') ||
-    endpoint.includes('/api/ad/engagement') ||
-    endpoint.includes('/api/ad/break-event')
+    path.includes('/api/ad/impression') ||
+    path.includes('/api/ad/click') ||
+    path.includes('/api/ad/engagement') ||
+    path.includes('/api/ad/break-event')
   ) {
     return 'delivery';
   }

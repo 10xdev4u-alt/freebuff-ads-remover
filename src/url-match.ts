@@ -16,7 +16,12 @@ export function matchRoute(url: string, pattern: string): boolean {
   // path-only pattern
   if (!pattern.includes('://')) {
     let pathname = url;
-    try { pathname = new URL(url).pathname; } catch { /* keep */ }
+    try { pathname = new URL(url).pathname; } catch {
+      // Path-only input: strip query/hash before matching, otherwise an ad
+      // token inside a query value could block a control request.
+      const cut = url.search(/[?#]/);
+      pathname = cut >= 0 ? url.slice(0, cut) : url;
+    }
     const cp = pattern.toLowerCase().replace(/\/{2,}/g, '/');
     let cu = pathname.toLowerCase().replace(/\/{2,}/g, '/');
     try { cu = decodeURIComponent(pathname).toLowerCase().replace(/\/{2,}/g, '/'); } catch { /* malformed percent-encoding: match the raw path */ }
