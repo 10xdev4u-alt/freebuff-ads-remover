@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-19 (Wave 54 truth pass; Freebuff 0.0.204).
+Last updated: 2026-11-25 (Wave 63; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -76,7 +76,9 @@ the Deprecated section.
 
 ## 2. Coverage — network layer
 
-- [ ] Block `https://freebuff.com/api/desktop/updates/` behind opt-in `blockUpdates` toggle.
+- [x] Block `https://freebuff.com/api/desktop/updates/` behind opt-in `blockUpdates` toggle
+      (`src/config.ts:12`, `src/interceptor.ts:150-165`); off by default and never
+      enabled by presets. → Wave 63
 - [ ] Intercept SSE (EventSource) ad streams, not just fetch/XHR.
 - [ ] Intercept WebSocket ad channels.
 - [ ] Intercept `navigator.sendBeacon` ad calls (via preload patch).
@@ -434,6 +436,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       event could overwrite an in-flight chain and clear a previously detected
       ad hop. `tests/redirect-chain-canonicalization.test.ts` covers re-record,
       duplicate-slash redirect hops and the clean-chain/completion guards.
+
+### Wave 63 — Opt-in update blocking
+- [x] `feat(config): opt-in blockUpdates` — `blockUpdates` is a Zod/default-false
+      config field and an `ExtensionConfig` member; `DESKTOP_UPDATES_PATH` lives
+      outside `AD_ENDPOINTS` and is evaluated as an origin-scoped path rule in
+      `AdInterceptor`, including percent-encoded and query/subpath variants.
+      `isAdUrl` reflects the toggle so redirect chains also cancel. Tests in
+      `tests/block-updates.test.ts` cover defaults, disk load/save, runtime
+      toggling, master switch, sibling-path safety and malformed URLs.
 
 ---
 

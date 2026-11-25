@@ -10,6 +10,7 @@ Location: `~/.config/freebuff-ads-remover/config.json`
 {
   "enabled": true,
   "blockTracking": true,
+  "blockUpdates": false,
   "adHosts": [],
   "cssFallback": true,
   "dashboard": true,
@@ -44,6 +45,15 @@ equivalents). Set to `false` to let those through so the ad server still
 sees analytics from an ad-free client — useful for comparing dashboards.
 Ad delivery, policy, slot, creative and proposal routes stay blocked either
 way.
+
+### `blockUpdates` (default: `false`)
+
+Opt-in block for Freebuff's own desktop update check
+(`https://freebuff.com/api/desktop/updates`). Off by default: blocking updates
+can strand the app on an old payload. When `true`, that path (including query
+and subpath variants) is cancelled as an ad request; no other first-party
+route is affected. This is a path rule because host-based rules deliberately
+exempt first-party hosts, and presets never turn it on implicitly.
 
 ### `adHosts` (default: `[]`)
 

@@ -85,6 +85,13 @@ export const AD_ENDPOINTS = [
   '/api/ad/display',
 ] as const;
 
+/**
+ * First-party desktop update check. Deliberately not an AD_ENDPOINTS entry:
+ * it is blocked only when the user opts in with `blockUpdates`. Origin-scoped
+ * so other hosts serving a similar path are unaffected.
+ */
+export const DESKTOP_UPDATES_PATH = 'https://freebuff.com/api/desktop/updates';
+
 export type AdEndpoint = (typeof AD_ENDPOINTS)[number];
 
 /**
@@ -126,6 +133,7 @@ export interface ExtensionConfig {
   preset: 'strict' | 'balanced' | 'minimal' | null;
   enabled: boolean;
   blockTracking: boolean;
+  blockUpdates: boolean;
   /**
    * Hostnames blocked regardless of path. Empty by default: Freebuff 0.0.204
    * serves every ad from first-party hosts, so there is no third-party ad host
@@ -247,6 +255,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   preset: null,
   enabled: true,
   blockTracking: true,
+  blockUpdates: false,
   adHosts: [],
   network: { partitionPattern: '^freebuff-' },
   cssFallback: true,

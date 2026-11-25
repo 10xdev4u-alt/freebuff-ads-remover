@@ -1,5 +1,5 @@
 import type { InterceptResult, AdSurface, AdPattern, AdStage } from './types.js';
-import { AD_ENDPOINTS, PLACEMENT_IDS, TRACKING_ENDPOINTS, stageForEndpoint } from './types.js';
+import { AD_ENDPOINTS, DESKTOP_UPDATES_PATH, PLACEMENT_IDS, TRACKING_ENDPOINTS, stageForEndpoint } from './types.js';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
@@ -145,6 +145,21 @@ export class AdInterceptor {
       return result;
     }
 
+    // Opt-in first-party update blocking. Host rules deliberately exempt
+    // freebuff.com, so this is an origin-scoped path rule instead.
+    if (this.blockUpdates(url)) {
+      const result: InterceptResult = {
+        blocked: true,
+        reason: 'Desktop updates blocked (blockUpdates)',
+        surface: 'sponsorBreak',
+        endpoint: DESKTOP_UPDATES_PATH,
+        stage: 'inventory',
+      };
+      this.recordBlock(url, method, 'sponsorBreak', 'inventory', DESKTOP_UPDATES_PATH, captureStart, dryRun);
+      if (dryRun) return { blocked: false };
+      return result;
+    }
+
     for (const pattern of this.patterns) {
       if (this.matches(url, pattern.pattern)) {
         const result: InterceptResult = {
@@ -192,6 +207,18 @@ export class AdInterceptor {
     return matchRoute(url, pattern);
   }
 
+  /** True when the opt-in rule matches a URL, including percent-encoded paths. */
+  private blockUpdates(url: string): boolean {
+    if (!this.config.blockUpdates) return false;
+    if (this.matches(url, DESKTOP_UPDATES_PATH)) return true;
+    try {
+      const decoded = decodeURI(url);
+      return decoded !== url && this.matches(decoded, DESKTOP_UPDATES_PATH);
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * The configured ad host a URL belongs to, or null. Accepts a bare hostname
    * (`ads.example.com`) or an origin (`https://ads.example.com/`). First-party
@@ -235,7 +262,7 @@ export class AdInterceptor {
   }
 
   isAdUrl(url: string): boolean {
-    return this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
+    return this.blockUpdates(url) || this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
   }
 
   private isTracking(url: string): boolean {
