@@ -434,6 +434,8 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
     radarBox: HTMLElement;
     radarCanvas: HTMLCanvasElement;
     heat: HTMLElement;
+    exportJson: HTMLElement;
+    exportCsv: HTMLElement;
   }
 
   interface Blip {
@@ -572,6 +574,8 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
         <footer class="footer">
           <span class="dom-hidden" data-f="domHidden">0 hidden in page</span>
           <span class="since" data-f="since"></span>
+          <button class="export-btn" type="button" data-f="exportJson" aria-label="Export block log as JSON">JSON</button>
+          <button class="export-btn" type="button" data-f="exportCsv" aria-label="Export block log as CSV">CSV</button>
         </footer>
       </section>
     `;
@@ -611,6 +615,8 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
       radarBox: byData('radarBox'),
       radarCanvas: canvas,
       heat: byData('heat'),
+      exportJson: byData('exportJson'),
+      exportCsv: byData('exportCsv'),
     };
   }
 
@@ -1100,6 +1106,24 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
 
   let latest: StatsSnapshot | null = null;
 
+  /** Browser-only export: build a Blob in the click handler, never at load. */
+  function downloadLog(kind: 'json' | 'csv', s: ShieldState): void {
+    if (state !== s || !latest?.exportLog) return;
+    const body = kind === 'json' ? latest.exportLog.json : latest.exportLog.csv;
+    const blob = new Blob([body], { type: kind === 'json' ? 'application/json' : 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `farblock-${String(Date.now())}.${kind}`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function wireExports(s: ShieldState): void {
+    s.bound.exportJson.addEventListener('click', () => { downloadLog('json', s); });
+    s.bound.exportCsv.addEventListener('click', () => { downloadLog('csv', s); });
+  }
+
   function step(s: ShieldState, now: number): void {
     s.radar.frame = null;
     // Self-terminate if the state was replaced, the panel closed, the user
@@ -1156,6 +1180,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
     const next = freshState(doc, options);
     state = next;
     renderVersion(next);
+    wireExports(next);
     ensureObserver(doc, next);
   }
 

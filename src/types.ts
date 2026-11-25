@@ -236,6 +236,8 @@ export interface StatsSnapshot {
   recent: BlockEvent[];
   perMinute: { minute: number; count: number }[];
   perSurfaceMinute: Record<AdSurface, { minute: number; count: number }[]>;
+  /** Serialized block log for the dashboard's JSON/CSV export buttons. */
+  exportLog?: { json: string; csv: string };
 }
 
 /** API the dashboard client exposes on globalThis inside the app page. */

@@ -140,7 +140,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); void promotionEngine.tick(); }, outcomeLog);
     promotionEngine.setInterceptor(interceptor);
     cssInjector = new CssInjector(config, logger, registry);
-    dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
+    dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard, blockLog });
     electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval, config);
     if (session) {
       electronHook.activate(session, electronApi);
