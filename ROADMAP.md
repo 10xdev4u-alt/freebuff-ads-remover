@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-25 (Wave 64; Freebuff 0.0.205).
+Last updated: 2026-11-25 (Wave 65; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -149,7 +149,9 @@ the Deprecated section.
 
 ## 5. Placement aliases & sponsored commands
 
-- [x] Resolve retired↔canonical placement IDs in any client-side logic (done: map).
+- [ ] Resolve retired↔canonical placement IDs in client-side logic — no map
+      exists yet; `PLACEMENT_IDS` is a flat canonical list
+      (`src/types.ts:122-129`).
 - [ ] Block sponsored-command refusals bypass (new v0.0.201 module).
 - [ ] Track placement-alias usage in dashboard.
 - [ ] Auto-update alias map from upstream bundle on each release.
@@ -158,8 +160,13 @@ the Deprecated section.
 
 - [ ] Per-surface, per-stage time-series charts.
 - [ ] Top blocked endpoints list.
-- [ ] Block-rate sparkline.
-- [ ] Export block log (JSON/CSV) from dashboard.
+- [x] Block-rate sparkline — `renderSpark` uses the 30-minute `perMinute`
+      series (`src/dashboard-client.ts:760-785`). Marked done (was stale `[ ]`).
+- [x] Export block log (JSON/CSV) from dashboard — shadow-DOM
+      `exportJson`/`exportCsv` buttons download `exportLog.json`/`.csv` byte-for-byte
+      through browser-only Blob + object URL; `BlockLog.toJson()/toCsv()` remain
+      the single serializer and the page API stays four-key
+      (`tests/dashboard-export.test.ts`). → Wave 65
 - [ ] Desktop notification on new ad surface detected.
 - [ ] Local-only telemetry (opt-in) for aggregate effectiveness stats.
 - [ ] Health panel: injection status, audit status, last update.
@@ -168,13 +175,18 @@ the Deprecated section.
 
 ## 7. Configuration & UX
 
-- [ ] Per-profile config (multiple Freebuff profiles).
+- [x] Per-profile config (multiple Freebuff profiles) — `getConfigDir(profileId)`
+      and `FREEBUFF_PROFILE` (`src/config.ts:119-128`); only profile rename/recreate
+      events are still unwatched.
 - [ ] Import/export config.
-- [ ] Preset profiles: strict / balanced / minimal.
+- [x] Preset profiles: strict / balanced / minimal — `configSchema.preset` and
+      `PRESETS` applied in `loadConfig` (`src/config.ts:10,130-177`). In-app UI
+      is still missing.
 - [ ] First-run wizard.
 - [ ] In-app settings panel (not just JSON).
-- [x] Hot-reload all settings without restart (mostly done; watcher ignores profile/rename).
-- [x] Remote block-list feed (opt-in, signed).
+- [x] Hot-reload all settings without restart — the watcher honors the active
+      profile and ignores rename/recreate events (`src/config.ts:192-207`).
+- [x] Remote block-list feed (signed; enabled by default with a kill switch).
 - [ ] Scheduled updates of block lists.
 
 ## 8. Testing & quality
@@ -484,6 +496,20 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `WebContentsScriptTarget.replaceScript` plus a teardown post on config
       change, and CSS no longer uses the static all-surface fast path when a
       surface is disabled or the registry changed. `tests/per-surface-scoping.test.ts`.
+
+### Wave 65 — Dashboard export truth
+- [x] `feat(dashboard): export block log JSON/CSV from the in-app panel` —
+      the page client renders `exportJson`/`exportCsv` buttons in its shadow DOM
+      and downloads `farblock-*.json`/`.csv` byte-for-byte via browser-only
+      `Blob` + object URL. `StatsSnapshot.exportLog` is produced in the main
+      process from `BlockLog.toJson()/toCsv()` (capped at 200 recent entries),
+      so CSV escaping is never reimplemented in the page. The API stays exactly
+      `install`/`update`/`unmount`/`isOpen`, keeping the page-client guard and
+      `FAR_REQUIRE_DIST=1` dist test green. `tests/dashboard-export.test.ts`.
+- [x] Section 6/7 truth pass — marked the already-shipped sparkline, per-profile
+      config and presets done with code evidence, corrected the hot-reload and
+      feed-default wording, and removed the unsupported "placement alias map
+      done" claim. No deprecated renderer hook was introduced.
 
 ---
 

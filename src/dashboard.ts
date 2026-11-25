@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { ElectronAppLike } from './electron-bridge.js';
 import type { Logger } from './logger.js';
 import type { StatsStore } from './stats-store.js';
+import type { BlockLog } from './block-log.js';
 import { WebContentsScriptTarget } from './web-contents-script.js';
 import { AD_CSS_SELECTORS } from './types.js';
 
@@ -44,6 +45,7 @@ export interface DashboardOptions {
   clientSource?: string;
   intervalMs?: number;
   enabled?: boolean;
+  blockLog?: BlockLog;
 }
 
 /**
@@ -52,6 +54,7 @@ export interface DashboardOptions {
  */
 export class Dashboard {
   private readonly stats: StatsStore;
+  private readonly blockLog: BlockLog | null;
   private readonly logger: Logger;
   private readonly clientSource: string | undefined;
   private readonly intervalMs: number;
@@ -64,6 +67,7 @@ export class Dashboard {
 
   constructor(stats: StatsStore, logger: Logger, options: DashboardOptions = {}) {
     this.stats = stats;
+    this.blockLog = options.blockLog ?? null;
     this.logger = logger;
     this.clientSource = options.clientSource;
     this.intervalMs = options.intervalMs ?? 1000;
@@ -102,7 +106,13 @@ export class Dashboard {
 
   push(): void {
     if (!this.active || !this.target) return;
-    const json = JSON.stringify(this.stats.snapshot());
+    const snapshot = this.stats.snapshot();
+    if (this.blockLog) {
+      // Cap the payload: push() runs every second and a rotated log can be ~1 MB.
+      const opts = { limit: 200 };
+      snapshot.exportLog = { json: this.blockLog.toJson(opts), csv: this.blockLog.toCsv(opts) };
+    }
+    const json = JSON.stringify(snapshot);
     this.target.postScript(`globalThis.farBuffShield && globalThis.farBuffShield.update(${json});`);
   }
 
