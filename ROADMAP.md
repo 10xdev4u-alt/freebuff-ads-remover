@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-25 (Wave 65; Freebuff 0.0.205).
+Last updated: 2026-11-25 (Wave 66; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -191,15 +191,19 @@ the Deprecated section.
 
 ## 8. Testing & quality
 
-- [ ] Property-based tests for `stageForEndpoint` and `intercept`.
-- [ ] Fuzz tests for URL matching (edge cases, unicode, encoding).
+- [x] Property-based tests for `stageForEndpoint` and `intercept`: seeded
+      generator with 250 deterministic inputs plus per-endpoint normalization
+      transforms, asserting totality, stage↔intercept agreement and no false
+      positives (`tests/url-intercept-properties.test.ts`). → Wave 66
+- [x] Fuzz tests for URL matching (unicode, encoding, malformed percent, query
+      order, duplicate slashes) in the same seeded file. → Wave 66
 - [ ] Snapshot tests for `HIDE_ALL_ADS_CSS`.
 - [ ] Visual regression for dashboard (Playwright).
 - [x] E2E against a real Freebuff instance in CI (headless): `scripts/e2e-headless.mjs`,
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.1/93.8/91.3/95.4.
+      lines/functions/branches/statements, and the suite holds 97.1/93.9/91.2/95.3.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [ ] Golden-file tests for audit output.
@@ -510,6 +514,19 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       config and presets done with code evidence, corrected the hot-reload and
       feed-default wording, and removed the unsupported "placement alias map
       done" claim. No deprecated renderer hook was introduced.
+
+### Wave 66 — Test quality
+- [x] `test(url): seeded properties for matching, stages and interception` —
+      a deterministic mulberry32 generator drives 250 mixed-case/unicode/
+      percent-encoded/duplicate-slash inputs through `canonicalize`, `matchRoute`,
+      `stageForEndpoint` and `AdInterceptor`, plus per-endpoint normalization
+      transforms that pin stage↔intercept agreement. The added equivalence and
+      invariance properties exposed two real bugs: an ad token inside a query
+      value blocked a path-only control request (`src/url-match.ts:18-24`) and
+      `stageForEndpoint` was not invariant under the normalization matching
+      applies (`src/types.ts:36-46`); both are fixed. `tests/url-intercept-properties.test.ts`;
+      no new dependency and no `AD_ENDPOINTS` change. Snapshot/mutation/visual-regression bullets stay
+      open by design (redundant or would add heavy tooling).
 
 ---
 
