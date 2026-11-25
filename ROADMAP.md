@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-25 (Wave 66; Freebuff 0.0.205).
+Last updated: 2026-11-25 (Wave 67; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -187,7 +187,8 @@ the Deprecated section.
 - [x] Hot-reload all settings without restart — the watcher honors the active
       profile and ignores rename/recreate events (`src/config.ts:192-207`).
 - [x] Remote block-list feed (signed; enabled by default with a kill switch).
-- [ ] Scheduled updates of block lists.
+- [x] Scheduled updates of block lists — daily `0 6 * * *` self-heal/feed jobs
+      (`upstream-proof.yml:4-5,96-150`, `feed-publish.yml:5-6,35-58`). → Wave 67 truth pass
 
 ## 8. Testing & quality
 
@@ -246,18 +247,20 @@ the Deprecated section.
 - [x] Auto-generate API docs from types (`scripts/gen-api-docs.mjs`).
 - [ ] Keep ARCHITECTURE.md in sync via CI check.
 - [ ] Video walkthrough of install + verify.
-- [ ] Troubleshooting guide with common failures.
+- [x] Troubleshooting guide with common failures — `docs/INSTALLATION.md:68-99`,
+      `docs/SHIELD.md:220-237`, linked from `README.md:208`. → Wave 67 truth pass
 - [x] Security policy (SECURITY.md).
-- [ ] Contributing guide with PR checklist.
+- [x] Contributing guide with PR checklist — `CONTRIBUTING.md` now spells out
+      the required boxes, including `npm run audit:deltas`. → Wave 67
 
 ## 12. Community & scale
 
 - [x] Issue template for new ad surfaces: `.github/ISSUE_TEMPLATE/ad-surface.md` asks
       for payload version, surface kind, location, evidence and expected
       classification. → Wave 60
-- [~] PRs gated on audit truth: `ci.yml`'s required `audit-delta-gate` reproduces every
-      baseline classification, but `.github/pull_request_template.md` still has no
-      audit checkbox. → Wave 60
+- [x] PRs gated on audit truth: `ci.yml`'s required `audit-delta-gate` reproduces
+      every baseline classification, and the PR template now carries an audit
+      checkbox (`scripts/docs-check.mjs` fails when it disappears). → Wave 67
 - [x] Release notes automation (`release.yml:81`, `proof-publish.yml`).
 
 ---
@@ -528,6 +531,21 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       no new dependency and no `AD_ENDPOINTS` change. Snapshot/mutation/visual-regression bullets stay
       open by design (redundant or would add heavy tooling).
 
+### Wave 67 — Docs truth
+- [x] `docs: gate human-facing claims against code` — `scripts/docs-check.mjs`
+      exports a pure `checkDocs()` with injectable sources of truth and is wired
+      into `docs:check` (already required by `release:check`). It fails on stale
+      CONFIGURATION shield defaults, a stale ROADMAP Deprecated payload version,
+      a missing PR-template audit checkbox and missing ARCHITECTURE surfaces.
+      All five live drifts are corrected; `tests/docs-consistency.test.ts` self-tests
+      each gate with negative fixtures.
+- [x] Section 11 PR-template bullet is no longer `[~]`. The Deprecated section
+      records its 0.0.201 verification as historical and names the current
+      0.0.205 payload without claiming an unaudited re-verification. Scheduled
+      block-list updates and the troubleshooting guide are marked done with
+      code evidence; ARCHITECTURE CI-sync and the `[~]` auto-merge item remain
+      open (no full sync check, no real `--auto --merge` landing).
+
 ---
 
 ## Milestones
@@ -541,7 +559,7 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 
 Total tracked items: 100+. Each item = one issue/PR. Target: 1000+ commits over the program.
 
-## Deprecated (verified against 0.0.201 bundle)
+## Deprecated (verified against 0.0.201 bundle; current payload 0.0.205)
 - SSE/WebSocket renderer hooks — 0 ad usage (only LLM streaming libs).
 - Service-worker ad blocking — no service worker present.
 - Renderer fetch/XHR monkey-patching — session.webRequest already covers it.

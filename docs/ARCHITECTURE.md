@@ -123,7 +123,8 @@ getStats(): { requestCount: number; blockCount: number; patterns: number } | nul
     "sponsoredTask": true,
     "sponsoredRun": true,
     "partner": true,
-    "invitation": true
+    "invitation": true,
+    "sponsoredCard": true
   },
   "logLevel": "info",
   "logToFile": true

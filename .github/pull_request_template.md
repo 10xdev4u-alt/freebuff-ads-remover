@@ -12,6 +12,7 @@
 - [ ] Typecheck clean (`npm run typecheck`)
 - [ ] Lint clean (`npm run lint`)
 - [ ] Coverage >= 80%
+- [ ] Audit deltas clean (`npm run audit:deltas`)
 
 ## Checklist
 
