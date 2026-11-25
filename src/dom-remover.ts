@@ -25,7 +25,7 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
   const selectors = JSON.stringify(options.selectors);
   const debug = options.debug ? 'true' : 'false';
   return `(function () {
-  var VERSION = 2;
+  var VERSION = 3;
   var GUARD = '__farBuffDomArmor_v' + VERSION;
   if (window[GUARD]) return;
   window[GUARD] = true;
@@ -62,7 +62,12 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
       var el = all[j];
       if (el.shadowRoot) removeRoot(el.shadowRoot);
       if (el.tagName === 'IFRAME') {
-        try { if (el.contentDocument) removeRoot(el.contentDocument); } catch (e) {}
+        try {
+          if (el.contentDocument) {
+            removeRoot(el.contentDocument);
+            observeRoot(el.contentDocument);
+          }
+        } catch (e) {}
       }
     }
   }
@@ -88,6 +93,15 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
     } catch (e) {}
   }
 
+  // load does not bubble, so this must be a capture-phase listener on the
+  // document to see iframes that navigate or are inserted after start.
+  function onFrameLoad(event) {
+    var target = event && event.target;
+    if (!target || target.tagName !== 'IFRAME') return;
+    try { observeRoot(target.contentDocument); } catch (e) {}
+    schedule();
+  }
+
   function attachAll() {
     observeRoot(document);
     // observe existing shadow roots
@@ -111,7 +125,10 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
     history.pushState = function () { var r = origPush.apply(this, arguments); schedule(); return r; };
     history.replaceState = function () { var r = origReplace.apply(this, arguments); schedule(); return r; };
     window.addEventListener('popstate', schedule);
-    // iframe load
+    // iframe load (capture phase: load does not bubble)
+    document.addEventListener('load', onFrameLoad, true);
+    teardownFns.push(function () { document.removeEventListener('load', onFrameLoad, true); });
+    // one-shot window load for the initial document
     window.addEventListener('load', function () { schedule(); }, { once: true });
   }
 
