@@ -4,6 +4,7 @@ import type { CssInjector } from './css-injector.js';
 import type { Dashboard } from './dashboard.js';
 import type { Logger } from './logger.js';
 import { loadConfig } from './config.js';
+import type { Config } from './config.js';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import type {
   ElectronAppLike,
@@ -14,7 +15,7 @@ import type {
 } from './electron-bridge.js';
 import { WebContentsCssTarget } from './web-contents-css.js';
 import { WebContentsScriptTarget } from './web-contents-script.js';
-import { buildDomRemoverFromSelectors } from './dom-remover.js';
+import { buildDomRemoverFromSelectors, selectorsForSurfaces } from './dom-remover.js';
 import { discoverPartitions } from './partition-scanner.js';
 import { createChainTracker } from './redirect-chain.js';
 
@@ -34,6 +35,8 @@ export class ElectronHook {
   private cssInjector: CssInjector;
   private dashboard: Dashboard | null;
   private domRemoval: boolean;
+  private config: Config;
+  private domRuleId: string | null;
   private logger: Logger;
   private sessions: Set<ElectronSessionLike>;
   private chainTrackers: Map<ElectronSessionLike, ReturnType<typeof createChainTracker>>;
@@ -50,12 +53,15 @@ export class ElectronHook {
     logger: Logger,
     dashboard?: Dashboard,
     domRemoval: boolean = false,
+    config: Config = loadConfig(),
   ) {
     this.interceptor = interceptor;
     this.cssInjector = cssInjector;
     this.logger = logger;
     this.dashboard = dashboard ?? null;
     this.domRemoval = domRemoval;
+    this.config = config;
+    this.domRuleId = null;
     this.sessions = new Set();
     this.chainTrackers = new Map();
     this.cssTarget = null;
@@ -125,8 +131,8 @@ export class ElectronHook {
       );
       void this.cssInjector.activate(this.cssTarget);
       this.scriptTarget = new WebContentsScriptTarget(electronApi.app, getAllWebContents, this.logger);
-      if (this.domRemoval) {
-        this.scriptTarget.injectScript(buildDomRemoverFromSelectors());
+      if (this.domRemoval && selectorsForSurfaces(this.config.surfaces).length > 0) {
+        this.domRuleId = this.scriptTarget.injectScript(buildDomRemoverFromSelectors(this.config));
       }
       this.dashboard?.activate(electronApi.app, getAllWebContents);
     } else {
@@ -134,6 +140,34 @@ export class ElectronHook {
     }
 
     this.logger.info('Electron session hook activated', { sessions: this.sessions.size });
+  }
+
+  /**
+   * Re-scope or retire the injected DOM remover when config changes. The old
+   * rule must be torn down before replacement, otherwise its stored script
+   * re-arms on the next navigation.
+   */
+  updateConfig(config: Config): void {
+    this.config = config;
+    this.domRemoval = config.domRemoval;
+    if (!this.hookActive || !this.scriptTarget) return;
+    const teardown = 'window.__farBuffDomArmor&&window.__farBuffDomArmor.teardown();';
+    const enabled = this.domRemoval && selectorsForSurfaces(config.surfaces).length > 0;
+    if (!enabled) {
+      if (this.domRuleId) {
+        this.scriptTarget.postScript(teardown);
+        this.scriptTarget.replaceScript(this.domRuleId, null);
+        this.domRuleId = null;
+      }
+      return;
+    }
+    const code = buildDomRemoverFromSelectors(config);
+    if (this.domRuleId) {
+      this.scriptTarget.postScript(teardown);
+      this.scriptTarget.replaceScript(this.domRuleId, code);
+    } else {
+      this.domRuleId = this.scriptTarget.injectScript(code);
+    }
   }
 
   deactivate(): void {
@@ -162,6 +196,7 @@ export class ElectronHook {
       this.scriptTarget.dispose();
       this.scriptTarget = null;
     }
+    this.domRuleId = null;
     this.dashboard?.deactivate();
     this.interceptor.deactivate();
     this.hookActive = false;

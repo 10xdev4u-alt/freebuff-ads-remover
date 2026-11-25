@@ -62,8 +62,14 @@ export class CssInjector {
       return;
     }
 
-    const reg = this.registry ? this.registry.current().selectors : AD_CSS_SELECTORS;
-    if (enabledSurfaces.length === Object.keys(reg).length) {
+    const reg: Record<string, string[]> = this.registry ? this.registry.current().selectors : AD_CSS_SELECTORS;
+    const allSurfacesOn = Object.values(this.config.surfaces).every(Boolean);
+    const registryIsDefault =
+      Object.keys(reg).length === Object.keys(AD_CSS_SELECTORS).length &&
+      Object.entries(AD_CSS_SELECTORS).every(
+        ([surface, selectors]) => (reg[surface] ?? []).join(',') === selectors.join(','),
+      );
+    if (allSurfacesOn && registryIsDefault) {
       await this.injectSurface('all', HIDE_ALL_ADS_CSS, target);
       return;
     }

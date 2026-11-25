@@ -123,8 +123,14 @@ the Deprecated section.
       → Wave 64 truth pass
 - [x] Handle dynamically added ad surfaces after initial render: observer +
       history hooks (`src/dom-remover.ts:81-96,125-127`). → Wave 64 truth pass
-- [x] Cover all 68 CSS classes (done) + keep audit green on every release.
-- [ ] Add per-surface CSS scoping to avoid over-hiding.
+- [x] Cover every registered CSS selector (`src/types.ts:333` `AD_CSS_SELECTORS`)
+      and keep the audit green on every release.
+- [x] Per-surface CSS/DOM scoping avoids over-hiding: injected CSS is combined
+      only when every surface is enabled and the registry still matches the
+      default selector set (`src/css-injector.ts:65-79`); DOM-removal selectors
+      are derived from `config.surfaces` (`src/dom-remover.ts:175-190`) and
+      re-armed on config change (`src/electron-hook.ts:updateConfig`).
+      `tests/per-surface-scoping.test.ts`. → Wave 64
 - [ ] Dark/light theme-aware hiding (avoid layout shift).
 - [ ] Prevent ad placeholder skeleton flicker (reserve space collapse).
 - [x] Derive DOM selectors from the registry: `src/dom-remover.ts` hardcoded 5 while
@@ -471,8 +477,13 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       throwing shadowRoot query cannot abort removal.
 - [x] Section 3 truth pass: MutationObserver removal, shadow piercing, SPA
       re-scan and dynamic-surface coverage were already implemented and are now
-      marked done with file:line evidence. Per-surface DOM scoping, theme-aware
-      hiding and skeleton-flicker work remain open.
+      marked done with file:line evidence. Theme-aware hiding and
+      skeleton-flicker work remain open.
+- [x] `feat(dom): scope hiding to enabled surfaces` — DOM-removal selectors are
+      derived from `config.surfaces`, the injected script is re-armed through
+      `WebContentsScriptTarget.replaceScript` plus a teardown post on config
+      change, and CSS no longer uses the static all-surface fast path when a
+      surface is disabled or the registry changed. `tests/per-surface-scoping.test.ts`.
 
 ---
 

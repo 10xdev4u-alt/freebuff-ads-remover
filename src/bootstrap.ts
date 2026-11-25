@@ -141,7 +141,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     promotionEngine.setInterceptor(interceptor);
     cssInjector = new CssInjector(config, logger, registry);
     dashboard = new Dashboard(statsStore, logger, { enabled: config.dashboard });
-    electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval);
+    electronHook = new ElectronHook(interceptor, cssInjector, logger, dashboard, config.domRemoval, config);
     if (session) {
       electronHook.activate(session, electronApi);
     }
@@ -208,6 +208,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       logger?.info('Config changed, reloading...');
       interceptor?.updateConfig(newConfig);
       cssInjector?.updateConfig(newConfig);
+      electronHook?.updateConfig(newConfig);
       dashboard?.setEnabled(newConfig.dashboard);
       runtimeVerifier?.updateConfig({
         timeoutMs: newConfig.verify.timeoutMs,
