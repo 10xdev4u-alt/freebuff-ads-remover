@@ -407,10 +407,11 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       computing a strictly increasing version, failing closed on stale, ambiguous,
       regressed or malformed input. `scripts/bump-version.mjs` validates every
       surface token before writing atomically to `package.json`, the README badge,
-      the top CHANGELOG entry, the landing pill/eyebrow and the marker.
+      the top CHANGELOG entry, all landing version/hash claims and the marker.
       `release-cut.yml` opens a reviewed `ci/release-vX.Y.Z` PR; `release-tag.yml`
       asserts the marker against the committed receipt and only then pushes the tag;
-      the ledger checks marker ↔ package ↔ receipt. `release.yml`'s verify-artifact
+      the ledger checks marker ↔ package ↔ receipt freshness/probes/hashes/newest
+      receipt. `release.yml`'s verify-artifact
       E2E now pins `FREEBUFF_PAYLOAD_VERSION`.
 
 ---

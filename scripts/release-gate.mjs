@@ -184,9 +184,10 @@ export function evaluateReleaseCut(root, now = Date.now()) {
 
 /**
  * Asserts that the recorded cut is safe to tag: the marker agrees with
- * package.json, points at a committed live-e2e receipt, that receipt matches
- * the marker pair and is still fresh. Throws on any disagreement, so the tag
- * workflow fails closed instead of publishing an unverified version.
+ * package.json, points at the newest live-e2e receipt, that receipt passes
+ * the same artifact/corpus/freshness/provenance checks as a cut and matches
+ * the marker pair. Throws on any disagreement, so the tag workflow fails
+ * closed instead of publishing an unverified version.
  */
 export function assertTagReady(root, now = Date.now()) {
   const markerRead = readJson(path.join(root, 'release', 'last-cut.json'));
@@ -214,24 +215,23 @@ export function assertTagReady(root, now = Date.now()) {
     throw new Error(`release marker version ${marker.version} != package.json ${pkg.value?.version}`);
   }
 
-  let receipt;
-  try {
-    receipt = JSON.parse(fs.readFileSync(path.join(root, marker.receipt), 'utf8'));
-  } catch {
-    throw new Error(`release marker receipt ${marker.receipt} is missing or unreadable`);
+  // Re-run the full cut-side verification, not just field equality. A
+  // consistent marker pointing at a receipt that no longer matches the
+  // shipped artifact/corpus must never produce a tag.
+  const selected = selectVerifiedLiveReceipt(root, now);
+  if (!selected.ok) throw new Error(selected.error);
+  if (selected.file !== marker.receipt) {
+    throw new Error(
+      `release marker receipt ${marker.receipt} is not the newest verified live receipt (${selected.file})`,
+    );
   }
+  const receipt = selected.receipt;
   if (receipt.payloadVersion !== marker.payloadVersion) {
     throw new Error(`marker receipt payloadVersion ${receipt.payloadVersion} != marker ${marker.payloadVersion}`);
   }
   if (receipt.artifactHash !== marker.artifactHash) {
     throw new Error(`marker receipt artifactHash ${receipt.artifactHash} != marker ${marker.artifactHash}`);
   }
-  if (receipt.pass !== true) throw new Error('marker receipt did not pass');
-  if (receipt.provenance !== 'live-e2e') throw new Error('marker receipt is not live-e2e provenance');
-  if (!Number.isFinite(receipt.probes) || receipt.probes <= 0) throw new Error('marker receipt has no probes');
-  const age = now - Date.parse(receipt.at);
-  if (!Number.isFinite(age)) throw new Error('marker receipt has a missing or invalid timestamp');
-  if (age > MAX_RECEIPT_AGE_MS) throw new Error(`marker receipt is stale (${Math.round(age / 86400000)}d old)`);
 
   return { version: marker.version };
 }
