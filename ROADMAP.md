@@ -463,6 +463,12 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       capture-phase document `load` handler, re-arms the guard version so an
       already-injected document picks up the change, and removes the listener on
       teardown. `tests/dom-remover-iframe.test.ts` asserts the emitted script.
+- [x] `fix(dom): make teardown complete and sweeps hostile-DOM safe` — the
+      generated script now uses named popstate/window-load handlers removed on
+      teardown, cancels its pending animation frame, and guards recursive
+      shadow-root enumeration. `tests/dom-remover-runtime.test.ts` executes the
+      script under jsdom to prove no stale instance acts after teardown and a
+      throwing shadowRoot query cannot abort removal.
 - [x] Section 3 truth pass: MutationObserver removal, shadow piercing, SPA
       re-scan and dynamic-surface coverage were already implemented and are now
       marked done with file:line evidence. Per-surface DOM scoping, theme-aware

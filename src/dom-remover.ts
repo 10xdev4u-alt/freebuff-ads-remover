@@ -33,6 +33,7 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
   var debug = ${debug};
   var combined = selectors.join(',');
   var rafPending = false;
+  var rafId = null;
   var observers = [];
   var origPush = history.pushState;
   var origReplace = history.replaceState;
@@ -56,11 +57,15 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
         stats.removed++;
       }
     }
-    // recurse shadow roots + same-origin iframes
-    var all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+    // recurse shadow roots + same-origin iframes; a hostile or partially
+    // constructed host must not abort the sweep.
+    var all = [];
+    try { all = root.querySelectorAll ? root.querySelectorAll('*') : []; } catch (e) { return; }
     for (var j = 0; j < all.length; j++) {
       var el = all[j];
-      if (el.shadowRoot) removeRoot(el.shadowRoot);
+      var sr = null;
+      try { sr = el.shadowRoot; } catch (e) {}
+      if (sr) removeRoot(sr);
       if (el.tagName === 'IFRAME') {
         try {
           if (el.contentDocument) {
@@ -74,6 +79,7 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
 
   function remove() {
     rafPending = false;
+    rafId = null;
     stats.passes++;
     removeRoot(document);
   }
@@ -81,7 +87,7 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
   function schedule() {
     if (rafPending) return;
     rafPending = true;
-    (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : function (cb) { setTimeout(cb, 16); })(remove);
+    rafId = (typeof requestAnimationFrame === 'function' ? requestAnimationFrame : function (cb) { return setTimeout(cb, 16); })(remove);
   }
 
   function observeRoot(root) {
@@ -101,6 +107,9 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
     try { observeRoot(target.contentDocument); } catch (e) {}
     schedule();
   }
+
+  function onPopState() { schedule(); }
+  function onWindowLoad() { schedule(); }
 
   function attachAll() {
     observeRoot(document);
@@ -124,12 +133,19 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
     teardownFns.push(function () { Element.prototype.attachShadow = origAttachShadow; });
     history.pushState = function () { var r = origPush.apply(this, arguments); schedule(); return r; };
     history.replaceState = function () { var r = origReplace.apply(this, arguments); schedule(); return r; };
-    window.addEventListener('popstate', schedule);
+    window.addEventListener('popstate', onPopState);
     // iframe load (capture phase: load does not bubble)
     document.addEventListener('load', onFrameLoad, true);
-    teardownFns.push(function () { document.removeEventListener('load', onFrameLoad, true); });
+    teardownFns.push(function () {
+      document.removeEventListener('load', onFrameLoad, true);
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('load', onWindowLoad);
+      if (rafId !== null && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafId);
+      rafId = null;
+      rafPending = false;
+    });
     // one-shot window load for the initial document
-    window.addEventListener('load', function () { schedule(); }, { once: true });
+    window.addEventListener('load', onWindowLoad, { once: true });
   }
 
   window.__farBuffDomArmor = {
