@@ -105,12 +105,12 @@ export function applyVersionBump(root, options) {
   );
 
   const changelogText = readText(root, 'CHANGELOG.md');
-  const heading = /\n## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}\n/.exec(changelogText);
+  const heading = /^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$/m.exec(changelogText);
   assert(heading, 'CHANGELOG.md is missing a "## [x.y.z] - YYYY-MM-DD" heading');
+  const before = changelogText.slice(0, heading.index).replace(/\s*$/, '\n\n');
   const changelogOut =
-    changelogText.slice(0, heading.index + 1) +
-    `\n## [${version}] - ${options.date}\n\n${options.notes}\n` +
-    changelogText.slice(heading.index + 1);
+    `${before}## [${version}] - ${options.date}\n\n${options.notes}\n\n` +
+    changelogText.slice(heading.index);
 
   const htmlText = readText(root, 'index.html');
   let htmlOut = swap(
@@ -131,6 +131,18 @@ export function applyVersionBump(root, options) {
     htmlOut = htmlOut.replace(
       /freebuffVersion:'\d+\.\d+\.\d+'/g,
       `freebuffVersion:'${payloadVersion}'`,
+    );
+  }
+  if (/extensionVersion:'\d+\.\d+\.\d+'/.test(htmlOut)) {
+    htmlOut = htmlOut.replace(
+      /extensionVersion:'\d+\.\d+\.\d+'/g,
+      `extensionVersion:'${version}'`,
+    );
+  }
+  if (/hash:'sha256:[0-9a-f]{64}'/.test(htmlOut)) {
+    htmlOut = htmlOut.replace(
+      /hash:'sha256:[0-9a-f]{64}'/g,
+      `hash:'${artifactHash}'`,
     );
   }
 

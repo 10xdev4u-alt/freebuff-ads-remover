@@ -285,6 +285,28 @@ export async function checkLedger(root, deps = {}) {
           }
           if (mr.value?.pass !== true) fail('release marker receipt did not pass');
           if (mr.value?.provenance !== 'live-e2e') fail('release marker receipt is not live-e2e provenance');
+          if (!Number.isFinite(mr.value?.probes) || mr.value.probes <= 0) {
+            fail('release marker receipt has no probes');
+          }
+          const markerAge = ageMs(mr.value?.at);
+          if (!Number.isFinite(markerAge)) fail('release marker receipt has a missing or invalid timestamp');
+          else if (markerAge > 7 * 24 * 60 * 60 * 1000) fail('release marker receipt is stale (>7d)');
+          else if (markerAge < -5 * 60 * 1000) fail('release marker receipt is in the future');
+          if (mr.value?.corpusHash !== `sha256:${hash}`) {
+            fail('release marker receipt corpus hash mismatch');
+          }
+          if (!exists('config/generated-rules.json')) {
+            fail('release marker artifact missing');
+          } else {
+            const shipped = 'sha256:' + crypto.createHash('sha256').update(fs.readFileSync(artifactPath)).digest('hex');
+            if (m?.artifactHash !== shipped) fail('release marker artifactHash does not match shipped artifact');
+          }
+          const newestLiveFile = liveReceipts
+            .slice()
+            .sort((a, c) => String(c.value?.at || '').localeCompare(String(a.value?.at || '')))[0]?.file;
+          if (newestLiveFile && path.basename(rel) !== newestLiveFile) {
+            fail('release marker does not point at the newest live receipt');
+          }
         }
       }
     }
@@ -306,6 +328,10 @@ export async function checkLedger(root, deps = {}) {
       if (latestLive && eyebrow[2] !== latestLive.payloadVersion) {
         fail(`landing payload version ${eyebrow[2]} != live receipt ${latestLive.payloadVersion}`);
       }
+    }
+    const embeddedVersion = landing.match(/extensionVersion:'(\d+\.\d+\.\d+)'/);
+    if (embeddedVersion && embeddedVersion[1] !== pkgVersion) {
+      fail(`landing embedded extensionVersion ${embeddedVersion[1]} != package ${pkgVersion}`);
     }
   }
   const heroTests = landing.match(/<strong>(\d+) tests<\/strong>/);

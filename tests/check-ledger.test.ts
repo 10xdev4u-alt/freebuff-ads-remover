@@ -22,7 +22,7 @@ function makeFixture() {
   const corpus = '{"path":"/api/ad/x","label":"ad"}\n';
   const corpusHash = sha(corpus);
   const now = new Date().toISOString();
-  const liveReceipt = { at: now, payloadVersion: '0.0.204', provenance: 'live-e2e', pass: true, probes: 5, artifactHash };
+  const liveReceipt = { at: now, payloadVersion: '0.0.204', provenance: 'live-e2e', pass: true, probes: 5, artifactHash, corpusHash };
   write('README.md', 'npm test # vitest, 1 tests\n![version-1.2.3-blue](x)\n');
   write('index.html', [
     '<span class="ver-pill">v1.2.3</span>',
@@ -244,8 +244,8 @@ describe('ledger gate', () => {
 
   it('warns when the live-proof page describes an older corpus', async () => {
     const f = fixture();
-    const receipt = { ...f.liveReceipt, corpusHash: 'sha256:older' };
-    fs.writeFileSync(path.join(f.root, 'receipts', 'live-0.0.204.json'), JSON.stringify(receipt));
+    const receipt = { ...f.liveReceipt, corpusHash: 'sha256:older', at: '2026-01-01T00:00:00.000Z' };
+    fs.writeFileSync(path.join(f.root, 'receipts', 'live-0.0.203.json'), JSON.stringify(receipt));
     fs.writeFileSync(path.join(f.root, 'live-proof', 'index.html'), `<pre>${JSON.stringify(receipt, null, 2)}</pre>`);
     const r = await checkLedger(f.root, deps);
     expect(r.ok).toBe(true);
@@ -305,5 +305,37 @@ describe('ledger gate', () => {
     fs.writeFileSync(p, JSON.stringify({ ...(JSON.parse(fs.readFileSync(p, 'utf8')) as { payloadVersion: string }), payloadVersion: '0.0.203' }));
     const r = await checkLedger(f.root, deps);
     expect(r.findings).toContain('release marker payloadVersion "0.0.203" != receipt "0.0.204"');
+  });
+
+  it('fails when the release marker receipt is stale', async () => {
+    const f = fixture();
+    fs.writeFileSync(
+      path.join(f.root, 'receipts', 'live-0.0.204.json'),
+      JSON.stringify({ ...f.liveReceipt, at: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() }),
+    );
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('release marker receipt is stale (>7d)');
+  });
+
+  it('fails when the release marker pair does not match the shipped artifact', async () => {
+    const f = fixture();
+    const wrong = 'sha256:' + 'b'.repeat(64);
+    fs.writeFileSync(path.join(f.root, 'release', 'last-cut.json'), JSON.stringify({
+      version: '1.2.3', payloadVersion: '0.0.204', artifactHash: wrong,
+      receipt: 'receipts/live-0.0.204.json', at: f.now,
+    }));
+    fs.writeFileSync(path.join(f.root, 'receipts', 'live-0.0.204.json'), JSON.stringify({ ...f.liveReceipt, artifactHash: wrong }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('release marker artifactHash does not match shipped artifact');
+  });
+
+  it('fails when the release marker does not point at the newest live receipt', async () => {
+    const f = fixture();
+    fs.writeFileSync(
+      path.join(f.root, 'receipts', 'live-0.0.205.json'),
+      JSON.stringify({ ...f.liveReceipt, at: new Date(Date.now() + 1000).toISOString() }),
+    );
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('release marker does not point at the newest live receipt');
   });
 });

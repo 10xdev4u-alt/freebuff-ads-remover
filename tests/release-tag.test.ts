@@ -16,7 +16,10 @@ function makeFixture() {
     fs.writeFileSync(p, content);
   };
   const now = Date.now();
-  const artifactHash = sha('artifact');
+  const artifactText = '{"addEndpoints":["/api/ad/x"]}';
+  const corpusText = '{"path":"/api/ad/x","label":"ad"}\n';
+  const artifactHash = sha(artifactText);
+  const corpusHash = sha(corpusText);
   const receipt = {
     at: new Date(now).toISOString(),
     payloadVersion: '0.0.205',
@@ -24,8 +27,11 @@ function makeFixture() {
     pass: true,
     probes: 9,
     artifactHash,
+    corpusHash,
   };
   write('package.json', JSON.stringify({ version: '1.27.0' }, null, 2));
+  write('config/generated-rules.json', artifactText);
+  write('corpus/golden.jsonl', corpusText);
   write('receipts/live-0.0.205.json', JSON.stringify(receipt, null, 2));
   write(
     'release/last-cut.json',
@@ -66,7 +72,7 @@ describe('assertTagReady', () => {
   it('rejects a marker pointing at a missing receipt', () => {
     const f = fixture();
     fs.rmSync(path.join(f.root, 'receipts', 'live-0.0.205.json'));
-    expect(() => assertTagReady(f.root, f.now)).toThrow(/missing or unreadable/);
+    expect(() => assertTagReady(f.root, f.now)).toThrow(/no live receipt/);
   });
 
   it('rejects a receipt whose pair does not match the marker', () => {
@@ -102,5 +108,32 @@ describe('assertTagReady', () => {
     const f = fixture();
     fs.writeFileSync(path.join(f.root, 'release', 'last-cut.json'), '{oops');
     expect(() => assertTagReady(f.root, f.now)).toThrow(/corrupt/);
+  });
+
+  it('rejects a receipt that no longer matches the shipped artifact or corpus', () => {
+    const artifact = fixture();
+    fs.writeFileSync(path.join(artifact.root, 'config', 'generated-rules.json'), '{"addEndpoints":["/api/ad/other"]}');
+    expect(() => assertTagReady(artifact.root, artifact.now)).toThrow(/artifactHash does not match/);
+    const corpus = fixture();
+    fs.writeFileSync(path.join(corpus.root, 'corpus', 'golden.jsonl'), '{"path":"/api/ad/other","label":"ad"}\n');
+    expect(() => assertTagReady(corpus.root, corpus.now)).toThrow(/corpusHash does not match/);
+  });
+
+  it('rejects a future-dated receipt', () => {
+    const f = fixture();
+    rewrite(f, 'receipts/live-0.0.205.json', {
+      ...f.receipt,
+      at: new Date(f.now + 60 * 60 * 1000).toISOString(),
+    });
+    expect(() => assertTagReady(f.root, f.now)).toThrow(/future/);
+  });
+
+  it('rejects a marker that is not backed by the newest live receipt', () => {
+    const f = fixture();
+    fs.writeFileSync(
+      path.join(f.root, 'receipts', 'live-0.0.206.json'),
+      JSON.stringify({ ...f.receipt, at: new Date(f.now + 1000).toISOString() }, null, 2),
+    );
+    expect(() => assertTagReady(f.root, f.now)).toThrow(/not the newest/);
   });
 });

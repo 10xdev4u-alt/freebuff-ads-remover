@@ -25,6 +25,7 @@ function makeFixture() {
     [
       '<nav><span class="ver-pill">v1.27.0</span></nav>',
       '<span class="eyebrow"><span class="dot"></span> v1.27.0 · verified against Freebuff 0.0.205</span>',
+      `const receiptJson = { extensionVersion:'1.27.0', hash:'sha256:${'a'.repeat(64)}' };`,
       '<p>untouched</p>',
     ].join('\n'),
   );
@@ -56,9 +57,13 @@ describe('applyVersionBump', () => {
     const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
     expect(changelog).toContain('## [1.28.0] - 2026-11-24');
     expect(changelog.indexOf('## [1.28.0]')).toBeLessThan(changelog.indexOf('## [1.27.0]'));
+    expect(changelog).toMatch(/Wave 61: auto-cut[^\n]*\n\n## \[1\.27\.0\]/);
+    expect(changelog).not.toContain('notes\n## [1.27.0]');
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     expect(html).toContain('class="ver-pill">v1.28.0<');
     expect(html).toContain('v1.28.0 · verified against Freebuff 0.0.205');
+    expect(html).toContain(`extensionVersion:'1.28.0'`);
+    expect(html).toContain(`hash:'${base.artifactHash}'`);
     expect(html).toContain('<p>untouched</p>');
     expect(JSON.parse(fs.readFileSync(path.join(root, 'release/last-cut.json'), 'utf8'))).toEqual({
       version: '1.28.0',
