@@ -1,6 +1,7 @@
 {
   "enabled": true,
   "blockTracking": true,
+  "blockUpdates": false,
   "cssFallback": true,
   "dashboard": true,
   "surfaces": {

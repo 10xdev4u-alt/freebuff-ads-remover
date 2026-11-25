@@ -9,6 +9,7 @@ const configSchema = z.object({
   enabled: z.boolean().default(true),
   preset: z.enum(['strict','balanced','minimal']).nullable().default(null),
   blockTracking: z.boolean().default(true),
+  blockUpdates: z.boolean().default(false),
   adHosts: z.array(z.string()).default([]),
   network: z.object({ partitionPattern: z.string().default('^freebuff-') }).default(() => ({ partitionPattern: '^freebuff-' })),
   cssFallback: z.boolean().default(true),
