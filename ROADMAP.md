@@ -383,8 +383,22 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       enforces the built artifact in CI (`FAR_REQUIRE_DIST=1`).
 
 ### Wave 61 — Zero manual landing (policy-gated)
-- [ ] `ci: auto-merge the bot PR train` — conflicts with `PLAN.md` non-negotiables;
-      needs an explicit decision first.
+- [~] `ci: auto-merge the bot PR train` — policy decided and gate implemented,
+      awaiting a real bot PR landing via `--auto --merge`. Only same-repo
+      `github-actions[bot]` PRs on `ci/feed-publish`, `ci/live-receipt`,
+      `ci/proof-publish` or `ci/upstream-heal-*` carrying the `bot-train` label.
+      `scripts/auto-merge-gate.mjs` requires a fresh approval from
+      `10xdev4u-alt` (pinned to `commit_id` when present, else newer than the
+      latest commit), all five required checks SUCCESS on the current head SHA,
+      clean or behind merge state, conventional subjects of at most 6 words
+      authored by `10xdev4u-alt` (read from `commit.author.name`, as the REST
+      API does), and no co-author trailer. `auto-merge-bot.yml` checks out
+      `main` and enables `gh pr merge --auto --merge`; Dependabot, human PRs and
+      release-cut PRs are excluded. Bot PRs opened by `GITHUB_TOKEN` get
+      `action_required` CI runs with zero jobs, so the runner dispatches
+      `ci.yml` and `heal-proof.yml` on the PR branch when checks are the only
+      blocker. Existing bot PRs need the `bot-train` label backfilled and a
+      fresh approval; flip to `[x]` after a real auto-merge lands.
 - [x] `ci: auto-cut a release from a verified live receipt` — policy decided:
       cut when the newest live-e2e receipt's `(payloadVersion, artifactHash)` differs
       from `release/last-cut.json`, MINOR on a payload change and PATCH otherwise; a
