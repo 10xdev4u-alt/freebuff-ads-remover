@@ -29,7 +29,7 @@
     "audit": "node scripts/audit-endpoints.mjs",
     "audit:deltas": "node scripts/check-audit-deltas.mjs",
     "sbom": "node scripts/gen-sbom.mjs --out sbom.spdx.json",
-    "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md",
+    "docs:check": "node scripts/gen-api-docs.mjs && git diff --exit-code docs/API.md && node scripts/docs-check.mjs",
     "ledger:check": "node scripts/check-ledger.mjs",
     "release:gate": "node scripts/release-gate.mjs",
     "release:bump": "node scripts/bump-version.mjs",

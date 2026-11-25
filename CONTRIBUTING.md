@@ -44,7 +44,7 @@ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
 
 ## Pull Request Template
 
-See [.github/pull_request_template.md](.github/pull_request_template.md).
+See [.github/pull_request_template.md](.github/pull_request_template.md). Before opening a PR, complete every box: tests, typecheck, lint, coverage, audit deltas (`npm run audit:deltas`), conventional commits, research/TDD evidence and docs updates. The `audit-delta-gate` CI job is mandatory; the checkbox is the human acknowledgement that it passed.
 
 ## Code Style
 
