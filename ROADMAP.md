@@ -387,17 +387,21 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       awaiting a real bot PR landing via `--auto --merge`. Only same-repo
       `github-actions[bot]` PRs on `ci/feed-publish`, `ci/live-receipt`,
       `ci/proof-publish` or `ci/upstream-heal-*` carrying the `bot-train` label.
-      `scripts/auto-merge-gate.mjs` requires a fresh approval from
-      `10xdev4u-alt` (pinned to `commit_id` when present, else newer than the
-      latest commit), all five required checks SUCCESS on the current head SHA,
+      `scripts/auto-merge-gate.mjs` requires the reviewer's latest substantive
+      state to be an approval pinned to `commit_id` (else newer than the latest
+      commit), so a later `CHANGES_REQUESTED` vetoes; it also requires the latest
+      run of all five required checks to be SUCCESS on the current head SHA,
       clean or behind merge state, conventional subjects of at most 6 words
       authored by `10xdev4u-alt` (read from `commit.author.name`, as the REST
       API does), and no co-author trailer. `auto-merge-bot.yml` checks out
-      `main` and enables `gh pr merge --auto --merge`; Dependabot, human PRs and
-      release-cut PRs are excluded. Bot PRs opened by `GITHUB_TOKEN` get
+      `main` and enables `gh pr merge --auto --merge`; already-enabled PRs are
+      re-evaluated and auto-merge is disabled again on a hold label or bad
+      commit. Dependabot, human PRs and release-cut PRs are excluded. Bot PRs opened by `GITHUB_TOKEN` get
       `action_required` CI runs with zero jobs, so the runner dispatches
-      `ci.yml` and `heal-proof.yml` on the PR branch when checks are the only
-      blocker. Existing bot PRs need the `bot-train` label backfilled and a
+      `ci.yml` and `heal-proof.yml` (in `checks_only` mode, so no receipt PR is
+      mutated) on the PR branch when checks are the only blocker. The four bot
+      PR steps pin `author` to `10xdev4u-alt` to match the gate's identity
+      rule. Existing bot PRs need the `bot-train` label backfilled and a
       fresh approval; flip to `[x]` after a real auto-merge lands.
 - [x] `ci: auto-cut a release from a verified live receipt` — policy decided:
       cut when the newest live-e2e receipt's `(payloadVersion, artifactHash)` differs

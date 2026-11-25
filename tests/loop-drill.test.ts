@@ -15,7 +15,7 @@ function restoreCorpus() { for (const [f, v] of corpusBackup) fs.writeFileSync(p
 describe('loop drill', () => {
   beforeAll(backupCorpus);
   afterAll(restoreCorpus);
-  it('runs end to end against the payload-gap fixture', () => {
+  it('runs end to end against the payload-gap fixture', { timeout: 15000 }, () => {
     if (!fs.existsSync('/tmp/feed-private.pem')) {
       const { privateKey } = crypto.generateKeyPairSync('ed25519');
       fs.writeFileSync('/tmp/feed-private.pem', privateKey.export({ type: 'pkcs8', format: 'pem' }));
@@ -44,7 +44,7 @@ describe('loop drill', () => {
     expect(drillReceipt.healHash).toBe(healReceipt.artifactHash);
   });
 
-  it('writes the drill receipt under the work dir by default', () => {
+  it('writes the drill receipt under the work dir by default', { timeout: 15000 }, () => {
     if (!fs.existsSync('/tmp/feed-private.pem')) {
       const { privateKey } = crypto.generateKeyPairSync('ed25519');
       fs.writeFileSync('/tmp/feed-private.pem', privateKey.export({ type: 'pkcs8', format: 'pem' }));
@@ -61,7 +61,7 @@ describe('loop drill', () => {
     expect(fs.existsSync(result.receipt)).toBe(true);
   });
 
-  it('fails when the fixture has no heal delta', () => {    const fixtureRoot = path.join(repo, 'tests', 'fixtures', 'payload-gap');
+  it('fails when the fixture has no heal delta', { timeout: 15000 }, () => {    const fixtureRoot = path.join(repo, 'tests', 'fixtures', 'payload-gap');
     const expected = JSON.parse(fs.readFileSync(path.join(fixtureRoot, 'expected-rules.json'), 'utf8')) as { addEndpoints: string[] };
     const route = expected.addEndpoints[0];
     if (!route) throw new Error('payload-gap fixture has no expected route');

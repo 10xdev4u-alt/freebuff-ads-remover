@@ -49,6 +49,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/feed-publish
+          author: "10xdev4u-alt <10xdev4u@gmail.com>"
           title: "chore(feed): publish signed manifest"
           commit-message: "chore(feed): publish signed manifest"
           body: "Automated signed feed manifest publish."

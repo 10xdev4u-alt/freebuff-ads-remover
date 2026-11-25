@@ -138,6 +138,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/upstream-heal-${{ steps.ver.outputs.version }}
+          author: "10xdev4u-alt <10xdev4u@gmail.com>"
           title: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}"
           body-path: /tmp/heal.md
           commit-message: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}"

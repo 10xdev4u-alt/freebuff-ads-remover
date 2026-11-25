@@ -21,6 +21,8 @@ export interface BotPrInput {
     status: string;
     conclusion: string | null;
     head_sha: string;
+    completed_at?: string | undefined;
+    started_at?: string | undefined;
   }>;
   commits: Array<{
     author: { name: string } | null;

@@ -19,9 +19,9 @@ function fixture() {
       labels: [{ name: 'bot-train' }],
     },
     reviews: [
-      { user: { login: '10xdev4u-alt' }, state: 'APPROVED', submitted_at: new Date(now - 1000).toISOString(), commit_id: undefined as string | undefined },
+      { user: { login: '10xdev4u-alt' }, state: 'APPROVED', submitted_at: new Date(now - 1000).toISOString(), commit_id: undefined as string | undefined, completed_at: undefined as string | undefined },
     ],
-    checks: REQUIRED_CHECKS.map((name) => ({ name, status: 'completed', conclusion: 'success', head_sha: headSha })),
+    checks: REQUIRED_CHECKS.map((name) => ({ name, status: 'completed', conclusion: 'success', head_sha: headSha, completed_at: undefined as string | undefined, started_at: undefined as string | undefined })),
     commits: [
       {
         // Real REST shape: top-level author is often null for bot commits.
@@ -119,6 +119,50 @@ describe('evaluateBotPr', () => {
     expect(blockers(wrong).join(' ')).toMatch(/stale approval/);
   });
 
+  it('uses the reviewer latest state, so a later CHANGES_REQUESTED vetoes', () => {
+    const f = fixture();
+    f.reviews = [
+      { user: { login: '10xdev4u-alt' }, state: 'APPROVED', submitted_at: new Date(now - 2000).toISOString(), commit_id: headSha, completed_at: undefined },
+      { user: { login: '10xdev4u-alt' }, state: 'CHANGES_REQUESTED', submitted_at: new Date(now - 1000).toISOString(), commit_id: headSha, completed_at: undefined },
+    ];
+    expect(blockers(f).join(' ')).toMatch(/no current approval/);
+  });
+
+  it('ignores a stale successful check when a newer failure exists', () => {
+    const f = fixture();
+    f.checks = f.checks.map((c) => ({
+      ...c,
+      completed_at: c.name === 'test'
+        ? new Date(now - 5000).toISOString()
+        : new Date(now - 1000).toISOString(),
+    }));
+    f.checks.push({
+      name: 'test',
+      status: 'completed',
+      conclusion: 'failure',
+      head_sha: headSha,
+      completed_at: new Date(now - 500).toISOString(),
+      started_at: undefined,
+    });
+    expect(blockers(f).join(' ')).toMatch(/check test is failure/);
+  });
+
+  it('lets a newer pending check run block an older success', () => {
+    const f = fixture();
+    f.checks = f.checks.map((c) => c.name === 'test'
+      ? { ...c, started_at: new Date(now - 5000).toISOString(), completed_at: new Date(now - 4000).toISOString() }
+      : c);
+    f.checks.push({
+      name: 'test',
+      status: 'in_progress',
+      conclusion: null as unknown as string,
+      head_sha: headSha,
+      completed_at: undefined,
+      started_at: new Date(now - 1000).toISOString(),
+    });
+    expect(blockers(f).join(' ')).toMatch(/check test is in_progress/);
+  });
+
   it('fails closed when a required check is missing, pending or action_required', () => {
     const missing = fixture();
     missing.checks = missing.checks.filter((c) => c.name !== 'test');
@@ -177,6 +221,9 @@ describe('isBotTrainPr', () => {
     expect(isBotTrainPr(healled.pr)).toBe(true);
     const held = fixture();
     held.pr.labels.push({ name: 'hold' });
-    expect(isBotTrainPr(held.pr)).toBe(false);
+    // Held PRs are candidates, not eligible: the runner must still reach them
+    // so it can revoke auto-merge that was enabled before the hold.
+    expect(isBotTrainPr(held.pr)).toBe(true);
+    expect(blockers(held).join(' ')).toMatch(/do-not-merge|hold|blocked/);
   });
 });

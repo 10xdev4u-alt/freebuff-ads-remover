@@ -33,6 +33,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/proof-publish
+          author: "10xdev4u-alt <10xdev4u@gmail.com>"
           title: "chore(proof): publish live proof page"
           commit-message: "chore(proof): publish live proof page"
           labels: bot-train
