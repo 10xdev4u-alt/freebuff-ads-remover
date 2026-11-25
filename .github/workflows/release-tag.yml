@@ -1,0 +1,46 @@
+name: Release Tag
+
+on:
+  # Fires when a reviewed bump PR merges and release/last-cut.json changes.
+  push:
+    branches: [main]
+    paths:
+      - 'release/last-cut.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Fail closed: an absent, corrupt or stale marker must never publish a tag.
+      - name: Assert marker before tagging
+        run: node scripts/release-gate.mjs --root . --tag
+
+      - name: Push tag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if git ls-remote --tags origin "refs/tags/v$VERSION" | grep -q .; then
+            echo "v$VERSION already exists on the remote; nothing to push"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "v$VERSION"
+          git push origin "v$VERSION"

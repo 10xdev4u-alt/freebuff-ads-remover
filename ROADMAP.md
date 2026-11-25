@@ -173,8 +173,10 @@ the Deprecated section.
 
 - [x] Cron job: fetch latest Freebuff AppImage, run audit, open PR with deltas
       (`upstream-proof.yml:4-5,41-105`).
-- [ ] Auto-bump version on audit-clean release: `release.yml:40-47` only asserts
-      tag == `package.json`; nothing bumps it. → Wave 61 (policy-gated)
+- [x] Release cut from a verified live receipt: `scripts/release-gate.mjs` dedupes on
+      `(payloadVersion, artifactHash)`, `scripts/bump-version.mjs` writes every version
+      surface atomically, `release-cut.yml` opens a reviewed bump PR, and
+      `release-tag.yml` asserts the marker before pushing the tag. → Wave 61
 - [x] Matrix testing across Node versions: the dev toolchain needs >=22.19 (Vitest resolves
       `undici` 8), so `ci.yml`'s `node-matrix` runs typecheck + tests on 22 and 24. The
       user-facing runtime floor stays >=20 and is exercised by `upstream-proof.yml`
@@ -383,8 +385,19 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 ### Wave 61 — Zero manual landing (policy-gated)
 - [ ] `ci: auto-merge the bot PR train` — conflicts with `PLAN.md` non-negotiables;
       needs an explicit decision first.
-- [ ] `ci: auto-cut a release from a verified live receipt` — needs the versioning policy
-      decided first.
+- [x] `ci: auto-cut a release from a verified live receipt` — policy decided:
+      cut when the newest live-e2e receipt's `(payloadVersion, artifactHash)` differs
+      from `release/last-cut.json`, MINOR on a payload change and PATCH otherwise; a
+      newer timestamp alone never mints a version. `scripts/release-gate.mjs`
+      re-verifies freshness (≤7d), pass, provenance, probes, and both hashes before
+      computing a strictly increasing version, failing closed on stale, ambiguous,
+      regressed or malformed input. `scripts/bump-version.mjs` validates every
+      surface token before writing atomically to `package.json`, the README badge,
+      the top CHANGELOG entry, the landing pill/eyebrow and the marker.
+      `release-cut.yml` opens a reviewed `ci/release-vX.Y.Z` PR; `release-tag.yml`
+      asserts the marker against the committed receipt and only then pushes the tag;
+      the ledger checks marker ↔ package ↔ receipt. `release.yml`'s verify-artifact
+      E2E now pins `FREEBUFF_PAYLOAD_VERSION`.
 
 ---
 

@@ -42,6 +42,13 @@ function makeFixture() {
   write('feed/manifest.json', JSON.stringify({ version: 1, generatedAt: now, entries: [{ healHash: artifactHash, rules: artifact }], rollbackTo: null }));
   write('live-proof/index.html', `<pre>${JSON.stringify(liveReceipt, null, 2)}</pre>`);
   write('package.json', JSON.stringify({ version: '1.2.3' }));
+  write('release/last-cut.json', JSON.stringify({
+    version: '1.2.3',
+    payloadVersion: '0.0.204',
+    artifactHash,
+    receipt: 'receipts/live-0.0.204.json',
+    at: now,
+  }));
   write('CHANGELOG.md', '## [1.2.3] 2026-01-01\n');
   return { root, artifactHash, artifactText, corpus, corpusHash, now, liveReceipt };
 }
@@ -274,5 +281,29 @@ describe('ledger gate', () => {
     fs.writeFileSync(path.join(f.root, 'corpus', 'golden.jsonl'), '{"path":"/api/ad/x","label":"ad"}\nnot-json\n');
     const r = await checkLedger(f.root, deps);
     expect(r.findings).toContain('corpus/golden.jsonl is not valid JSONL');
+  });
+
+  it('fails when the release marker disagrees with package.json', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'release', 'last-cut.json');
+    fs.writeFileSync(p, JSON.stringify({ ...(JSON.parse(fs.readFileSync(p, 'utf8')) as { version: string }), version: '9.9.9' }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('release marker version "9.9.9" != package 1.2.3');
+  });
+
+  it('fails when the release marker points at a missing receipt', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'release', 'last-cut.json');
+    fs.writeFileSync(p, JSON.stringify({ ...(JSON.parse(fs.readFileSync(p, 'utf8')) as { receipt: string }), receipt: 'receipts/live-0.0.999.json' }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('release marker receipt receipts/live-0.0.999.json is missing or corrupt');
+  });
+
+  it('fails when the release marker pair does not match its receipt', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'release', 'last-cut.json');
+    fs.writeFileSync(p, JSON.stringify({ ...(JSON.parse(fs.readFileSync(p, 'utf8')) as { payloadVersion: string }), payloadVersion: '0.0.203' }));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('release marker payloadVersion "0.0.203" != receipt "0.0.204"');
   });
 });

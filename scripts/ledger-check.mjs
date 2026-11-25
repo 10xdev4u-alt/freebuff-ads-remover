@@ -257,6 +257,39 @@ export async function checkLedger(root, deps = {}) {
     if (changelogTop && changelogTop[1] !== pkgVersion) fail(`CHANGELOG top ${changelogTop[1]} != package ${pkgVersion}`);
   }
 
+  // Release marker: release/last-cut.json is the dedupe key for release cuts,
+  // so it must name package.json's version and a committed, passing live-e2e
+  // receipt matching the recorded pair.
+  if (!exists('release/last-cut.json')) {
+    fail('release/last-cut.json missing');
+  } else {
+    const marker = readJson(path.join(root, 'release', 'last-cut.json'));
+    if (!marker.ok) fail('release/last-cut.json unreadable');
+    else {
+      const m = marker.value;
+      if (pkg.ok && m?.version !== pkg.value?.version) {
+        fail(`release marker version ${JSON.stringify(m?.version)} != package ${pkg.value?.version}`);
+      }
+      const rel = typeof m?.receipt === 'string' ? m.receipt : '';
+      if (!rel || path.isAbsolute(rel) || rel.split(/[\\/]/).includes('..')) {
+        fail(`release marker receipt path ${JSON.stringify(m?.receipt)} is invalid`);
+      } else {
+        const mr = readJson(path.join(root, rel));
+        if (!mr.ok) fail(`release marker receipt ${rel} is missing or corrupt`);
+        else {
+          if (mr.value?.payloadVersion !== m?.payloadVersion) {
+            fail(`release marker payloadVersion ${JSON.stringify(m?.payloadVersion)} != receipt ${JSON.stringify(mr.value?.payloadVersion)}`);
+          }
+          if (mr.value?.artifactHash !== m?.artifactHash) {
+            fail(`release marker artifactHash ${JSON.stringify(m?.artifactHash)} != receipt ${JSON.stringify(mr.value?.artifactHash)}`);
+          }
+          if (mr.value?.pass !== true) fail('release marker receipt did not pass');
+          if (mr.value?.provenance !== 'live-e2e') fail('release marker receipt is not live-e2e provenance');
+        }
+      }
+    }
+  }
+
   // Landing page claims. The page states facts a visitor cannot check; the
   // ledger is what makes them trustworthy, so each is verified against the same
   // source of truth used above.
