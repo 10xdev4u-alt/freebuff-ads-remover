@@ -21,8 +21,10 @@ research → issues → validate → implement → test → commit → PR → re
 
 1. **No commits to main** — All work via PR
 2. **No squash merge** — Merge commit preserves history
-3. **Co-author on every commit** — `the-ai-developer`
-4. **Reviewer on every PR** — `the-ai-developer`
+3. **No co-author trailer** — commits are authored by `10xdev4u-alt`
+4. **Reviewer on every PR** — `the-ai-developer`; bot-train PRs instead need a
+   fresh approval from a write-access maintainer (`10xdev4u-alt`) before
+   auto-merge is enabled (`the-ai-developer` only has read access)
 5. **6-word conventional commits** — Strict format
 6. **Research before code** — Document findings first
 7. **TDD** — Test first, then implement
@@ -34,9 +36,9 @@ research → issues → validate → implement → test → commit → PR → re
 <type>: <description>
 
 <body>
-
-Co-authored-by: the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>
 ```
+
+Author: `10xdev4u-alt <10xdev4u@gmail.com>`; no co-author trailer.
 
 Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
 

@@ -140,7 +140,8 @@ jobs:
           branch: ci/upstream-heal-${{ steps.ver.outputs.version }}
           title: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}"
           body-path: /tmp/heal.md
-          commit-message: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}" 
+          commit-message: "fix(shield): heal Freebuff ${{ steps.ver.outputs.version }}"
+          labels: bot-train
           add-paths: |
             corpus/
             config/generated-rules.json

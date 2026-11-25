@@ -16,14 +16,8 @@
 ## Checklist
 
 - [ ] Commit messages follow conventional commits (max 6 words)
-- [ ] Co-author trailer present on every commit
+- [ ] Commits authored as `10xdev4u-alt` with no co-author trailer
 - [ ] Research documented before implementation
 - [ ] Tests written before implementation (TDD)
 - [ ] No sensitive data in code or logs
 - [ ] Documentation updated if needed
-
----
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-authored-by: the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>

@@ -1,0 +1,36 @@
+name: Auto Merge Bot
+
+on:
+  # Runs only in base context: never check out or execute PR-head code.
+  pull_request_review:
+    types: [submitted]
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: bot-train-landing
+  cancel-in-progress: false
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # pull_request_review sets GITHUB_REF to refs/pull/N/merge; always
+          # evaluate from main, never from PR-head code.
+          ref: main
+
+      # The gate is pure Node; gh is preinstalled on the runner.
+      - name: Evaluate bot PR train
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/auto-merge-bot.mjs

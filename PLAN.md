@@ -10,8 +10,9 @@
 |------|----------|
 | Auth / Owner | `10xdev4u-alt` (GitHub) |
 | Email | `10xdev4u@gmail.com` |
-| Co-author (every commit) | `the-ai-developer` |
-| Reviewer (every PR) | `the-ai-developer` |
+| Commit author (every commit) | `10xdev4u-alt` |
+| Requested reviewer | `the-ai-developer` (read-only) |
+| Approving reviewer (write access) | `10xdev4u-alt` |
 
 ### Git Config (local)
 ```bash
@@ -19,10 +20,15 @@ git config user.name "10xdev4u-alt"
 git config user.email "10xdev4u@gmail.com"
 ```
 
-### Co-author trailer (every commit)
+### Commit identity (every commit)
+
 ```
-Co-authored-by: the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>
+Author: 10xdev4u-alt <10xdev4u@gmail.com>
 ```
+
+No co-author trailer: `the-ai-developer` is the requested reviewer, not a
+commit author, and has only read access (so its approval cannot satisfy branch
+protection).
 
 ---
 
@@ -34,8 +40,8 @@ This is the **only** way work gets done. No exceptions. No direct pushes to main
 
 ```
 research → evaluate → issues → validate idea → implement →
-local validation → commit & push → PR → review (the-ai-developer) →
-validate → merge (no squash) → cleanup branches → next issue
+local validation → commit & push → PR → review (approve: `10xdev4u-alt`;
+request: `the-ai-developer`) → validate → merge (no squash) → cleanup branches → next issue
 ```
 
 ### Stage Gate Rules
@@ -45,9 +51,9 @@ validate → merge (no squash) → cleanup branches → next issue
 3. **Validate the idea** — For each issue, document the proposed solution approach in the issue body. Get clarity before code.
 4. **Implement** — Follow TDD: write test first (RED), implement (GREEN), refactor (IMPROVE).
 5. **Local validation** — Lint, typecheck, test. All green before commit.
-6. **Commit** — Conventional commits, max 6 words in the subject line. Co-author trailer mandatory.
+6. **Commit** — Conventional commits, max 6 words in the subject line. Authored by `10xdev4u-alt`; no co-author trailer.
 7. **Push & PR** — Push branch, open PR with comprehensive description.
-8. **Review** — `the-ai-developer` reviews. Address all comments.
+8. **Review** — `the-ai-developer` is requested; `10xdev4u-alt` approves (write access). Bot-train PRs need a fresh `10xdev4u-alt` approval before auto-merge.
 9. **Merge** — No squash merge. Merge commit preserves history.
 10. **Cleanup** — Delete local branch, remote branch, stale branches. Repeat.
 
@@ -60,7 +66,7 @@ validate → merge (no squash) → cleanup branches → next issue
 - **type:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`, `build`, `style`
 - **description:** max 6 words, imperative mood, no period at end
 - **body:** what changed, why, research references
-- **trailer:** `Co-authored-by: the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>`
+- **trailer:** none — do not add `Co-authored-by` lines
 
 ### Examples
 ```
@@ -71,7 +77,6 @@ all ad-related API endpoints. Covers /api/ad/*, /api/ads/*,
 and the remote agentic offer endpoint.
 
 Research: REA analysis of orchestrator routes, ad-context.cjs
-Co-authored-by: the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>
 ```
 
 ```
@@ -79,8 +84,6 @@ test: verify sponsor break never renders
 
 Add integration test ensuring that when ad API returns null,
 the SponsorBreak component is never mounted in the renderer.
-
-Co-authored-by: the-ai-developer <88466089+the-ai-developer@users.noreply.github.com>
 ```
 
 ---
@@ -359,8 +362,10 @@ Proposed solution with technical details.
 
 1. **No commits to main** — All work via PR
 2. **No squash merge** — Merge commit preserves history
-3. **Co-author on every commit** — `the-ai-developer`
-4. **Reviewer on every PR** — `the-ai-developer`
+3. **No co-author trailer** — commits are authored by `10xdev4u-alt`
+4. **Reviewer on every PR** — `the-ai-developer`; bot-train PRs instead need a
+   fresh approval from a write-access maintainer (`10xdev4u-alt`) before
+   auto-merge is enabled (`the-ai-developer` only has read access)
 5. **6-word conventional commits** — Strict format
 6. **Research before code** — No code without research
 7. **Test before implementation** — TDD mandatory

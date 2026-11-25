@@ -35,4 +35,5 @@ jobs:
           branch: ci/proof-publish
           title: "chore(proof): publish live proof page"
           commit-message: "chore(proof): publish live proof page"
+          labels: bot-train
           add-paths: live-proof/index.html

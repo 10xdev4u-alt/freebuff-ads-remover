@@ -121,6 +121,7 @@ jobs:
           branch: ci/live-receipt
           title: "chore(proof): publish live receipt"
           commit-message: "chore(proof): publish live receipt"
+          labels: bot-train
           add-paths: receipts/live-*.json
           base: main
 

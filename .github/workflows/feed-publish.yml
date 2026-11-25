@@ -52,5 +52,6 @@ jobs:
           title: "chore(feed): publish signed manifest"
           commit-message: "chore(feed): publish signed manifest"
           body: "Automated signed feed manifest publish."
+          labels: bot-train
           add-paths: |
             feed/manifest.json
