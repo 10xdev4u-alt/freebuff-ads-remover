@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-25 (Wave 63; Freebuff 0.0.205).
+Last updated: 2026-11-25 (Wave 64; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -107,11 +107,22 @@ the Deprecated section.
 
 ## 3. Coverage — DOM & CSS layer
 
-- [ ] MutationObserver-based node removal (not just CSS hide) for `!important` overrides.
-- [ ] Shadow DOM piercing for ad containers in shadow roots.
-- [ ] iframe ad removal (same-origin only; cross-origin via URL blocking).
-- [ ] Re-inject CSS on SPA navigation without full reload.
-- [ ] Handle dynamically added ad surfaces after initial render.
+- [x] MutationObserver-based node removal for `!important` overrides: nodes are
+      physically removed and re-scans are raf-scheduled on childList/subtree
+      changes (`src/dom-remover.ts:55,81-86`). → Wave 64 truth pass
+- [x] Shadow DOM piercing for ad containers in shadow roots: recursive sweep,
+      root observation and an `attachShadow` hook (`src/dom-remover.ts:59-67,93-97,118`).
+      → Wave 64 truth pass
+- [x] iframe ad removal (same-origin only; cross-origin via URL blocking):
+      recursive `contentDocument` sweep, per-iframe MutationObserver and a
+      capture-phase `load` handler for late/navigated frames
+      (`src/dom-remover.ts:64-72,98-102,129-130`). → Wave 64
+- [x] Re-inject CSS on SPA navigation without full reload: CSS is re-injected on
+      `did-finish-load` (`src/web-contents-css.ts:123-132`), and `pushState`,
+      `replaceState` and `popstate` re-scan the DOM (`src/dom-remover.ts:125-127`).
+      → Wave 64 truth pass
+- [x] Handle dynamically added ad surfaces after initial render: observer +
+      history hooks (`src/dom-remover.ts:81-96,125-127`). → Wave 64 truth pass
 - [x] Cover all 68 CSS classes (done) + keep audit green on every release.
 - [ ] Add per-surface CSS scoping to avoid over-hiding.
 - [ ] Dark/light theme-aware hiding (avoid layout shift).
@@ -445,6 +456,17 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `isAdUrl` reflects the toggle so redirect chains also cancel. Tests in
       `tests/block-updates.test.ts` cover defaults, disk load/save, runtime
       toggling, master switch, sibling-path safety and malformed URLs.
+
+### Wave 64 — DOM resilience truth
+- [x] `fix(dom): observe late and navigated same-origin iframes` — the generated
+      remover now observes iframe documents during the recursive sweep and on a
+      capture-phase document `load` handler, re-arms the guard version so an
+      already-injected document picks up the change, and removes the listener on
+      teardown. `tests/dom-remover-iframe.test.ts` asserts the emitted script.
+- [x] Section 3 truth pass: MutationObserver removal, shadow piercing, SPA
+      re-scan and dynamic-surface coverage were already implemented and are now
+      marked done with file:line evidence. Per-surface DOM scoping, theme-aware
+      hiding and skeleton-flicker work remain open.
 
 ---
 
