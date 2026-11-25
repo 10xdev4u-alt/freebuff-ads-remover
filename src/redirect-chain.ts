@@ -9,7 +9,11 @@ export function createChainTracker(isAd: (url: string) => boolean): ChainTracker
   const chains = new Map<string | number, { urls: string[]; ad: boolean }>();
   return {
     record(requestId, url) {
-      chains.set(requestId, { urls: [url], ad: isAd(url) });
+      // Re-arming can deliver another request event for the same id. Preserve
+      // an already-set ad flag so a later non-ad record cannot un-block the
+      // chain (an ad hop anywhere in the chain is enough).
+      const previous = chains.get(requestId);
+      chains.set(requestId, { urls: [url], ad: isAd(url) || (previous?.ad ?? false) });
     },
     redirect(requestId, url) {
       const c = chains.get(requestId);

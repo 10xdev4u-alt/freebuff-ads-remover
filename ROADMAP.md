@@ -91,7 +91,10 @@ the Deprecated section.
       tests in `tests/url-match-canonicalization.test.ts`. → Wave 59, verified Wave 62
 - [x] Block by host in addition to path (allowlist of ad hosts). → Wave 59
 - [ ] Block by request body content (sponsored task payloads).
-- [ ] Block redirect chains that land on ad endpoints.
+- [x] Block redirect chains that land on ad endpoints — `createChainTracker`
+      (`src/redirect-chain.ts:8-31`) preserves an ad flag across re-record, and
+      `tests/redirect-chain-canonicalization.test.ts` covers re-arm duplicates
+      and duplicate-slash ad hops. → Wave 59, hardened Wave 62
 - [ ] Block prefetch/preload of ad assets.
 - [x] Guard malformed URLs in matching: `decodeURIComponent` failures fall back to the
       raw path (`src/url-match.ts:22`). → Wave 59
@@ -427,6 +430,10 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `tests/url-match-canonicalization.test.ts` covers absolute and path-only
       URLs, query/case variants, pattern-side slashes and the already-passing
       guards. No endpoint or AD_ENDPOINTS change.
+- [x] `fix(redirect): preserve ad flag across re-record` — a re-armed request
+      event could overwrite an in-flight chain and clear a previously detected
+      ad hop. `tests/redirect-chain-canonicalization.test.ts` covers re-record,
+      duplicate-slash redirect hops and the clean-chain/completion guards.
 
 ---
 
