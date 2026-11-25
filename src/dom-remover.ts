@@ -9,6 +9,7 @@
  */
 
 import { AD_CSS_SELECTORS } from './types.js';
+import type { AdSurface } from './types.js';
 
 // Derived from the registry so a selector added to AD_CSS_SELECTORS reaches the
 // DOM remover without a second hardcoded list drifting behind it.
@@ -172,6 +173,22 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
 })();`;
 }
 
-export function buildDomRemoverFromSelectors(): string {
-  return buildDomRemoverScript({ selectors: DOM_REMOVAL_SELECTORS, debug: false });
+/**
+ * Selectors to inject for the surfaces the user has enabled. `undefined`
+ * means "all surfaces", preserving the legacy no-argument behavior.
+ */
+export function selectorsForSurfaces(
+  surfaces?: Record<AdSurface, boolean>,
+  bySurface: Record<string, string[]> = AD_CSS_SELECTORS,
+): string[] {
+  const entries = Object.entries(bySurface) as [AdSurface, string[]][];
+  const selected = surfaces ? entries.filter(([surface]) => surfaces[surface]) : entries;
+  return [...new Set(selected.flatMap(([, selectors]) => selectors))];
+}
+
+export function buildDomRemoverFromSelectors(config?: { surfaces: Record<AdSurface, boolean> }): string {
+  return buildDomRemoverScript({
+    selectors: selectorsForSurfaces(config?.surfaces),
+    debug: false,
+  });
 }

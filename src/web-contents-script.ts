@@ -51,6 +51,19 @@ export class WebContentsScriptTarget {
     }
   }
 
+  /** Replace or delete a stored rule so later navigations cannot re-run it. */
+  replaceScript(id: string, code: string | null): void {
+    if (this.disposed) return;
+    if (code === null) {
+      this.rules.delete(id);
+      return;
+    }
+    this.rules.set(id, code);
+    for (const contents of this.currentContents()) {
+      this.execute(contents, code);
+    }
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
