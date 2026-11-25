@@ -6,6 +6,11 @@ on:
   # that never reports. Source PRs must get the real E2E.
   pull_request:
   workflow_dispatch:
+    inputs:
+      checks_only:
+        description: 'Run the E2E checks without publishing a live receipt PR'
+        type: boolean
+        default: false
   schedule:
     - cron: '0 6 * * *'
 
@@ -101,7 +106,7 @@ jobs:
           cat /tmp/far-e2e-extract/config/delivery-receipt.json
 
       - name: Stage live receipt on a main-based branch
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.checks_only == false
         run: |
           V="${{ steps.payload.outputs.version }}"
           if [ ! -f "receipts/live-${V}.json" ]; then
@@ -115,10 +120,11 @@ jobs:
           cp "/tmp/far-live-receipt/live-${V}.json" receipts/
 
       - name: Publish live receipt
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.checks_only == false
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ci/live-receipt
+          author: "10xdev4u-alt <10xdev4u@gmail.com>"
           title: "chore(proof): publish live receipt"
           commit-message: "chore(proof): publish live receipt"
           labels: bot-train

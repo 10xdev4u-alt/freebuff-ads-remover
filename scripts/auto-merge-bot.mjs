@@ -17,8 +17,28 @@ function ghJson(args) {
   }
 }
 
+// Pages must be drained: a >100-review PR can otherwise hide a newer
+// CHANGES_REQUESTED, and a >100-check head can hide a required check.
+function ghJsonAll(args) {
+  try {
+    const out = execFileSync('gh', ['api', '--paginate', '--slurp', ...args], {
+      encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const parsed = JSON.parse(out);
+    // --slurp returns an array of pages, each itself an array for list
+    // endpoints (object responses stay as page objects). Flatten one level.
+    return Array.isArray(parsed) ? parsed.flat() : parsed;
+  } catch (error) {
+    throw new Error(`gh api --paginate ${args.join(' ')} failed: ${error.stderr || error.message}`);
+  }
+}
+
 function ghMerge(number) {
   execFileSync('gh', ['pr', 'merge', String(number), '--auto', '--merge'], { stdio: 'inherit' });
+}
+
+function ghDisableAuto(number) {
+  execFileSync('gh', ['pr', 'merge', String(number), '--disable-auto'], { stdio: 'inherit' });
 }
 
 function hasPendingRun(workflow, ref) {
@@ -38,7 +58,11 @@ function requestChecks(pr, lines) {
   for (const workflow of ['ci.yml', 'heal-proof.yml']) {
     if (hasPendingRun(workflow, pr.head.ref)) continue;
     try {
-      execFileSync('gh', ['workflow', 'run', workflow, '--ref', pr.head.ref], { stdio: 'inherit' });
+      const args = ['workflow', 'run', workflow, '--ref', pr.head.ref];
+      // heal-proof also publishes live receipts on dispatch; checks_only keeps
+      // this repair from pushing a new commit to another bot PR.
+      if (workflow === 'heal-proof.yml') args.push('--field', 'checks_only=true');
+      execFileSync('gh', args, { stdio: 'inherit' });
       lines.push(`- #${pr.number} ${pr.head.ref}: requested ${workflow} checks on the PR head`);
     } catch (error) {
       lines.push(`- #${pr.number} ${pr.head.ref}: could not dispatch ${workflow}: ${error.message}`);
@@ -47,28 +71,35 @@ function requestChecks(pr, lines) {
 }
 
 function main() {
-  const prs = ghJson(['repos/{owner}/{repo}/pulls?state=open&per_page=100&sort=created&direction=asc']);
+  const prs = ghJsonAll(['repos/{owner}/{repo}/pulls?state=open&per_page=100&sort=created&direction=asc']);
   if (!Array.isArray(prs)) throw new Error('pull list was not an array');
 
   const lines = [`Bot train: ${prs.length} open PR(s) inspected.`];
   for (const pr of prs) {
     if (!isBotTrainPr(pr)) continue;
     const number = pr.number;
-    if (pr.auto_merge) {
-      lines.push(`- #${number} ${pr.head.ref}: auto-merge already enabled`);
-      continue;
-    }
     const sha = pr.head.sha;
-    const reviews = ghJson([`repos/{owner}/{repo}/pulls/${number}/reviews?per_page=100`]);
-    const commits = ghJson([`repos/{owner}/{repo}/pulls/${number}/commits?per_page=100`]);
-    const checkPage = ghJson([`repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`]);
-    const checks = Array.isArray(checkPage?.check_runs) ? checkPage.check_runs : [];
+    const reviews = ghJsonAll([`repos/{owner}/{repo}/pulls/${number}/reviews?per_page=100`]);
+    const commits = ghJsonAll([`repos/{owner}/{repo}/pulls/${number}/commits?per_page=100`]);
+    const checkPages = ghJsonAll([`repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`]);
+    const checks = (Array.isArray(checkPages) ? checkPages : [checkPages])
+      .flatMap((page) => (Array.isArray(page?.check_runs) ? page.check_runs : Array.isArray(page) ? page : []));
     const decision = evaluateBotPr({ pr, reviews, commits, checks });
 
     if (!decision.eligible) {
       lines.push(`- #${number} ${pr.head.ref}: blocked — ${decision.reasons.join('; ')}`);
+      // Auto-merge is not a set-and-forget gate: a later hold label or commit
+      // must revoke it, because neither is branch protection.
+      if (pr.auto_merge) {
+        ghDisableAuto(number);
+        lines.push(`- #${number} ${pr.head.ref}: auto-merge disabled after re-check`);
+      }
       const otherBlockers = decision.reasons.filter((r) => !r.startsWith('check '));
       if (otherBlockers.length === 0) requestChecks(pr, lines);
+      continue;
+    }
+    if (pr.auto_merge) {
+      lines.push(`- #${number} ${pr.head.ref}: auto-merge already enabled and still eligible`);
       continue;
     }
     ghMerge(number);

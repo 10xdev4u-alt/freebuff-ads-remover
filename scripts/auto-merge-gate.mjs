@@ -31,13 +31,17 @@ function allowedBranch(ref) {
   return BOT_BRANCHES.includes(ref) || HEAL_BRANCH_RE.test(ref);
 }
 
-/** Cheap prefilter used by the runner before spending API calls on a PR. */
+/**
+ * Cheap prefilter for PRs that look like the bot train. Hold labels are
+ * deliberately NOT excluded here: a held PR with auto-merge already enabled
+ * must still reach evaluateBotPr so the runner can revoke it.
+ */
 export function isBotTrainPr(pr) {
   if (!pr || pr.state !== 'open' || pr.draft || pr.merged) return false;
   if (pr.author?.login !== BOT_AUTHOR || pr.base?.ref !== 'main') return false;
   if (!allowedBranch(pr.head?.ref)) return false;
   const labels = Array.isArray(pr.labels) ? pr.labels.map((l) => l.name) : [];
-  return labels.includes('bot-train') && !labels.some((l) => HOLD_LABELS.includes(l));
+  return labels.includes('bot-train');
 }
 
 /**
@@ -88,16 +92,27 @@ export function evaluateBotPr(input) {
   }
 
   const reviews = Array.isArray(input.reviews) ? input.reviews : [];
-  const allowedApprovals = reviews.filter(
-    (r) => r?.state === 'APPROVED' && APPROVERS.includes(r?.user?.login),
-  );
+  // Only the reviewer's *latest* substantive review counts. GitHub ignores
+  // COMMENTED when deciding whether an approval still stands, but a later
+  // CHANGES_REQUESTED or DISMISSED must override an earlier APPROVED.
+  const substantive = ['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'];
+  const latestByReviewer = new Map();
+  for (const r of reviews) {
+    if (!APPROVERS.includes(r?.user?.login) || !substantive.includes(r?.state)) continue;
+    const t = Date.parse(r.submitted_at);
+    const key = r.user.login;
+    const prev = latestByReviewer.get(key);
+    if (!prev || (Number.isFinite(t) && t >= prev.t)) latestByReviewer.set(key, { review: r, t });
+  }
+  const finalReviews = [...latestByReviewer.values()].map((v) => v.review);
+  const allowedApprovals = finalReviews.filter((r) => r.state === 'APPROVED');
   const approvals = allowedApprovals.filter((r) => {
     if (r.commit_id) return r.commit_id === pr?.head?.sha;
     return Date.parse(r.submitted_at) > latestCommitAt;
   });
   if (approvals.length === 0) {
-    if (allowedApprovals.length > 0) {
-      reasons.push('stale approval: reviewer approval must be newer than the latest commit');
+    if (finalReviews.length > 0) {
+      reasons.push('stale approval / no current approval: reviewer approval must be newer than the latest commit');
     } else {
       const named = reviews
         .filter((r) => r?.state === 'APPROVED')
@@ -109,12 +124,25 @@ export function evaluateBotPr(input) {
 
   const checks = Array.isArray(input.checks) ? input.checks : [];
   const sha = pr?.head?.sha;
+  // One ordering key for both selection and veto: a run's start time. A newer
+  // pending or failed run must outrank an older success even when its
+  // completed_at is absent (incomplete runs have no completion time yet).
+  const checkOrder = (c) => {
+    const t = Date.parse(c?.started_at ?? c?.completed_at ?? '');
+    return Number.isFinite(t) ? t : -Infinity;
+  };
   for (const name of REQUIRED_CHECKS) {
-    const hit = checks.find((c) => c?.name === name && c?.head_sha === sha);
-    if (!hit) {
+    const hits = checks.filter((c) => c?.name === name && c?.head_sha === sha);
+    if (hits.length === 0) {
       reasons.push(`check ${name} missing for head ${sha}`);
-    } else if (hit.status !== 'completed' || hit.conclusion !== 'success') {
-      reasons.push(`check ${name} is ${hit.conclusion ?? hit.status}`);
+      continue;
+    }
+    const latest = hits.slice().sort((a, b) => checkOrder(b) - checkOrder(a))[0];
+    const failures = hits.filter((c) => c.status !== 'completed' || c.conclusion !== 'success');
+    if (failures.some((f) => checkOrder(f) >= checkOrder(latest))) {
+      reasons.push(`check ${name} is ${latest?.conclusion ?? latest?.status}`);
+    } else if (latest.status !== 'completed' || latest.conclusion !== 'success') {
+      reasons.push(`check ${name} is ${latest.conclusion ?? latest.status}`);
     }
   }
 
