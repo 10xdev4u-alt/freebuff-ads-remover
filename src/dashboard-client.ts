@@ -479,6 +479,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
     selectors: string;
     version: string;
     observer: MutationObserver | null;
+    shortcut: ((event: KeyboardEvent) => void) | null;
     counted: WeakSet<Element>;
     domHidden: number;
     prevTotal: number;
@@ -640,6 +641,9 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
   function freshState(doc: Document, options: ShieldInstallOptions): ShieldState {
     const previous = state;
     previous?.observer?.disconnect();
+    if (previous?.shortcut) {
+      previous.host.ownerDocument.removeEventListener('keydown', previous.shortcut);
+    }
     stopLoop(previous);
 
     const host = doc.createElement('div');
@@ -661,6 +665,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
       selectors: options.hideSelectors,
       version: options.version ?? '',
       observer: null,
+      shortcut: null,
       counted: new WeakSet<Element>(),
       domHidden: 0,
       prevTotal: 0,
@@ -700,6 +705,21 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
       const next = s.bound.pseg.querySelector(`[data-view-btn="${s.view}"]`);
       if (next instanceof HTMLElement) next.focus();
     });
+
+    // Panel-only shortcut: no new page API method and no blocking pause.
+    const onShortcut = (event: KeyboardEvent): void => {
+      if (event.repeat || !event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey) return;
+      if (event.key.toLowerCase() !== 'd' && event.code !== 'KeyD') return;
+      const target = event.target;
+      if (target instanceof Element) {
+        const editable = target.closest('input,textarea,select,[contenteditable=""],[contenteditable="true"]');
+        if (editable) return;
+      }
+      event.preventDefault();
+      setOpen(s, s.bound.panel.hasAttribute('hidden'));
+    };
+    s.shortcut = onShortcut;
+    s.host.ownerDocument.addEventListener('keydown', onShortcut);
   }
 
   function setOpen(s: ShieldState, open: boolean): void {
@@ -1281,6 +1301,9 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
   function unmount(): void {
     stopLoop(state);
     state?.observer?.disconnect();
+    if (state?.shortcut) {
+      state.host.ownerDocument.removeEventListener('keydown', state.shortcut);
+    }
     state = null;
     latest = null;
     document.getElementById(HOST_ID)?.remove();
