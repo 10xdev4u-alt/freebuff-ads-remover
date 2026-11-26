@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-25 (Wave 67; Freebuff 0.0.205).
+Last updated: 2026-11-26 (Wave 68; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -159,7 +159,11 @@ the Deprecated section.
 ## 6. Dashboard & observability
 
 - [ ] Per-surface, per-stage time-series charts.
-- [ ] Top blocked endpoints list.
+- [x] Top blocked endpoints list — the page client derives a top-six list from
+      `snapshot.byEndpoint` (`src/stats-store.ts:48,67`) using `endpointLabel`
+      and inert `textContent` rendering (`src/dashboard-client.ts:renderEndpoints`).
+      Session-only data; no `AD_ENDPOINTS` or page-API change.
+      `tests/dashboard-endpoints.test.ts`. → Wave 68
 - [x] Block-rate sparkline — `renderSpark` uses the 30-minute `perMinute`
       series (`src/dashboard-client.ts:760-785`). Marked done (was stale `[ ]`).
 - [x] Export block log (JSON/CSV) from dashboard — shadow-DOM
@@ -545,6 +549,17 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       block-list updates and the troubleshooting guide are marked done with
       code evidence; ARCHITECTURE CI-sync and the `[~]` auto-merge item remain
       open (no full sync check, no real `--auto --merge` landing).
+
+### Wave 68 — Dashboard top endpoints
+- [x] `feat(dashboard): rank top blocked endpoints` — the page client renders a
+      top-six list from `snapshot.byEndpoint`, which already crosses the process
+      boundary via `Dashboard.push()`. No main-process, IPC, page-API or
+      `AD_ENDPOINTS` change; labels use the existing `endpointLabel()` and
+      `textContent` so hostile endpoint strings stay inert. `tests/dashboard-endpoints.test.ts`
+      covers empty state, zero filtering, descending order with stable ties,
+      the cap, HTML-ish labels and re-binding across updates. Four phase agents
+      independently confirmed this as the best value/risk ratio among the
+      remaining open items.
 
 ---
 
