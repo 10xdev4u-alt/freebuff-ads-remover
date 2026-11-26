@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-26 (Wave 69; Freebuff 0.0.205).
+Last updated: 2026-11-26 (Wave 70; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -174,7 +174,10 @@ the Deprecated section.
 - [ ] Desktop notification on new ad surface detected.
 - [ ] Local-only telemetry (opt-in) for aggregate effectiveness stats.
 - [ ] Health panel: injection status, audit status, last update.
-- [ ] Keyboard shortcuts for toggle/pause.
+- [x] Keyboard shortcuts for toggle/pause: panel-only `Alt+Shift+D` toggle via
+      the existing `setOpen()`, ignoring repeats and editable targets and
+      detaching on unmount (`src/dashboard-client.ts:wire/unmount`). No pause,
+      no new page API key. `tests/dashboard-client-shortcut.test.ts`. → Wave 70
 - [ ] Dark/light theme sync with Freebuff.
 
 ## 7. Configuration & UX
@@ -572,9 +575,20 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the genuine blockers (missing approval and required checks).
 - [ ] `[~]` auto-merge bot PR train — still awaiting a real `--auto --merge`
       landing; the code no longer blocks it, but live approval and check state
-      are still required. Config import/export, golden-file audit output,
-      ARCHITECTURE full sync, desktop notifications and keyboard shortcuts were
+      are still required. Config import/export (trust-root risk), golden-file
+      audit output, ARCHITECTURE full sync and desktop notifications were
       evaluated by the phase agents and deferred with code evidence.
+
+### Wave 70 — Dashboard shortcut
+- [x] `feat(dashboard): toggle panel with Alt+Shift+D` — a document-level
+      keydown handler in the page client calls the existing `setOpen()`; it
+      ignores repeats, extra modifiers, non-matching keys and editable targets,
+      and is detached on unmount and re-install. The four-key page API, dist
+      guard and `AD_ENDPOINTS` are unchanged. `tests/dashboard-client-shortcut.test.ts`
+      pins toggle behavior, ignored events, cleanup and guard safety.
+- [ ] `[~]` auto-merge bot PR train — still awaiting the live landing; phase E
+      confirmed the remaining blockers are operational (approval + dispatched
+      checks), not rule or code defects.
 
 ---
 
