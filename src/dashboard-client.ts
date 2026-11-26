@@ -334,6 +334,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
   font-weight: 600;
 }
 .surfaces,
+.endpoints,
 .events {
   list-style: none;
   margin: 0;
@@ -347,8 +348,10 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
   scrollbar-color: #3a3f4b transparent;
 }
 .surfaces::-webkit-scrollbar,
+.endpoints::-webkit-scrollbar,
 .events::-webkit-scrollbar { width: 6px; }
 .surfaces::-webkit-scrollbar-thumb,
+.endpoints::-webkit-scrollbar-thumb,
 .events::-webkit-scrollbar-thumb { background: #3a3f4b; border-radius: 3px; }
 .surface-row {
   display: grid;
@@ -362,6 +365,16 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
 .surface-bar { height: 4px; border-radius: 2px; background: var(--far-surface-2); overflow: hidden; }
 .surface-fill { display: block; height: 100%; background: var(--far-accent); border-radius: 2px; transition: width 0.4s ease; }
 .surface-count { text-align: right; color: var(--far-txt-2); font-weight: 650; font-variant-numeric: tabular-nums; }
+.endpoint-row {
+  display: grid;
+  grid-template-columns: 1fr 30px;
+  gap: 7px;
+  align-items: center;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+.endpoint-name { color: var(--far-txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.endpoint-count { text-align: right; color: var(--far-txt-2); font-weight: 650; font-variant-numeric: tabular-nums; }
 
 .event {
   display: grid;
@@ -425,6 +438,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
     sparkArea: Element | null;
     stageCounts: Partial<Record<AdStage, HTMLElement>>;
     surfaces: HTMLElement;
+    endpoints: HTMLElement;
     events: HTMLElement;
     domHidden: HTMLElement;
     since: HTMLElement;
@@ -569,6 +583,8 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
         </div>
         <div class="section-label">Top surfaces</div>
         <ul class="surfaces" data-f="surfaces"></ul>
+        <div class="section-label">Top endpoints</div>
+        <ul class="endpoints" data-f="endpoints"></ul>
         <div class="section-label">Latest stops</div>
         <ul class="events" data-f="events"></ul>
         <footer class="footer">
@@ -606,6 +622,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
       sparkArea: root.querySelector('[data-f="sparkArea"]'),
       stageCounts,
       surfaces: byData('surfaces'),
+      endpoints: byData('endpoints'),
       events: byData('events'),
       domHidden: byData('domHidden'),
       since: byData('since'),
@@ -839,6 +856,39 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
     }
     s.bound.surfaces.replaceWith(list);
     s.bound.surfaces = list;
+  }
+
+  function renderEndpoints(s: ShieldState, snapshot: StatsSnapshot): void {
+    const entries = Object.entries(snapshot.byEndpoint)
+      .filter(([, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+    const doc = s.host.ownerDocument;
+    const list = doc.createElement('ul');
+    list.className = 'endpoints';
+    list.setAttribute('data-f', 'endpoints');
+    if (entries.length === 0) {
+      const empty = doc.createElement('li');
+      empty.className = 'empty';
+      empty.textContent = 'watching for endpoints…';
+      list.appendChild(empty);
+    } else {
+      for (const [endpoint, count] of entries) {
+        const row = doc.createElement('li');
+        row.className = 'endpoint-row';
+        row.setAttribute('data-endpoint', endpoint);
+        const name = doc.createElement('span');
+        name.className = 'endpoint-name';
+        name.textContent = endpointLabel(endpoint);
+        const number = doc.createElement('span');
+        number.className = 'endpoint-count';
+        number.textContent = String(count);
+        row.append(name, number);
+        list.appendChild(row);
+      }
+    }
+    s.bound.endpoints.replaceWith(list);
+    s.bound.endpoints = list;
   }
 
   function renderEvents(s: ShieldState, snapshot: StatsSnapshot): void {
@@ -1213,6 +1263,7 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
     }
 
     renderSurfaces(s, snapshot);
+    renderEndpoints(s, snapshot);
     renderEvents(s, snapshot);
     renderSpark(s, snapshot);
     renderHeat(s, snapshot);
