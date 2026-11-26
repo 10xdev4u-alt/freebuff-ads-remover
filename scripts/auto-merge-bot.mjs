@@ -7,6 +7,7 @@
 import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { evaluateBotPr, isBotTrainPr } from './auto-merge-gate.mjs';
+import { normalizePrListEntry } from './auto-merge-shape.mjs';
 
 function ghJson(args) {
   try {
@@ -75,8 +76,13 @@ function main() {
   if (!Array.isArray(prs)) throw new Error('pull list was not an array');
 
   const lines = [`Bot train: ${prs.length} open PR(s) inspected.`];
-  for (const pr of prs) {
-    if (!isBotTrainPr(pr)) continue;
+  for (const listed of prs) {
+    // REST list entries put the author under `user` and leave mergeable_state
+    // unresolved. Normalize before allowlisting, then fetch the detail view.
+    const candidate = normalizePrListEntry(listed);
+    if (!isBotTrainPr(candidate)) continue;
+    const detail = ghJson([`repos/{owner}/{repo}/pulls/${candidate.number}`]);
+    const pr = normalizePrListEntry(listed, detail);
     const number = pr.number;
     const sha = pr.head.sha;
     const reviews = ghJsonAll([`repos/{owner}/{repo}/pulls/${number}/reviews?per_page=100`]);

@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-26 (Wave 68; Freebuff 0.0.205).
+Last updated: 2026-11-26 (Wave 69; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -560,6 +560,21 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the cap, HTML-ish labels and re-binding across updates. Four phase agents
       independently confirmed this as the best value/risk ratio among the
       remaining open items.
+
+### Wave 69 — Bot-train REST shape
+- [x] `fix(ci): normalize REST PR shape before auto-merge gate` — the list
+      endpoint returns `author: null` with `user.login`, so the runner's
+      `isBotTrainPr` rejected every real bot PR; `mergeable_state` was also
+      unresolved until the per-PR detail call. `scripts/auto-merge-shape.mjs`
+      adapts that boundary without changing any gate predicate, and
+      `tests/auto-merge-shape.test.ts` pins the live shape. A live runner probe
+      now selects both `ci/feed-publish` and `ci/live-receipt` and reports only
+      the genuine blockers (missing approval and required checks).
+- [ ] `[~]` auto-merge bot PR train — still awaiting a real `--auto --merge`
+      landing; the code no longer blocks it, but live approval and check state
+      are still required. Config import/export, golden-file audit output,
+      ARCHITECTURE full sync, desktop notifications and keyboard shortcuts were
+      evaluated by the phase agents and deferred with code evidence.
 
 ---
 

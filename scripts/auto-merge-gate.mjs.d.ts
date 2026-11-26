@@ -4,7 +4,7 @@ export interface BotPrInput {
     state: string;
     draft: boolean;
     merged?: boolean;
-    mergeable_state: string;
+    mergeable_state: string | null;
     author: { login: string } | null;
     base: { ref: string };
     head: { ref: string; sha: string };
