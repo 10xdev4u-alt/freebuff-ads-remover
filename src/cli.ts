@@ -3,7 +3,7 @@
  * farbuff CLI — thin wrapper over library functions.
  * No reimplemented logic: every command delegates to src/*.
  */
-import { loadConfig, getConfigDir } from './config.js';
+import { loadConfig, getConfigDir, getConfigPath } from './config.js';
 import { AdInterceptor } from './interceptor.js';
 import { Logger } from './logger.js';
 import { replay } from './replay.js';
@@ -202,6 +202,42 @@ function cmdConfigGet(flags: Record<string, string | boolean>, positional: strin
   return 0;
 }
 
+const CONFIG_EXPORT_USAGE = 'Usage: farbuff config-export --out FILE [--profile ID]';
+
+/**
+ * Exports the effective config without the signed-feed verification keys.
+ * Read-only with respect to the live config: it never imports or writes back.
+ */
+function cmdConfigExport(flags: Record<string, string | boolean>): number {
+  const destination = flags['out'];
+  if (typeof destination !== 'string' || !destination) {
+    console.error(CONFIG_EXPORT_USAGE);
+    return 2;
+  }
+  const flag = flags['profile'];
+  if (flag !== undefined && typeof flag !== 'string') {
+    console.error(CONFIG_EXPORT_USAGE);
+    return 2;
+  }
+  const profile = typeof flag === 'string' ? flag : process.env.FREEBUFF_PROFILE || 'default';
+  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(profile) || profile.includes('..')) {
+    console.error(CONFIG_EXPORT_USAGE);
+    return 2;
+  }
+  const live = getConfigPath(profile);
+  if (!fs.existsSync(live) || path.resolve(destination) === path.resolve(live)) {
+    console.error(CONFIG_EXPORT_USAGE);
+    return 2;
+  }
+  const copy = JSON.parse(JSON.stringify(loadConfig(profile))) as Record<string, unknown>;
+  const feed = copy.feed as Record<string, unknown>;
+  delete feed.publicKey;
+  delete feed.previousPublicKey;
+  fs.writeFileSync(destination, JSON.stringify(copy, null, 2));
+  console.log('exported config to', destination);
+  return 0;
+}
+
 function cmdAudit(positional: string[]): number {
   const resources = positional[0];
   /* v8 ignore next */ if (!resources) { console.error('Usage: farbuff audit <resources-dir>'); return 2; }
@@ -271,6 +307,8 @@ Commands:
   audit <resources>    Run endpoint audit
   gate [--corpus DIR]  Run replay gate against golden corpus
   corpus [--dir DIR]   Verify golden corpus integrity
+  config-export --out FILE [--profile ID]
+                       Export effective config (feed keys omitted)
   help                 This help
 `);
   return 0;
@@ -288,6 +326,7 @@ export function runCli(argv: string[]): number {
     case 'discover': return cmdDiscover(flags);
     case 'audit': return cmdAudit(positional);
     case 'config-get': return cmdConfigGet(flags, positional);
+    case 'config-export': return cmdConfigExport(flags);
     case 'submit-misses': return cmdSubmitMisses(flags);
     case 'submit-outcomes': return cmdSubmitOutcomes(flags);
     case 'feed-sync': return cmdFeedSync(flags);
@@ -298,8 +337,13 @@ export function runCli(argv: string[]): number {
     case 'export': return cmdExport(flags);
     case 'export-outcomes': return cmdExportOutcomes(flags);
     case 'autopilot': return cmdAutopilot(flags);
-    case 'help':
-    default: return cmdHelp();
+    case 'help': return cmdHelp();
+    default:
+      if (cmd) {
+        console.error(`Unknown command: ${cmd}`);
+        return 2;
+      }
+      return cmdHelp();
   }
 }
 

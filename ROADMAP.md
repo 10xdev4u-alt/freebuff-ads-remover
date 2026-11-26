@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-26 (Wave 70; Freebuff 0.0.205).
+Last updated: 2026-11-26 (Wave 71; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -185,7 +185,10 @@ the Deprecated section.
 - [x] Per-profile config (multiple Freebuff profiles) — `getConfigDir(profileId)`
       and `FREEBUFF_PROFILE` (`src/config.ts:119-128`); only profile rename/recreate
       events are still unwatched.
-- [ ] Import/export config.
+- [~] Import/export config — export-only `farbuff config-export --out FILE
+      [--profile ID]` is implemented, omitting the signed-feed keys; import is
+      deliberately rejected because it would let untrusted JSON replace the
+      feed trust root (`scripts/launch-freebuff.sh:357-366`). → Wave 71
 - [x] Preset profiles: strict / balanced / minimal — `configSchema.preset` and
       `PRESETS` applied in `loadConfig` (`src/config.ts:10,130-177`). In-app UI
       is still missing.
@@ -433,8 +436,10 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       enforces the built artifact in CI (`FAR_REQUIRE_DIST=1`).
 
 ### Wave 61 — Zero manual landing (policy-gated)
-- [~] `ci: auto-merge the bot PR train` — policy decided and gate implemented,
-      awaiting a real bot PR landing via `--auto --merge`. Only same-repo
+- [x] `ci: auto-merge the bot PR train` — policy decided, gate implemented and
+      proven live: PR #238 (`ci/feed-publish`) landed via `--auto --merge` at
+      2026-11-26T16:13:35Z (merge commit `5411bdc`) after a fresh approval and
+      five green checks. Only same-repo
       `github-actions[bot]` PRs on `ci/feed-publish`, `ci/live-receipt`,
       `ci/proof-publish` or `ci/upstream-heal-*` carrying the `bot-train` label.
       `scripts/auto-merge-gate.mjs` requires the reviewer's latest substantive
@@ -451,8 +456,9 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `ci.yml` and `heal-proof.yml` (in `checks_only` mode, so no receipt PR is
       mutated) on the PR branch when checks are the only blocker. The four bot
       PR steps pin `author` to `10xdev4u-alt` to match the gate's identity
-      rule. Existing bot PRs need the `bot-train` label backfilled and a
-      fresh approval; flip to `[x]` after a real auto-merge lands.
+      rule. Existing bot PRs can be opted in with the `bot-train` label and a
+      fresh approval; the gate revokes auto-merge on a hold label, stale
+      approval or bad commit.
 - [x] `ci: auto-cut a release from a verified live receipt` — policy decided:
       cut when the newest live-e2e receipt's `(payloadVersion, artifactHash)` differs
       from `release/last-cut.json`, MINOR on a payload change and PATCH otherwise; a
@@ -550,8 +556,7 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       records its 0.0.201 verification as historical and names the current
       0.0.205 payload without claiming an unaudited re-verification. Scheduled
       block-list updates and the troubleshooting guide are marked done with
-      code evidence; ARCHITECTURE CI-sync and the `[~]` auto-merge item remain
-      open (no full sync check, no real `--auto --merge` landing).
+      code evidence; ARCHITECTURE CI-sync remains open (no full sync check).
 
 ### Wave 68 — Dashboard top endpoints
 - [x] `feat(dashboard): rank top blocked endpoints` — the page client renders a
@@ -573,11 +578,12 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `tests/auto-merge-shape.test.ts` pins the live shape. A live runner probe
       now selects both `ci/feed-publish` and `ci/live-receipt` and reports only
       the genuine blockers (missing approval and required checks).
-- [ ] `[~]` auto-merge bot PR train — still awaiting a real `--auto --merge`
-      landing; the code no longer blocks it, but live approval and check state
-      are still required. Config import/export (trust-root risk), golden-file
-      audit output, ARCHITECTURE full sync and desktop notifications were
-      evaluated by the phase agents and deferred with code evidence.
+- [x] `ci: auto-merge the bot PR train` — live landing achieved: PR #238
+      (`ci/feed-publish`) was approved on its final head, received all five
+      required checks, and merged via `gh pr merge --auto --merge` at
+      2026-11-26T16:13:35Z (commit `5411bdc`). Config import/export (trust-root
+      risk), golden-file audit output, ARCHITECTURE full sync and desktop
+      notifications were evaluated by the phase agents and deferred.
 
 ### Wave 70 — Dashboard shortcut
 - [x] `feat(dashboard): toggle panel with Alt+Shift+D` — a document-level
@@ -586,9 +592,23 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       and is detached on unmount and re-install. The four-key page API, dist
       guard and `AD_ENDPOINTS` are unchanged. `tests/dashboard-client-shortcut.test.ts`
       pins toggle behavior, ignored events, cleanup and guard safety.
-- [ ] `[~]` auto-merge bot PR train — still awaiting the live landing; phase E
-      confirmed the remaining blockers are operational (approval + dispatched
-      checks), not rule or code defects.
+- [x] `ci: auto-merge live proof` — PR #238 landed via the bot's
+      `--auto --merge` after the branch was rewritten to a conventional
+      `10xdev4u-alt` commit, re-approved on the final SHA, and all five checks
+      went green. Wave 61's last policy-gated item is now closed.
+
+### Wave 71 — Safe config export
+- [x] `feat(cli): export effective config without feed keys` — `config-export
+      --out FILE [--profile ID]` validates the profile, refuses to clobber the
+      live config (direct or aliased path), serializes the resolved config with
+      `feed.publicKey`/`feed.previousPublicKey` removed, and never imports or
+      writes back. Unknown commands now return 2 while empty argv still shows
+      help. `tests/cli-config-export.test.ts`; no `AD_ENDPOINTS`, page-API or
+      launcher change.
+- [x] Section 7 import/export bullet is `[~]`: export shipped, import rejected
+      with code evidence (trust-root replacement). Health panel, theme sync,
+      anti-detection rewrites, alias tracking and golden-file audit output were
+      evaluated by five phase agents and deferred as non-atomic or redundant.
 
 ---
 
