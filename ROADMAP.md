@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 94; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 95; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -856,6 +856,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the live base config with defaults. `tests/config-defaults.test.ts` pins
       both the profile file and the untouched base config. No `AD_ENDPOINTS` or
       page-API change.
+
+### Wave 95 — Feed rollback replay
+- [x] `fix(feed): keep rollback guard monotonic` — `feed-sync.mjs` no longer
+      exempts `rollbackTo` manifests from the version high-water check, so a
+      replayed old signed rollback cannot reset `feed-state.json` and unlock
+      every previously rejected older manifest. Genuinely newer rollbacks still
+      apply. `tests/feed.test.ts` pins both the replay rejection and a valid
+      fresh rollback. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
