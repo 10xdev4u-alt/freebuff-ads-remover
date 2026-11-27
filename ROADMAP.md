@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 83; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 84; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -764,6 +764,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       import safety. The three workflows that invoke the CLI now pass
       `GITHUB_TOKEN`, since the repaired guard makes their previously-dead
       API calls live. No `AD_ENDPOINTS`, page-API or launcher change.
+
+### Wave 84 — Tracking exception vs host rules
+- [x] `fix(interceptor): host rules beat tracking` — with
+      `blockTracking: false` (the `minimal` preset), tracking-shaped paths on
+      configured or healed ad hosts are now blocked; the tracking exception
+      still applies to unconfigured and first-party hosts. Both `intercept()`
+      and `isAdUrl()` agree. `tests/tracking-host-rules.test.ts` pins configured,
+      healed, unconfigured and first-party hosts. No `AD_ENDPOINTS` or page-API
+      change.
 
 ---
 
