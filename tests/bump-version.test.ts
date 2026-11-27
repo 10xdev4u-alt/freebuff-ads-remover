@@ -12,6 +12,10 @@ function makeFixture() {
     fs.writeFileSync(p, content);
   };
   write('package.json', JSON.stringify({ name: 'x', version: '1.27.0' }, null, 2) + '\n');
+  write('package-lock.json', JSON.stringify({
+    name: 'x', version: '1.27.0',
+    packages: { '': { name: 'x', version: '1.26.0' } },
+  }, null, 2) + '\n');
   write(
     'README.md',
     '# Title\n\n[![Version: 1.27.0](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)\n\n| [Changelog](CHANGELOG.md) | Release history (current: `1.27.0`) |\n\nbody\n',
@@ -51,9 +55,14 @@ describe('applyVersionBump', () => {
   it('updates every version surface and writes the cut marker', () => {
     const root = fixture();
     const result = applyVersionBump(root, base);
-    expect(result.files.sort()).toEqual(['CHANGELOG.md', 'README.md', 'index.html', 'package.json', 'release/last-cut.json']);
+    expect(result.files.sort()).toEqual(['CHANGELOG.md', 'README.md', 'index.html', 'package-lock.json', 'package.json', 'release/last-cut.json']);
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { version: string };
     expect(pkg.version).toBe('1.28.0');
+    const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8')) as {
+      version: string; packages: Record<string, { version: string }>;
+    };
+    expect(lock.version).toBe('1.28.0');
+    expect(lock.packages['']?.version).toBe('1.28.0');
     expect(fs.readFileSync(path.join(root, 'README.md'), 'utf8')).toContain('version-1.28.0-blue');
     const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
     expect(readme).toContain('[![Version: 1.28.0](https://img.shields.io/badge/version-1.28.0-blue)]');

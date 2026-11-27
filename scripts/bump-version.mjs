@@ -96,6 +96,24 @@ export function applyVersionBump(root, options) {
   const pkgOut = { ...pkg, version };
   const packageText = `${JSON.stringify(pkgOut, null, 2)}\n`;
 
+  // The lockfile repeats the package version twice. Keep it coupled so a cut
+  // never ships a lockfile claiming the previous release.
+  const lockPath = path.join(root, 'package-lock.json');
+  let lockText = null;
+  if (fs.existsSync(lockPath)) {
+    let lock;
+    try {
+      lock = JSON.parse(readText(root, 'package-lock.json'));
+    } catch (error) {
+      throw new Error(`package-lock.json is not valid JSON: ${error.message}`);
+    }
+    assert(parseSemver(lock?.version), 'package-lock.json version is not a semver triple');
+    assert(parseSemver(lock?.packages?.['']?.version), 'package-lock.json packages[""] version is not a semver triple');
+    lock.version = version;
+    lock.packages[''].version = version;
+    lockText = `${JSON.stringify(lock, null, 2)}\n`;
+  }
+
   const readmeText = readText(root, 'README.md');
   const readmeOut = swap(
     swap(
@@ -178,13 +196,16 @@ export function applyVersionBump(root, options) {
   const markerDir = path.join(root, 'release');
   fs.mkdirSync(markerDir, { recursive: true });
   atomicWrite(path.join(root, 'package.json'), packageText);
+  if (lockText !== null) atomicWrite(lockPath, lockText);
   atomicWrite(path.join(root, 'README.md'), readmeFinal);
   atomicWrite(path.join(root, 'CHANGELOG.md'), changelogOut);
   atomicWrite(path.join(root, 'index.html'), htmlOut);
   atomicWrite(path.join(markerDir, 'last-cut.json'), `${JSON.stringify(marker, null, 2)}\n`);
 
+  const written = ['CHANGELOG.md', 'README.md', 'index.html', 'package.json', 'release/last-cut.json'];
+  if (lockText !== null) written.push('package-lock.json');
   return {
-    files: ['CHANGELOG.md', 'README.md', 'index.html', 'package.json', 'release/last-cut.json'],
+    files: written,
   };
 }
 
