@@ -426,6 +426,25 @@ import type { AdStage, BlockEvent, FarBuffShieldApi, ShieldInstallOptions, Stats
   .panel,
   .live-dot { animation: none; }
 }
+
+/* OS light scheme: override token-driven chrome only. Canvas/inline colors
+   stay dark by design — see docs/SHIELD.md. No script or page-API change. */
+@media (prefers-color-scheme: light) {
+  :host {
+    --far-accent: #0a7f4b;
+    --far-accent-ink: #eafff3;
+    --far-surface: #ffffff;
+    --far-surface-2: #f2f4f7;
+    --far-sunken: #e9edf2;
+    --far-line: rgba(0, 0, 0, 0.10);
+    --far-line-2: rgba(0, 0, 0, 0.16);
+    --far-txt: #4b5563;
+    --far-txt-2: #333b47;
+    --far-txt-3: #161a22;
+    --far-txt-0: #7b8494;
+    --far-shadow: 0 3px 0 rgba(16, 19, 24, 0.10);
+  }
+}
 `;
 
   interface Bound {
