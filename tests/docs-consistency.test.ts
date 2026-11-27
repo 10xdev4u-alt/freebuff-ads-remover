@@ -21,7 +21,9 @@ function makeFixture() {
     '- `promoteAfter` (number, default 5): number of launches\n' +
       '- `maxPromotedRules` (number, default 10): hard cap\n',
   );
-  write('ROADMAP.md', '## Deprecated (verified against 0.0.201 bundle; current payload 0.0.205)\n');
+  write('ROADMAP.md', '## Deprecated (verified against 0.0.201 bundle; current payload 0.0.205)\n' +
+    'lines/functions/branches/statements, and the suite holds 97.5/94.0/91.3/95.7.\n');
+  write('index.html', '<span>coverage 97.5% lines</span>\ncoverage:{lines:97.5,branches:91.3},\n');
   write('.github/pull_request_template.md', '- [ ] Audit deltas clean (`npm run audit:deltas`)\n');
   write(
     'docs/ARCHITECTURE.md',
