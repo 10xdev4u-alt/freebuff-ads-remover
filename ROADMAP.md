@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 80; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 81; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -735,6 +735,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       which never self-executed. `tests/cli-config-get.test.ts` pins the
       launcher call shapes, legacy output and the entry point. No
       `AD_ENDPOINTS` or page-API change.
+
+### Wave 81 — CLI entry point
+- [x] `fix(cli): let the CLI entry point finish async work` — `bin/farbuff.mjs`
+      now sets `process.exitCode` instead of calling `process.exit()` outright,
+      so relay submissions can POST and trim their logs before Node tears down.
+      It also resolves its path with `fileURLToPath`, so installs under a path
+      containing spaces load `dist/cli.js` correctly. `tests/cli-entrypoint.test.ts`
+      pins delivery, spaced paths and command exit codes. No `AD_ENDPOINTS`,
+      page-API or launcher change.
 
 ---
 
