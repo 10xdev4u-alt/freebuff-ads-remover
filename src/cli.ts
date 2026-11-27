@@ -9,7 +9,7 @@ import { Logger } from './logger.js';
 import { replay } from './replay.js';
 import { discover } from './discovery.js';
 import { runGate } from './gate.js';
-import { verifyCorpus } from './corpus.js';
+import { loadCorpus, verifyCorpus } from './corpus.js';
 import { BlockLog } from './block-log.js';
 import { submitMisses } from './miss-report.js';
 import { submitOutcomes } from './outcome-report.js';
@@ -283,9 +283,11 @@ function cmdSynthesize(flags: Record<string, string | boolean>): number {
   return delta ? 0 : 1;
 }
 
-function cmdTrust(): number {
-  const reg = new RuleRegistry();
-  const report = buildTrustReport(reg, 0);
+function cmdTrust(flags: Record<string, string | boolean>): number {
+  const dir = (flags['dir'] as string) || path.join(process.cwd(), 'corpus');
+  let corpusEntries = 0;
+  try { corpusEntries = loadCorpus(dir).entries.length; } catch { /* off-repo: report zero */ }
+  const report = buildTrustReport(new RuleRegistry(), corpusEntries);
   console.log(JSON.stringify(report, null, 2));
   return 0;
 }
@@ -347,7 +349,7 @@ export function runCli(argv: string[]): number {
     case 'gate': return cmdGate(flags);
     case 'corpus': return cmdCorpusVerify(flags);
     case 'synthesize': return cmdSynthesize(flags);
-    case 'trust': return cmdTrust();
+    case 'trust': return cmdTrust(flags);
     case 'export': return cmdExport(flags);
     case 'export-outcomes': return cmdExportOutcomes(flags);
     case 'autopilot': return cmdAutopilot(flags);

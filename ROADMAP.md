@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 88; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 89; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -807,6 +807,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       of accepting an older success. `tests/auto-merge-gate.test.ts` pins the
       queued case in the real API response shape. No `AD_ENDPOINTS` or page-API
       change.
+
+### Wave 89 — Trust report corpus count
+- [x] `fix(cli): trust report real corpus count` — `farbuff trust` no longer
+      hardcodes `corpusEntries: 0`; it loads the verified corpus (default repo
+      path or `--dir`) and hashes the real entry count, so the report hash is
+      no longer bound to a nonexistent corpus. `tests/cli-trust.test.ts` pins
+      the default and explicit-dir counts plus hash consistency. No
+      `AD_ENDPOINTS` or page-API change.
 
 ---
 
