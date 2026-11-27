@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 84; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 85; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -773,6 +773,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       and `isAdUrl()` agree. `tests/tracking-host-rules.test.ts` pins configured,
       healed, unconfigured and first-party hosts. No `AD_ENDPOINTS` or page-API
       change.
+
+### Wave 85 — Export reads the writer config dir
+- [x] `fix(cli): export the active profile log` — `cmdExport` now builds
+      its `block-log.jsonl` path with `getConfigDir()` (as the writer does),
+      so profiles and the homedir fallback export the real entries instead of
+      an empty list or a decoy. `tests/cli-export.test.ts` pins profile, HOME
+      fallback and explicit-dir cases in JSON and CSV. No `AD_ENDPOINTS` or
+      page-API change.
 
 ---
 

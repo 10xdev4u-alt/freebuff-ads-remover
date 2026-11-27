@@ -303,7 +303,7 @@ function cmdAutopilot(flags: Record<string, string | boolean>): number {
 
 function cmdExport(flags: Record<string, string | boolean>): number {
   const format = (flags['format'] as string) || 'json';
-  const log = new BlockLog((process.env.FREEBUFF_CONFIG_DIR || '') + '/block-log.jsonl');
+  const log = new BlockLog(path.join(getConfigDir(), 'block-log.jsonl'));
   if (format === 'csv') console.log(log.toCsv());
   else console.log(log.toJson());
   return 0;
