@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 87; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 88; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -798,6 +798,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       restore the guard instead of leaving it silently unwrapped until restart.
       `tests/ghost-extra.test.ts` pins both toggles. No `AD_ENDPOINTS` or
       page-API change.
+
+### Wave 88 — Queued check ordering
+- [x] `fix(auto-merge): block queued checks outright` — GitHub check-run
+      objects have no top-level `created_at` and queued runs have no start or
+      completion time, so timestamp ordering could not see them. The gate now
+      fails closed whenever a required check has an untimed queued run, instead
+      of accepting an older success. `tests/auto-merge-gate.test.ts` pins the
+      queued case in the real API response shape. No `AD_ENDPOINTS` or page-API
+      change.
 
 ---
 
