@@ -14,7 +14,7 @@ function makeFixture() {
   write('package.json', JSON.stringify({ name: 'x', version: '1.27.0' }, null, 2) + '\n');
   write(
     'README.md',
-    '# Title\n\n[![Version: 1.27.0](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)\n\nbody\n',
+    '# Title\n\n[![Version: 1.27.0](https://img.shields.io/badge/version-1.27.0-blue)](CHANGELOG.md)\n\n| [Changelog](CHANGELOG.md) | Release history (current: `1.27.0`) |\n\nbody\n',
   );
   write(
     'CHANGELOG.md',
@@ -55,6 +55,9 @@ describe('applyVersionBump', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { version: string };
     expect(pkg.version).toBe('1.28.0');
     expect(fs.readFileSync(path.join(root, 'README.md'), 'utf8')).toContain('version-1.28.0-blue');
+    const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+    expect(readme).toContain('[![Version: 1.28.0](https://img.shields.io/badge/version-1.28.0-blue)]');
+    expect(readme).toContain('Release history (current: `1.28.0`)');
     const changelog = fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8');
     expect(changelog).toContain('## [1.28.0] - 2026-11-24');
     expect(changelog.indexOf('## [1.28.0]')).toBeLessThan(changelog.indexOf('## [1.27.0]'));
