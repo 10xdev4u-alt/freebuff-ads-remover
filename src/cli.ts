@@ -87,8 +87,8 @@ function cmdDoctor(): number {
   console.log('Config exists:', fs.existsSync(path.join(dir, 'config.json')));
   console.log('Node:', process.version);
   console.log('Platform:', process.platform, process.arch);
-  // check dist
-  const distIndex = path.join(process.cwd(), 'dist', 'bootstrap.js');
+  // cli.js is compiled into dist/, so resolve from the package root, not cwd.
+  const distIndex = path.join(__dirname, '..', 'dist', 'bootstrap.js');
   console.log('dist/bootstrap.js exists:', fs.existsSync(distIndex));
   return 0;
 }

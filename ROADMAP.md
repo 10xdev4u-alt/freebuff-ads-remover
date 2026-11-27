@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 89; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 90; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -815,6 +815,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       no longer bound to a nonexistent corpus. `tests/cli-trust.test.ts` pins
       the default and explicit-dir counts plus hash consistency. No
       `AD_ENDPOINTS` or page-API change.
+
+### Wave 90 — Doctor install check
+- [x] `fix(cli): doctor checks package-root dist` — `farbuff doctor` now
+      resolves `dist/bootstrap.js` from the package root (like `cmdUpdate`)
+      instead of the caller's cwd, so a healthy global install no longer
+      reports a false negative when invoked outside the repo.
+      `tests/cli-doctor.test.ts` pins cwd-invariant output. No `AD_ENDPOINTS` or
+      page-API change.
 
 ---
 
