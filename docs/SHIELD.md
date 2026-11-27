@@ -174,6 +174,11 @@ glance. The accent is defined **twice** — as `--far-accent` and as the literal
 gradient. Inline styles and canvas cannot read the shadow custom property, so
 change all of them together.
 
+The panel follows the OS `prefers-color-scheme: light` setting for token-driven
+chrome only (surfaces, lines, text, shadow). Canvas and inline literal colors
+listed above stay dark in light mode; that partial theming is intentional so
+this slice stays CSS-only with no page-API change.
+
 ## Build, test, verify
 
 ```bash

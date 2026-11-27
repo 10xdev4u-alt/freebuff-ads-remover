@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 76; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 77; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -207,7 +207,12 @@ the Deprecated section.
       the existing `setOpen()`, ignoring repeats and editable targets and
       detaching on unmount (`src/dashboard-client.ts:wire/unmount`). No pause,
       no new page API key. `tests/dashboard-client-shortcut.test.ts`. → Wave 70
-- [ ] Dark/light theme sync with Freebuff.
+- [x] OS `prefers-color-scheme: light` follow for token-driven panel chrome
+      (`src/dashboard-client.ts` CSS media block). Canvas/inline literal colors
+      stay dark by design (`docs/SHIELD.md:170-179`); no page-API change.
+      `tests/dashboard-client-light-theme.test.ts`. → Wave 77
+- [ ] Dark/light theme sync with Freebuff (in-app theme signal, not the OS
+      preference) — still open; no theme data reaches the page.
 
 ## 7. Configuration & UX
 
@@ -693,6 +698,16 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       still omitting the feed verification keys. `tests/config-outbound.test.ts`
       pins stored values, defaults, export content and invalid-value fallback.
       No `AD_ENDPOINTS`, page-API or launcher change.
+
+### Wave 77 — OS light scheme
+- [x] `feat(dashboard): follow OS prefers-color-scheme` — a CSS-only
+      `@media (prefers-color-scheme: light)` block overrides the token-driven
+      panel chrome (surfaces, lines, text, shadow); canvas and inline literal
+      colors remain dark by design and are documented in `docs/SHIELD.md`.
+      No `matchMedia`, markup, page-API or `AD_ENDPOINTS` change.
+      `tests/dashboard-client-light-theme.test.ts` asserts the media block,
+      token values, computed panel tokens, no `matchMedia` dependency, the
+      four-key API and guard/smoke validity.
 
 ---
 
