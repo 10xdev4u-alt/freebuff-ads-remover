@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-26 (Wave 71; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 72; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -79,15 +79,35 @@ the Deprecated section.
 - [x] Block `https://freebuff.com/api/desktop/updates/` behind opt-in `blockUpdates` toggle
       (`src/config.ts:12`, `src/interceptor.ts:150-165`); off by default and never
       enabled by presets. → Wave 63
-- [ ] Intercept SSE (EventSource) ad streams, not just fetch/XHR.
-- [ ] Intercept WebSocket ad channels.
-- [ ] Intercept `navigator.sendBeacon` ad calls (via preload patch).
-- [ ] Block ad requests issued from service workers (session-level, already partial).
-- [ ] Block ad requests from `webview` tags.
-- [ ] Cover `persist:freebuff-hosted-v1-*` partitions fully (currently discovered lazily).
-- [ ] Cover new partitions naming schemes without code changes (regex match).
-- [ ] Handle ad requests with query-string variants (`?placement=...`).
-- [ ] Handle ad requests with trailing slashes / case differences.
+- [x] Intercept SSE (EventSource) ad streams — the wildcard
+      `onBeforeRequest({urls:['*://*/*']})` cancels any HTTP GET in a hooked
+      session, including EventSource-style streams; renderer monkey-patching is
+      deliberately not used (`src/electron-hook.ts:270,282`). → Wave 72 truth pass
+- [ ] Intercept WebSocket ad channels — no WebSockets are intercepted; the
+      0.0.201 audit found no ad usage (`ROADMAP.md` Deprecated). Revisit only with
+      real evidence.
+- [x] Intercept `navigator.sendBeacon` ad calls — beacon POSTs are ordinary
+      requests through the same wildcard listener, with the real method forwarded
+      (`src/electron-hook.ts:244`). No preload patch needed. → Wave 72 truth pass
+- [x] Block ad requests issued from service workers (session-level) — any
+      `session-created` session gets the same wildcard listener
+      (`src/electron-hook.ts:92-96`); real-app routing remains an E2E claim.
+      → Wave 72 truth pass
+- [x] Block ad requests from `webview` tags — guest sessions arrive via
+      `web-contents-created` and are hooked/re-armed (`src/electron-hook.ts:95-100,228-231`).
+      → Wave 72 truth pass
+- [x] Cover `persist:freebuff-hosted-v1-*` partitions — regex discovery at
+      startup (`src/partition-scanner.ts:4-12`, `src/electron-hook.ts:103-116`).
+      → Wave 72 truth pass
+- [x] Cover new partition naming schemes without code changes —
+      `network.partitionPattern` is compiled at activation
+      (`src/electron-hook.ts:108`). → Wave 72 truth pass
+- [x] Handle ad requests with query-string variants (`?placement=...`) —
+      query sorting and prefix matching (`src/url-match.ts:10-12,33`).
+      → Wave 72 truth pass
+- [x] Handle ad requests with trailing slashes / case differences —
+      lowercasing and slash collapse (`src/url-match.ts:5,9,25-28,32-33`).
+      → Wave 72 truth pass
 - [x] Normalize duplicate slashes in paths — `src/url-match.ts:5,9` for absolute
       URLs and `:20-22` for the path-only branch used in production. Regression
       tests in `tests/url-match-canonicalization.test.ts`. → Wave 59, verified Wave 62
@@ -97,7 +117,9 @@ the Deprecated section.
       (`src/redirect-chain.ts:8-31`) preserves an ad flag across re-record, and
       `tests/redirect-chain-canonicalization.test.ts` covers re-arm duplicates
       and duplicate-slash ad hops. → Wave 59, hardened Wave 62
-- [ ] Block prefetch/preload of ad assets.
+- [x] Block prefetch/preload of ad assets — all resource types hit the same
+      wildcard `onBeforeRequest` (`src/electron-hook.ts:270,282`). No
+      `resourceType` filter is needed. → Wave 72 truth pass
 - [x] Guard malformed URLs in matching: `decodeURIComponent` failures fall back to the
       raw path (`src/url-match.ts:22`). → Wave 59
 - [x] Never skip `callback()` when `intercept()` throws: the shared handler logs and
@@ -609,6 +631,19 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       with code evidence (trust-root replacement). Health panel, theme sync,
       anti-detection rewrites, alias tracking and golden-file audit output were
       evaluated by five phase agents and deferred as non-atomic or redundant.
+
+### Wave 72 — Network truth pass
+- [x] `test(hook): prove transport-agnostic session blocking` — a new test file
+      exercises the wildcard `onBeforeRequest` listener with EventSource-style
+      GETs, beacon-style POSTs with the real method, `session-created` worker
+      sessions, webview guest sessions with `did-finish-load` re-arm, and
+      query/case/duplicate-slash variants on both the default session and a
+      discovered partition. A config-aware fix makes `network.partitionPattern`
+      come from the injected config instead of a fresh `loadConfig()`
+      (`src/electron-hook.ts:108`). `tests/section2-network-truth.test.ts`.
+- [x] Section 2 transport bullets are closed with code evidence; renderer
+      monkey-patching and WebSocket interception remain intentionally out of
+      scope (Deprecated section). Request-body blocking stays open.
 
 ---
 
