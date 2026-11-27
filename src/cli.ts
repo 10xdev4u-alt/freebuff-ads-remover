@@ -186,17 +186,31 @@ function cmdSubmitMisses(flags: Record<string, string | boolean>): number {
   return 0;
 }
 
+function dotted(source: unknown, key: string): unknown {
+  return key.split('.').reduce<unknown>((acc, part) => {
+    if (!acc || typeof acc !== 'object') return undefined;
+    return (acc as Record<string, unknown>)[part];
+  }, source);
+}
+
 function cmdConfigGet(flags: Record<string, string | boolean>, positional: string[]): number {
   const key = positional[0] ?? '';
-  const dir = (flags['dir'] as string) || getConfigDir();
-  const cfg = loadConfig();
-  // load from explicit dir if provided
-  let value: unknown = (cfg as Record<string, unknown>)[key];
-  if (flags['dir']) {
+  const explicit = flags['dir'];
+  let value: unknown;
+  if (typeof explicit === 'string' && explicit) {
+    // The launcher passes the config *file* path here; older callers pass a
+    // directory. An explicit source is authoritative: never fall back to the
+    // ambient config when it is missing, or the launcher silently reads the
+    // wrong profile.
     try {
-      const raw = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8')) as Record<string, unknown>;
-      value = raw[key];
-    } catch { /* fall back */ }
+      const isFile = fs.existsSync(explicit) && fs.statSync(explicit).isFile();
+      const file = isFile ? explicit : path.join(explicit, 'config.json');
+      value = dotted(JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>, key);
+    } catch {
+      value = undefined;
+    }
+  } else {
+    value = dotted(loadConfig(), key);
   }
   console.log(typeof value === 'string' ? value : JSON.stringify(value));
   return 0;
