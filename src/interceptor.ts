@@ -262,6 +262,8 @@ export class AdInterceptor {
   }
 
   isAdUrl(url: string): boolean {
+    if (!this.config.enabled) return false;
+    if (!this.config.blockTracking && this.isTracking(url)) return false;
     return this.blockUpdates(url) || this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
   }
 

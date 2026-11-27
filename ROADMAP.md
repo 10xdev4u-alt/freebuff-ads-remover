@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 73; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 74; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -666,6 +666,18 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `enabled`/`blockTracking`, so redirect chains can cancel requests that
       `intercept()` deliberately allows. OS-theme follow, request-body blocking
       and notifications remain deferred with code evidence.
+
+### Wave 74 — Config gates across surfaces
+- [x] `fix(interceptor): make isAdUrl honor config gates` — the predicate used
+      by redirect-chain tracking and 3xx `Location` cancellation now mirrors
+      `intercept()`: master `enabled` off → false, `blockTracking` off plus a
+      tracking route → false. Hot-reload via `updateConfig()` takes effect
+      immediately. `tests/is-ad-url-gate.test.ts` pins the gate matrix and the
+      hook-level redirect cases; no `AD_ENDPOINTS` change.
+- [ ] Adjacent gap found by research (not folded in): shadow `dryRun` returns
+      `{blocked:false}` from `intercept()` but `isAdUrl()` still reports true,
+      so dry-run chains could still cancel. Separate behavior change with its
+      own test.
 
 ---
 
