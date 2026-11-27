@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 75; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 76; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -674,10 +674,17 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       tracking route → false. Hot-reload via `updateConfig()` takes effect
       immediately. `tests/is-ad-url-gate.test.ts` pins the gate matrix and the
       hook-level redirect cases; no `AD_ENDPOINTS` change.
-- [ ] Adjacent gap found by research (not folded in): shadow `dryRun` returns
-      `{blocked:false}` from `intercept()` but `isAdUrl()` still reports true,
-      so dry-run chains could still cancel. Separate behavior change with its
-      own test.
+- [x] Shadow `dryRun` gap (found in Wave 74, closed in Wave 76): `intercept()`
+      returns `{blocked:false}` in dry-run, so `isAdUrl()` must agree to keep
+      redirect chains and 3xx redirects from cancelling. `tests/is-ad-url-dry-run.test.ts`.
+
+### Wave 76 — Dry-run gate parity
+- [x] `fix(interceptor): make isAdUrl respect shadow dryRun` — the shared
+      blocking predicate now mirrors `intercept()`'s dry-run short-circuit,
+      so passive capture never cancels traffic it deliberately allows.
+      `tests/is-ad-url-dry-run.test.ts` pins the gate matrix, live config
+      toggle, redirect-chain and 3xx `Location` behavior, plus regression
+      guards for normal capture. No `AD_ENDPOINTS`, page-API or launcher change.
 
 ### Wave 75 — Outbound config fidelity
 - [x] `fix(config): keep outbound through loadConfig and export` — added the
