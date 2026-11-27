@@ -126,7 +126,8 @@ export function evaluateBotPr(input) {
   const sha = pr?.head?.sha;
   // One ordering key for both selection and veto: a run's start time. A newer
   // pending or failed run must outrank an older success even when its
-  // completed_at is absent (incomplete runs have no completion time yet).
+  // completed_at is absent. Queued runs have no timestamps at all and are
+  // handled explicitly below.
   const checkOrder = (c) => {
     const t = Date.parse(c?.started_at ?? c?.completed_at ?? '');
     return Number.isFinite(t) ? t : -Infinity;
@@ -135,6 +136,13 @@ export function evaluateBotPr(input) {
     const hits = checks.filter((c) => c?.name === name && c?.head_sha === sha);
     if (hits.length === 0) {
       reasons.push(`check ${name} missing for head ${sha}`);
+      continue;
+    }
+    // Check-run objects have no top-level created_at and queued runs have
+    // neither started_at nor completed_at, so a queued re-run cannot be
+    // timestamp-ordered against an older success. Fail closed instead.
+    if (hits.some((c) => c?.status === 'queued' && !Number.isFinite(checkOrder(c)))) {
+      reasons.push(`check ${name} is queued`);
       continue;
     }
     const latest = hits.slice().sort((a, b) => checkOrder(b) - checkOrder(a))[0];
