@@ -357,18 +357,18 @@ main() {
     # Feed sync (opt-in): fetch + verify + materialize a signed heal manifest.
     # Fail-open: any failure leaves the existing rules in place.
     USER_CONFIG="${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}/config.json"
-    FEED_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.enabled 2>/dev/null || echo false)"
-    FEED_URL="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.url 2>/dev/null || echo "")"
-    FEED_KEY="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.publicKey 2>/dev/null || echo "")"
-    FEED_PREV_KEY="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" feed.previousPublicKey 2>/dev/null || echo "")"
+    FEED_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.enabled 2>/dev/null || echo false)"
+    FEED_URL="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.url 2>/dev/null || echo "")"
+    FEED_KEY="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.publicKey 2>/dev/null || echo "")"
+    FEED_PREV_KEY="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.previousPublicKey 2>/dev/null || echo "")"
     if [[ "$FEED_ENABLED" == "true" ]]; then
       FEED_PUBLIC_KEY="$FEED_KEY" FEED_PREVIOUS_PUBLIC_KEY="$FEED_PREV_KEY" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "${FREEBUFF_FEED_URL:-$FEED_URL}" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
     fi
 
     # Inbound relay (opt-in): submit redacted miss envelopes. Fail-open.
-    INBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" inbound.enabled 2>/dev/null || echo false)"
+    INBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" inbound.enabled 2>/dev/null || echo false)"
     if [[ "$INBOUND_ENABLED" == "true" && -n "${FREEBUFF_INBOUND_URL:-}" ]]; then
-      "$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" submit-misses --url "$FREEBUFF_INBOUND_URL" >/dev/null 2>&1 || echo "Inbound submit failed; continuing." >&2
+      "$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" submit-misses --url "$FREEBUFF_INBOUND_URL" >/dev/null 2>&1 || echo "Inbound submit failed; continuing." >&2
     fi
 
     # patch_resources reports its own failure; keep the documented fail-open
@@ -376,9 +376,9 @@ main() {
     patch_resources "$squashfs_root/resources" || true
 
     # Outbound relay (opt-in): submit wild outcome envelopes. Fail-open.
-    OUTBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" config-get --dir "$USER_CONFIG" outbound.enabled 2>/dev/null || echo false)"
+    OUTBOUND_ENABLED="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" outbound.enabled 2>/dev/null || echo false)"
     if [[ "$OUTBOUND_ENABLED" == "true" && -n "${FREEBUFF_OUTBOUND_URL:-}" ]]; then
-      "$NODE_BIN" "$EXTENSION_DIR/dist/cli.js" submit-outcomes --url "$FREEBUFF_OUTBOUND_URL" >/dev/null 2>&1 || echo "Outbound submit failed; continuing." >&2
+      "$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" submit-outcomes --url "$FREEBUFF_OUTBOUND_URL" >/dev/null 2>&1 || echo "Outbound submit failed; continuing." >&2
     fi
 
     # Integrity check: confirm the loader marker survived into the repacked asar.

@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 79; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 80; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -725,6 +725,16 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the audit never produced. `tests/audit-golden.test.ts` pins the full
       `--json` output for two fixtures plus the heal-consumed route/DOM fields.
       No `AD_ENDPOINTS`, page-API or launcher change.
+
+### Wave 80 — Launcher config reads
+- [x] `fix(cli): make launcher config reads work` — `config-get` now resolves
+      dotted keys and accepts `--dir` as either the config file path the
+      launcher passes or a directory; an explicit source is authoritative and
+      never falls back to the ambient profile. The launcher now invokes
+      `bin/farbuff.mjs`, the real CLI entry point, instead of `dist/cli.js`,
+      which never self-executed. `tests/cli-config-get.test.ts` pins the
+      launcher call shapes, legacy output and the entry point. No
+      `AD_ENDPOINTS` or page-API change.
 
 ---
 
