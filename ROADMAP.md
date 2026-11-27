@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 85; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 86; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -781,6 +781,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       an empty list or a decoy. `tests/cli-export.test.ts` pins profile, HOME
       fallback and explicit-dir cases in JSON and CSV. No `AD_ENDPOINTS` or
       page-API change.
+
+### Wave 86 — Release version claims
+- [x] `fix(release): refresh every verified-against claim` —
+      `scripts/bump-version.mjs` now updates the receipt panel's
+      `✓ verified against Freebuff` line (both the `data-l` attribute and text)
+      as well as the eyebrow and embedded metadata, so a payload bump can no
+      longer ship a page claiming two versions. `tests/bump-version.test.ts`
+      pins the changed-payload and unchanged-payload cases. No `AD_ENDPOINTS`,
+      page-API or launcher change.
 
 ---
 

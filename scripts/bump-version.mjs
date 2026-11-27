@@ -125,6 +125,14 @@ export function applyVersionBump(root, options) {
     /v\d+\.\d+\.\d+( · verified against Freebuff )\d+\.\d+\.\d+/,
     `v${version}$1${payloadVersion}`,
   );
+  // The receipt panel repeats the claim twice (data-l attribute and text);
+  // keep it in step with the eyebrow so the page never ships two payloads.
+  htmlOut = swap(
+    htmlOut,
+    'index.html',
+    /(✓ verified against Freebuff )\d+\.\d+\.\d+/g,
+    `$1${payloadVersion}`,
+  );
   // The page's embedded metadata carries the payload version too; refresh it
   // when present rather than letting the page disagree with its own pill.
   if (/freebuffVersion:'\d+\.\d+\.\d+'/.test(htmlOut)) {

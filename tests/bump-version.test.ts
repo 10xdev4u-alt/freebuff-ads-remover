@@ -26,6 +26,7 @@ function makeFixture() {
       '<nav><span class="ver-pill">v1.27.0</span></nav>',
       '<span class="eyebrow"><span class="dot"></span> v1.27.0 · verified against Freebuff 0.0.205</span>',
       `const receiptJson = { extensionVersion:'1.27.0', hash:'sha256:${'a'.repeat(64)}' };`,
+      '<span class="line" data-l="✓ verified against Freebuff 0.0.205">✓ verified against Freebuff 0.0.205</span>',
       '<p>untouched</p>',
     ].join('\n'),
   );
@@ -90,6 +91,31 @@ describe('applyVersionBump', () => {
     expect(() => applyVersionBump(root, base)).toThrow(/README/);
     expect(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).toBe(before);
     expect(fs.existsSync(path.join(root, 'release/last-cut.json'))).toBe(false);
+  });
+
+  it('refreshes every verified-against string when the payload version changes', () => {
+    const root = fixture();
+    applyVersionBump(root, { ...base, payloadVersion: '0.0.206' });
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    expect(html).toContain('v1.28.0 · verified against Freebuff 0.0.206');
+    expect(html).toContain(
+      '<span class="line" data-l="✓ verified against Freebuff 0.0.206">✓ verified against Freebuff 0.0.206</span>',
+    );
+    expect(html).not.toMatch(/verified against Freebuff 0\.0\.205/);
+    expect(html.match(/verified against Freebuff 0\.0\.206/g)).toHaveLength(3);
+    expect(html).toContain('<p>untouched</p>');
+  });
+
+  it('leaves verified-against strings alone when the payload version is unchanged', () => {
+    const root = fixture();
+    applyVersionBump(root, base);
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    expect(html).toContain('v1.28.0 · verified against Freebuff 0.0.205');
+    expect(html).toContain(
+      '<span class="line" data-l="✓ verified against Freebuff 0.0.205">✓ verified against Freebuff 0.0.205</span>',
+    );
+    expect(html).not.toMatch(/verified against Freebuff 0\.0\.206/);
+    expect(html.match(/verified against Freebuff 0\.0\.205/g)).toHaveLength(3);
   });
 
   it('rejects a non-semver target version', () => {
