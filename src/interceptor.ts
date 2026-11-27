@@ -117,9 +117,9 @@ export class AdInterceptor {
       return { blocked: false };
     }
 
-    // Tracking-only calls may be allowed through, but the ad content, policy
-    // and creative routes below stay blocked either way.
-    if (!this.config.blockTracking && this.isTracking(url)) {
+    // Tracking-only calls may be allowed through, but host rules win: a
+    // configured ad host is blocked even when its path is tracking-shaped.
+    if (!this.config.blockTracking && !this.hostMatch(url) && this.isTracking(url)) {
       this.logger.debug(`Allowed tracking request: ${url}`);
       if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
         const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
@@ -266,7 +266,7 @@ export class AdInterceptor {
     // Dry-run shadow capture deliberately allows every request; the shared
     // predicate must agree, including redirect chains and 3xx redirects.
     if (this.shadow?.isDryRun()) return false;
-    if (!this.config.blockTracking && this.isTracking(url)) return false;
+    if (!this.config.blockTracking && !this.hostMatch(url) && this.isTracking(url)) return false;
     return this.blockUpdates(url) || this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
   }
 
