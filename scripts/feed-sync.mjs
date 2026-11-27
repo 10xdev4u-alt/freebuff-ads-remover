@@ -49,7 +49,7 @@ if (!verifyManifest(manifest, publicKey, previousPublicKey)) {
   process.exit(1);
 }
 const version = Number(manifest.version ?? 0);
-if (state.version && version <= state.version && !manifest.rollbackTo) {
+if (state.version && version <= state.version) {
   console.log(JSON.stringify({ status: 'up-to-date', version }));
   process.exit(0);
 }

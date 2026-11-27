@@ -69,6 +69,65 @@ describe('feed sync', () => {
     expect(rules.addEndpoints).toContain('/api/monetize');
   });
 
+  it('rejects a replayed signed rollback manifest below the version high-water mark', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-feed-replay-'));
+    const cfg = path.join(tmp, 'cfg');
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+    const privPem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const pubPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const run = (name: string, base: Parameters<typeof signManifest>[0]) => {
+      const manifestPath = path.join(tmp, `${name}.json`);
+      fs.writeFileSync(manifestPath, JSON.stringify({ ...base, sig: signManifest(base, privPem) }));
+      return spawnSync(
+        process.execPath,
+        [path.join(process.cwd(), 'scripts', 'feed-sync.mjs'), '--manifest', manifestPath, '--config-dir', cfg],
+        { env: { ...process.env, FEED_PUBLIC_KEY: pubPem }, encoding: 'utf8' },
+      );
+    };
+
+    const fresh = run('fresh', {
+      version: 5, rollbackTo: null,
+      entries: [{ healHash: 'current', rules: { addEndpoints: ['/api/current'] } }],
+    });
+    expect(fresh.stdout).toContain('applied');
+
+    const replay = run('replay', { version: 2, rollbackTo: '1', entries: [] });
+    expect(replay.status).toBe(0);
+    expect(replay.stdout).toContain('up-to-date');
+    expect(replay.stdout).not.toContain('rolled-back');
+
+    const rules = JSON.parse(fs.readFileSync(path.join(cfg, 'feed-rules.json'), 'utf8')) as { addEndpoints: string[] };
+    expect(rules.addEndpoints).toContain('/api/current');
+    const state = JSON.parse(fs.readFileSync(path.join(cfg, 'feed-state.json'), 'utf8')) as { version: number };
+    expect(state.version).toBe(5);
+  });
+
+  it('still applies a fresh signed rollback manifest', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-feed-rollback-'));
+    const cfg = path.join(tmp, 'cfg');
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519');
+    const privPem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+    const pubPem = publicKey.export({ type: 'spki', format: 'pem' });
+    const run = (name: string, base: Parameters<typeof signManifest>[0]) => {
+      const manifestPath = path.join(tmp, `${name}.json`);
+      fs.writeFileSync(manifestPath, JSON.stringify({ ...base, sig: signManifest(base, privPem) }));
+      return spawnSync(
+        process.execPath,
+        [path.join(process.cwd(), 'scripts', 'feed-sync.mjs'), '--manifest', manifestPath, '--config-dir', cfg],
+        { env: { ...process.env, FEED_PUBLIC_KEY: pubPem }, encoding: 'utf8' },
+      );
+    };
+
+    expect(run('fresh', {
+      version: 5, rollbackTo: null,
+      entries: [{ healHash: 'current', rules: { addEndpoints: ['/api/current'] } }],
+    }).stdout).toContain('applied');
+    const rollback = run('rollback', { version: 6, rollbackTo: '4', entries: [] });
+    expect(rollback.stdout).toContain('rolled-back');
+    const state = JSON.parse(fs.readFileSync(path.join(cfg, 'feed-state.json'), 'utf8')) as { version: number };
+    expect(state.version).toBe(6);
+  });
+
   it('keeps the previous rules when the manifest signature is invalid', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-feed-'));
     const manifestPath = path.join(tmp, 'm.json');
