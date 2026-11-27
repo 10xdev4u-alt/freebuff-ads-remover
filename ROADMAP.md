@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 90; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 91; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -822,6 +822,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       instead of the caller's cwd, so a healthy global install no longer
       reports a false negative when invoked outside the repo.
       `tests/cli-doctor.test.ts` pins cwd-invariant output. No `AD_ENDPOINTS` or
+      page-API change.
+
+### Wave 91 — Iframe observer dedupe
+- [x] `fix(dom): dedupe iframe observers per root` — the generated DOM remover
+      now tracks observed roots in a `WeakSet`, so repeated sweeps and iframe
+      load events no longer stack a new `MutationObserver` on the same document
+      (a mutation → observer → sweep feedback loop). `tests/dom-remover-observers.test.ts`
+      pins one observation per root across three sweeps. No `AD_ENDPOINTS` or
       page-API change.
 
 ---

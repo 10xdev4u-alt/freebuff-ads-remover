@@ -36,6 +36,7 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
   var rafPending = false;
   var rafId = null;
   var observers = [];
+  var observedRoots = new WeakSet();
   var origPush = history.pushState;
   var origReplace = history.replaceState;
   var origAttachShadow = Element.prototype.attachShadow;
@@ -92,11 +93,12 @@ export function buildDomRemoverScript(options: DomRemoverOptions): string {
   }
 
   function observeRoot(root) {
-    if (!root) return;
+    if (!root || observedRoots.has(root)) return;
     try {
       var obs = new MutationObserver(schedule);
       obs.observe(root, { childList: true, subtree: true });
       observers.push(obs);
+      observedRoots.add(root);
     } catch (e) {}
   }
 
