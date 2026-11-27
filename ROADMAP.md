@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 82; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 83; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -753,6 +753,17 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `tests/self-heal-path.test.ts` pins plain, spaced and encoded installs
       against a copied fixture tree. No `AD_ENDPOINTS`, page-API or launcher
       change.
+
+### Wave 83 — AppImage self-execution guard
+- [x] `fix(scripts): match CLI self-exec paths` —
+      `scripts/fetch-latest-appimage.mjs` now uses an exported `isMain` helper
+      built on `pathToFileURL(resolve(argv1))`, so the CLI actually runs when
+      installed under a path with spaces or a literal `%20` segment; library
+      imports still do not execute `main()`. `tests/fetch-latest-appimage-main-guard.test.ts`
+      pins plain, spaced, encoded, other-runner and missing-argv paths plus
+      import safety. The three workflows that invoke the CLI now pass
+      `GITHUB_TOKEN`, since the repaired guard makes their previously-dead
+      API calls live. No `AD_ENDPOINTS`, page-API or launcher change.
 
 ---
 
