@@ -42,7 +42,7 @@ function makeInstall(segment: string): { root: string; copy: string; binDir: str
   fs.copyFileSync(path.join(repo, 'package.json'), path.join(copy, 'package.json'));
   fs.symlinkSync(path.join(repo, 'dist'), path.join(copy, 'dist'), 'dir');
   fs.symlinkSync(path.join(repo, 'node_modules'), path.join(copy, 'node_modules'), 'dir');
-  fs.writeFileSync(path.join(copy, 'resources', 'orchestrator', 'app.js'), '// benign: no ad routes or selectors');
+  fs.writeFileSync(path.join(copy, 'resources', 'orchestrator', 'app.js'), '// benign fixture\nconst route = "/api/ad/refresh-probe";\n');
   fs.writeFileSync(path.join(copy, 'resources', 'package.json'), JSON.stringify({ version: '0.0.205' }));
 
   const binDir = fs.mkdtempSync(path.join(os.tmpdir(), 'selfheal-bin-'));
@@ -86,6 +86,8 @@ async function expectHealthy(install: { copy: string; binDir: string }): Promise
   expect(artifact.source).toBe('ci-healed:0.0.205');
   const manifest = JSON.parse(fs.readFileSync(path.join(install.copy, 'corpus', 'manifest.json'), 'utf8')) as { freebuffVersion: string };
   expect(manifest.freebuffVersion).toBe('0.0.205');
+  const corpus = fs.readFileSync(path.join(install.copy, 'corpus', 'golden.jsonl'), 'utf8');
+  expect(corpus).toContain('/api/ad/refresh-probe');
 }
 
 describe('self-heal install paths', () => {
@@ -93,7 +95,7 @@ describe('self-heal install paths', () => {
     await expectHealthy(makeInstall('plain'));
   });
 
-  it.each(['with space', 'with%20literal'])('heals from an install path containing %s', async (segment) => {
+  it.each(['with space', 'with%20literal', 'with"quote'])('heals from an install path containing %s', async (segment) => {
     await expectHealthy(makeInstall(segment));
   });
 });

@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 91; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 92; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -831,6 +831,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       (a mutation → observer → sweep feedback loop). `tests/dom-remover-observers.test.ts`
       pins one observation per root across three sweeps. No `AD_ENDPOINTS` or
       page-API change.
+
+### Wave 92 — Self-heal child arguments
+- [x] `fix(self-heal): pass child args without shell` — the audit and corpus
+      refresh subprocesses now use `execFileSync` with argument arrays instead
+      of shell-interpolated strings, so resource paths containing quotes are
+      passed verbatim. Previously the corpus refresh silently scanned a
+      truncated path and the heal gate could pass against a stale corpus.
+      `tests/self-heal-path.test.ts` pins a quote-bearing install path and a
+      real route in the refreshed corpus. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
