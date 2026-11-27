@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 93; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 94; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -848,6 +848,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       exits no longer leave seeded `rules.json` behind for the next heal.
       `tests/self-heal-path.test.ts` pins cleanup after an aborted control-route
       heal. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 94 — Profile config creation
+- [x] `fix(config): write defaults to requested profile` — `loadConfig(profileId)`
+      now passes the profile through to `saveConfig`, so a missing profile
+      creates `<base>/profiles/<id>/config.json` instead of silently overwriting
+      the live base config with defaults. `tests/config-defaults.test.ts` pins
+      both the profile file and the untouched base config. No `AD_ENDPOINTS` or
+      page-API change.
 
 ---
 

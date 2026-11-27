@@ -164,7 +164,7 @@ export function loadConfig(profileId?: string): Config {
   const configPath = getConfigPath(profileId);
 
   if (!existsSync(configPath)) {
-    saveConfig(DEFAULT_CONFIG);
+    saveConfig(DEFAULT_CONFIG, profileId);
     return { ...DEFAULT_CONFIG };
   }
 

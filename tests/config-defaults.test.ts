@@ -109,6 +109,21 @@ describe('config paths', () => {
     expect(getConfigDir()).toBe(path.join(base, 'profiles', 'work'));
     expect(getConfigDir('default')).toBe(base);
   });
+
+  it('creates a missing profile without overwriting the base config', () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'cfg-profile-'));
+    process.env.FREEBUFF_CONFIG_DIR = base;
+    delete process.env.FREEBUFF_PROFILE;
+    const original = { logLevel: 'debug', enabled: false };
+    fs.writeFileSync(path.join(base, 'config.json'), JSON.stringify(original));
+
+    const cfg = loadConfig('work');
+
+    expect(fs.existsSync(path.join(base, 'profiles', 'work', 'config.json'))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(base, 'config.json'), 'utf8'))).toEqual(original);
+    expect(cfg.logLevel).toBe('info');
+    fs.rmSync(base, { recursive: true, force: true });
+  });
 });
 
 describe('watchConfig', () => {
