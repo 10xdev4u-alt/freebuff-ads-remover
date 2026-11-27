@@ -105,7 +105,7 @@ export class ElectronHook {
       const appLike = electronApi?.app as { getPath?: (n: string) => string } | undefined;
       const userData = appLike?.getPath?.('userData');
       if (userData) {
-        const pattern = new RegExp(loadConfig().network.partitionPattern);
+        const pattern = new RegExp(this.config.network.partitionPattern);
         for (const name of discoverPartitions(userData, pattern)) {
           const sm = sessionObj as ElectronSessionModuleLike;
           if (typeof sm.fromPartition === 'function') {
