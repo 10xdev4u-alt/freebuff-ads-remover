@@ -61,6 +61,23 @@ export async function checkDocs(root, deps = defaultDeps(root)) {
     fail(`ROADMAP Deprecated header missing current payload ${payloadVersion}`);
   }
 
+  // Section 8 quotes the coverage figures in prose. index.html pins lines and
+  // branches to values the ledger verifies against a real coverage run, so the
+  // prose must agree with those pins. Functions/statements have no checked-in
+  // pin and remain manually maintained.
+  const claim = /the suite holds (\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)/.exec(roadmap);
+  if (!claim) {
+    fail('ROADMAP coverage claim not found');
+  } else {
+    const landing = read(root, 'index.html');
+    const linePin = /coverage (\d+(?:\.\d+)?)% lines/.exec(landing)?.[1];
+    const obj = /coverage:\{lines:(\d+(?:\.\d+)?),branches:(\d+(?:\.\d+)?)\}/.exec(landing);
+    if (!linePin) fail('landing coverage text not found');
+    else if (claim[1] !== linePin) fail(`ROADMAP coverage lines ${claim[1]} != index ${linePin}`);
+    if (!obj) fail('landing coverage object not found');
+    else if (claim[3] !== obj[2]) fail(`ROADMAP coverage branches ${claim[3]} != index ${obj[2]}`);
+  }
+
   const template = read(root, '.github/pull_request_template.md');
   if (!/^- \[[ x]\].*audit/im.test(template)) fail('PR template has no audit checkbox');
 

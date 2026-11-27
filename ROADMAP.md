@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 77; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 78; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.1/93.9/91.2/95.3.
+      lines/functions/branches/statements, and the suite holds 97.5/94.0/91.3/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [ ] Golden-file tests for audit output.
@@ -708,6 +708,13 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `tests/dashboard-client-light-theme.test.ts` asserts the media block,
       token values, computed panel tokens, no `matchMedia` dependency, the
       four-key API and guard/smoke validity.
+
+### Wave 78 — Coverage claim truth
+- [x] `docs: gate the ROADMAP coverage claim against index pins` — `docs-check`
+      now fails when section 8's quoted lines/branches disagree with the
+      ledger-verified pins in `index.html`, and all four figures were corrected
+      to the measured 97.5/94.0/91.3/95.7. `tests/docs-coverage-claim.test.ts`
+      pins the invariant; no `AD_ENDPOINTS` or source change.
 
 ---
 
