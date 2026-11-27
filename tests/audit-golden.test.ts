@@ -38,11 +38,12 @@ function runAudit(fixture: string): Audit {
 
 beforeAll(() => {
   const interceptor = path.join(repo, 'dist', 'interceptor.js');
-  if (!fs.existsSync(interceptor)) {
-    execFileSync(process.execPath, ['node_modules/npm/bin/npm-cli.js', 'run', 'build'], {
-      cwd: repo, stdio: 'inherit',
-    });
-  }
+  if (fs.existsSync(interceptor)) return;
+  const npmExecpath = process.env.npm_execpath;
+  if (!npmExecpath) throw new Error('dist/interceptor.js is missing; run npm run build before tests');
+  execFileSync(process.execPath, [npmExecpath, 'run', 'build'], {
+    cwd: repo, stdio: 'inherit',
+  });
 });
 
 describe('audit JSON golden contract', () => {
