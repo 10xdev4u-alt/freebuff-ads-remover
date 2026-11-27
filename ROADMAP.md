@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 78; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 79; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -251,7 +251,9 @@ the Deprecated section.
       lines/functions/branches/statements, and the suite holds 97.5/94.0/91.3/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
-- [ ] Golden-file tests for audit output.
+- [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
+      full `--json` summary for two fixtures, including the heal-consumed
+      `freebuffVersion`, routes, DOM gaps and classifications. → Wave 79
 - [x] Self-test the ledger gate with negative fixtures. → Wave 57
 
 ## 9. CI / automation / scale
@@ -715,6 +717,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       ledger-verified pins in `index.html`, and all four figures were corrected
       to the measured 97.5/94.0/91.3/95.7. `tests/docs-coverage-claim.test.ts`
       pins the invariant; no `AD_ENDPOINTS` or source change.
+
+### Wave 79 — Audit JSON contract
+- [x] `fix(audit): emit the payload version self-heal consumes` — the audit
+      summary now includes `freebuffVersion` (payload `package.json`, `app.asar`
+      or baseline fallback), closing the gap where `self-heal.mjs` read a field
+      the audit never produced. `tests/audit-golden.test.ts` pins the full
+      `--json` output for two fixtures plus the heal-consumed route/DOM fields.
+      No `AD_ENDPOINTS`, page-API or launcher change.
 
 ---
 
