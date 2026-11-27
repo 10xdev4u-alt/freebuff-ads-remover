@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 74; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 75; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -678,6 +678,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `{blocked:false}` from `intercept()` but `isAdUrl()` still reports true,
       so dry-run chains could still cancel. Separate behavior change with its
       own test.
+
+### Wave 75 — Outbound config fidelity
+- [x] `fix(config): keep outbound through loadConfig and export` — added the
+      missing `outbound` Zod schema mirroring `ExtensionConfig`/`DEFAULT_CONFIG`,
+      so `loadConfig()` no longer strips it and `config-export` includes it while
+      still omitting the feed verification keys. `tests/config-outbound.test.ts`
+      pins stored values, defaults, export content and invalid-value fallback.
+      No `AD_ENDPOINTS`, page-API or launcher change.
 
 ---
 
