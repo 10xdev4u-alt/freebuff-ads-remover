@@ -259,7 +259,32 @@ const changedClassification = [...routes].filter((r) => {
   return prev.candidate !== classifications[r].candidate || prev.confidence !== classifications[r].confidence;
 }).sort();
 
+/** The self-heal loop reads this field to refresh the corpus for the audited payload. */
+function resolvePayloadVersion() {
+  const plain = join(resources, 'package.json');
+  if (existsSync(plain)) {
+    try {
+      const pkg = JSON.parse(readFileSync(plain, 'utf8'));
+      if (pkg.version) return String(pkg.version);
+    } catch { /* fall through */ }
+  }
+  const asarPath = join(resources, 'app.asar');
+  if (existsSync(asarPath)) {
+    try {
+      const { extractFile } = require('@electron/asar');
+      const pkg = JSON.parse(extractFile(asarPath, 'package.json').toString());
+      if (pkg.version) return String(pkg.version);
+    } catch { /* fall through */ }
+  }
+  try {
+    const baseline = JSON.parse(readFileSync('config/endpoint-baseline.json', 'utf8'));
+    if (baseline.payloadVersion) return String(baseline.payloadVersion);
+  } catch { /* fail closed as null */ }
+  return null;
+}
+
 const summary = {
+  freebuffVersion: resolvePayloadVersion(),
   routes: { total: results.length, blocked: results.length - missing.length, missing: missing.map((r) => r.route), missingDetail: missing, candidates: candidateRoutes, absolute: absoluteAdUrls, hostCandidates, classifications },
   dom: { total: selectorLiterals.size, covered: selectorLiterals.size - domGaps.length, gaps: domGaps },
   css: { total: cssAdClasses.size, covered: cssAdClasses.size - cssGaps.length, gaps: cssGaps },
