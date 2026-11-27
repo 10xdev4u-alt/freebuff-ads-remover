@@ -158,7 +158,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     }
     // Ghost Mode runtime (default off).
     ghostRuntime = new GhostRuntime(config.ghost);
-    ghostRuntime.activate();
+    ghostRuntime.activate(electronApi?.ipcMain);
     // Verification subsystem (fail-open).
     try {
       runtimeVerifier = new RuntimeVerifier(logger, {
@@ -209,6 +209,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
       interceptor?.updateConfig(newConfig);
       cssInjector?.updateConfig(newConfig);
       electronHook?.updateConfig(newConfig);
+      ghostRuntime?.updateConfig(newConfig.ghost);
       dashboard?.setEnabled(newConfig.dashboard);
       runtimeVerifier?.updateConfig({
         timeoutMs: newConfig.verify.timeoutMs,
@@ -237,6 +238,7 @@ export function deactivate(): void {
     verifyService?.close().catch(() => {});
     runtimeVerifier?.detachAll();
     electronHook?.deactivate();
+    ghostRuntime?.deactivate();
     unwatchConfig?.();
     logger?.info('Freebuff Ads Remover deactivated');
   } catch (err) {
@@ -250,6 +252,7 @@ export function deactivate(): void {
     cssInjector = null;
     statsStore = null;
     dashboard = null;
+    ghostRuntime = null;
     unwatchConfig = null;
   }
 }
