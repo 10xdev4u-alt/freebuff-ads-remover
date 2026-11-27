@@ -102,6 +102,10 @@ Log verbosity: `debug`, `info`, `warn`, `error`
 
 When `true`, writes logs to `~/.config/freebuff-ads-remover/extension.log`.
 
+### `outbound` (default: `{ enabled: false, submitUrl: "", maxBatch: 100 }`)
+
+Optional outcome-reporting settings. `config-export` now preserves this section; it never includes the signed-feed verification keys.
+
 ## Hot Reload
 
 Config changes are detected automatically. Edit the config file and save — no restart needed.

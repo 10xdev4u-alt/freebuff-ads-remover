@@ -90,6 +90,13 @@ const configSchema = z.object({
       retentionDays: z.number().int().positive().default(7),
     })
     .default(() => ({ enabled: false, submitUrl: '', maxBatch: 100, retentionDays: 7 })),
+  outbound: z
+    .object({
+      enabled: z.boolean().default(false),
+      submitUrl: z.string().default(''),
+      maxBatch: z.number().int().positive().default(100),
+    })
+    .default(() => ({ ...DEFAULT_CONFIG.outbound })),
   ghost: z
     .object({
       enabled: z.boolean().default(false),
