@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -48,8 +48,9 @@ const corpusDir = path.join(repoRoot, 'corpus');
 // 1. Run the audit (shared heuristics).
 let auditJson;
 try {
-  const cmd = `node scripts/audit-endpoints.mjs ${JSON.stringify(resources)} --json${genRulesExisting ? ` --generated-rules=${genRulesExisting}` : ''}`;
-  const raw = execSync(cmd, { cwd: repoRoot, encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
+  const cmd = ['scripts/audit-endpoints.mjs', resources, '--json'];
+  if (genRulesExisting) cmd.push(`--generated-rules=${genRulesExisting}`);
+  const raw = execFileSync(process.execPath, cmd, { cwd: repoRoot, encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
   auditJson = JSON.parse(raw);
 } catch (e) {
   // audit exits 1 when gaps exist; parse stdout from error
@@ -61,7 +62,7 @@ try {
 const payloadVersion = payloadVersionOverride || auditJson.freebuffVersion || null;
 if (payloadVersion) {
   try {
-    execSync(`node scripts/update-corpus.mjs --resources "${resources}" --version "${payloadVersion}"`, { cwd: repoRoot, stdio: 'pipe' });
+    execFileSync(process.execPath, ['scripts/update-corpus.mjs', '--resources', resources, '--version', String(payloadVersion)], { cwd: repoRoot, stdio: 'pipe' });
   } catch (e) {
     console.error('corpus refresh failed:', e.message);
     process.exit(1);
