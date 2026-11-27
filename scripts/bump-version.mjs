@@ -98,10 +98,22 @@ export function applyVersionBump(root, options) {
 
   const readmeText = readText(root, 'README.md');
   const readmeOut = swap(
-    readmeText,
+    swap(
+      readmeText,
+      'README.md',
+      /version-\d+\.\d+\.\d+-blue/g,
+      `version-${version}-blue`,
+    ),
     'README.md',
-    /version-\d+\.\d+\.\d+-blue/g,
-    `version-${version}-blue`,
+    /(Version: )\d+\.\d+\.\d+/g,
+    `$1${version}`,
+  );
+  // The docs table repeats the current release; keep it in step with the badge.
+  const readmeFinal = swap(
+    readmeOut,
+    'README.md',
+    /(Release history \(current: `)\d+\.\d+\.\d+(`\))/g,
+    `$1${version}$2`,
   );
 
   const changelogText = readText(root, 'CHANGELOG.md');
@@ -166,7 +178,7 @@ export function applyVersionBump(root, options) {
   const markerDir = path.join(root, 'release');
   fs.mkdirSync(markerDir, { recursive: true });
   atomicWrite(path.join(root, 'package.json'), packageText);
-  atomicWrite(path.join(root, 'README.md'), readmeOut);
+  atomicWrite(path.join(root, 'README.md'), readmeFinal);
   atomicWrite(path.join(root, 'CHANGELOG.md'), changelogOut);
   atomicWrite(path.join(root, 'index.html'), htmlOut);
   atomicWrite(path.join(markerDir, 'last-cut.json'), `${JSON.stringify(marker, null, 2)}\n`);

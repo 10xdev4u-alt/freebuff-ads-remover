@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 95; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 96; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -864,6 +864,13 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       every previously rejected older manifest. Genuinely newer rollbacks still
       apply. `tests/feed.test.ts` pins both the replay rejection and a valid
       fresh rollback. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 96 — README version surfaces
+- [x] `fix(release): update README version surfaces` — `bump-version.mjs` now
+      refreshes the badge alt text (`Version: x.y.z`) and the docs-table
+      `current:` version alongside the shields.io URL, so a cut no longer ships
+      a README claiming two versions. `tests/bump-version.test.ts` pins all
+      three surfaces. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
