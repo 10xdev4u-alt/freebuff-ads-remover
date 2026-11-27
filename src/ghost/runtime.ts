@@ -19,14 +19,16 @@ export class GhostRuntime {
   }
 
   activate(ipc?: GhostIpc): void {
+    // Remember the binding even while disabled: the config watcher can enable
+    // Ghost Mode later without passing IPC again.
+    if (ipc) this.ipc = ipc;
     if (!this.config.enabled) return;
     if (this.active) return;
-    if (ipc) {
-      this.ipc = ipc;
+    if (this.ipc) {
       const rules = rulesForPreset(this.config.preset);
       const sigs = rules.filter((r) => r.context === 'postMessage').map((r) => r.match.signature);
       const fields = rules.flatMap((r) => r.fields ?? []);
-      this.ipcHandle = wrapIpcMain(ipc, sigs, fields);
+      this.ipcHandle = wrapIpcMain(this.ipc, sigs, fields);
     }
     this.active = true;
   }
@@ -37,13 +39,12 @@ export class GhostRuntime {
   }
 
   updateConfig(config: GhostRuntimeConfig): void {
-    const wasActive = this.active;
     const ipc = this.ipc;
     this.deactivate();
     this.config = { ...config };
-    // Re-arm against the same IPC binding; dropping it would leave the runtime
-    // active but silently unguarded after a preset change.
-    if (wasActive && this.config.enabled) this.activate(ipc ?? undefined);
+    // Re-arm whenever enabled, including after a disable→enable toggle. The
+    // guard is idempotent and deactivate() already uninstalled the old wrap.
+    if (this.config.enabled) this.activate(ipc ?? undefined);
   }
 
   report(): { enabled: boolean; preset: string; active: boolean } {

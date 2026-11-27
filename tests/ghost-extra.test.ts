@@ -202,6 +202,27 @@ describe('GhostRuntime', () => {
     expect(ipc.on).not.toHaveBeenCalled();
   });
 
+  it('re-arms the IPC guard when re-enabled through config', () => {
+    const ipc = fakeIpc();
+    const originalOn = ipc.on;
+    const rt = new GhostRuntime({ enabled: true, preset: 'aggressive' });
+    rt.activate(ipc);
+    rt.updateConfig({ enabled: false, preset: 'aggressive' });
+    rt.updateConfig({ enabled: true, preset: 'aggressive' });
+    expect(rt.report()).toEqual({ enabled: true, preset: 'aggressive', active: true });
+    expect(ipc.on).not.toBe(originalOn);
+  });
+
+  it('arms the IPC guard when enabled after starting disabled', () => {
+    const ipc = fakeIpc();
+    const originalOn = ipc.on;
+    const rt = new GhostRuntime({ enabled: false, preset: 'standard' });
+    rt.activate(ipc);
+    rt.updateConfig({ enabled: true, preset: 'standard' });
+    expect(rt.report()).toEqual({ enabled: true, preset: 'standard', active: true });
+    expect(ipc.on).not.toBe(originalOn);
+  });
+
   it('activates without ipc and deactivates cleanly', () => {
     const rt = new GhostRuntime({ enabled: true, preset: 'aggressive' });
     rt.activate();

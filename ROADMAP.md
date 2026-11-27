@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 86; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 87; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -790,6 +790,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       longer ship a page claiming two versions. `tests/bump-version.test.ts`
       pins the changed-payload and unchanged-payload cases. No `AD_ENDPOINTS`,
       page-API or launcher change.
+
+### Wave 87 — Ghost config toggles
+- [x] `fix(ghost): re-arm IPC on config toggle` — `GhostRuntime` now stores
+      the IPC binding even while disabled and re-wraps it whenever config
+      enables Ghost Mode, so disable→re-enable and off-at-boot→enable both
+      restore the guard instead of leaving it silently unwrapped until restart.
+      `tests/ghost-extra.test.ts` pins both toggles. No `AD_ENDPOINTS` or
+      page-API change.
 
 ---
 
