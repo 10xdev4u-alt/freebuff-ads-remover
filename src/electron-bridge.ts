@@ -1,3 +1,5 @@
+import type { IpcMainLike } from './ghost/ipc-guard.js';
+
 export type WebRequestListener = (
   details: { url: string; method: string },
   callback: (response: { cancel?: boolean }) => void,
@@ -42,18 +44,23 @@ export interface ElectronBridge {
   app: ElectronAppLike;
   session: ElectronSessionModuleLike;
   webContents?: ElectronWebContentsModuleLike | null;
+  ipcMain?: IpcMainLike;
 }
 
 function narrow(value: unknown): ElectronBridge | null {
   if (typeof value !== 'object' || value === null) return null;
-  const candidate = value as { app?: unknown; session?: unknown; webContents?: unknown };
+  const candidate = value as { app?: unknown; session?: unknown; webContents?: unknown; ipcMain?: unknown };
   if (!candidate.app || !candidate.session) return null;
   const app = candidate.app as { whenReady?: unknown; on?: unknown; removeListener?: unknown };
   if (typeof app.whenReady !== 'function' || typeof app.on !== 'function') return null;
+  const ipcMain = candidate.ipcMain as { on?: unknown; handle?: unknown } | undefined;
   return {
     app: candidate.app as ElectronAppLike,
     session: candidate.session,
     webContents: (candidate.webContents as ElectronWebContentsModuleLike | undefined) ?? null,
+    ...(typeof ipcMain?.on === 'function' && typeof ipcMain.handle === 'function'
+      ? { ipcMain: ipcMain as IpcMainLike }
+      : {}),
   };
 }
 

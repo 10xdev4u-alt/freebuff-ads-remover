@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-27 (Wave 72; Freebuff 0.0.205).
+Last updated: 2026-11-27 (Wave 73; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -161,8 +161,15 @@ the Deprecated section.
 ## 4. Coverage — script layer
 
 - [ ] Inject a robust `farBuffShield` with retry on CSP failures.
-- [ ] Observe `ads:context` IPC and neutralize client context (privacy).
-- [ ] Block `ad-context` reads at IPC boundary.
+- [x] Observe `ads:context` IPC and neutralize client context (privacy) —
+      the existing `wrapIpcMain` guard is now wired from the Electron bridge
+      through `bootstrap.activate()` and re-armed on preset changes; active
+      only with opt-in Ghost Mode aggressive/paranoid
+      (`src/bootstrap.ts:161,207-222,232-255`).
+      `tests/ghost-ipc-bootstrap.test.ts`. → Wave 73
+- [x] Block `ad-context` reads at IPC boundary — same guard redacts
+      configured signature/field payloads for both `on` and `handle`
+      (`src/ghost/ipc-guard.ts:9-59`). → Wave 73
 - [ ] Neutralize placement-alias resolution so retired IDs stay retired.
 - [ ] Hook `window.fetch` / `XMLHttpRequest` in renderer as belt-and-suspenders.
 - [ ] Hook `EventSource` in renderer.
@@ -644,6 +651,21 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
 - [x] Section 2 transport bullets are closed with code evidence; renderer
       monkey-patching and WebSocket interception remain intentionally out of
       scope (Deprecated section). Request-body blocking stays open.
+
+### Wave 73 — Ghost IPC live
+- [x] `feat(ghost): wire the IPC guard into Electron bootstrap` — the bridge
+      now carries `ipcMain` when it has callable `on`/`handle`, `ElectronApi`
+      accepts it, and `bootstrap.activate()` passes it to `GhostRuntime`.
+      Deactivate uninstalls the guard and the config watcher re-arms it on
+      preset changes. Behavior is opt-in: default Ghost Mode stays off and
+      `standard` has no postMessage signatures.
+      `tests/ghost-ipc-bootstrap.test.ts` covers scrubbing on `on`/`handle`,
+      pass-through of unrelated payloads, disabled mode, uninstall and hot
+      reload. No `AD_ENDPOINTS`, page-API or new bootstrap export.
+- [ ] Phase E found a separate real gap for the next wave: `isAdUrl()` ignores
+      `enabled`/`blockTracking`, so redirect chains can cancel requests that
+      `intercept()` deliberately allows. OS-theme follow, request-body blocking
+      and notifications remain deferred with code evidence.
 
 ---
 

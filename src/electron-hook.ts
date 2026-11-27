@@ -13,6 +13,7 @@ import type {
   ElectronWebContentsModuleLike,
   ElectronWebContentsLike,
 } from './electron-bridge.js';
+import type { IpcMainLike } from './ghost/ipc-guard.js';
 import { WebContentsCssTarget } from './web-contents-css.js';
 import { WebContentsScriptTarget } from './web-contents-script.js';
 import { buildDomRemoverFromSelectors, selectorsForSurfaces } from './dom-remover.js';
@@ -22,6 +23,7 @@ import { createChainTracker } from './redirect-chain.js';
 export interface ElectronApi {
   app: ElectronAppLike;
   webContents?: ElectronWebContentsModuleLike | null;
+  ipcMain?: IpcMainLike;
 }
 
 /**
