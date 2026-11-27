@@ -97,7 +97,13 @@ if (genRulesExisting && fs.existsSync(genRulesExisting)) {
 // 3. Synthesize + gate via autopilot (load existing into registry first).
 const { runAutopilot } = await import(pathToFileURL(path.join(repoRoot, 'dist', 'autopilot.js')).href);
 const configDir = path.join(repoRoot, '.heal-tmp');
+// A killed or failed previous run can leave seeded rules behind. Clear them
+// before use, and register cleanup so every exit path removes the temp dir.
+try { fs.rmSync(configDir, { recursive: true, force: true }); } catch {}
 fs.mkdirSync(configDir, { recursive: true });
+process.on('exit', () => {
+  try { fs.rmSync(configDir, { recursive: true, force: true }); } catch {}
+});
 // seed registry with existing artifact
 if (existing) {
   const { RuleRegistry } = await import(pathToFileURL(path.join(repoRoot, 'dist', 'rule-registry.js')).href);
@@ -212,6 +218,4 @@ if (dryRun && markdownPath) {
 }
 
 
-// cleanup
-try { fs.rmSync(configDir, { recursive: true, force: true }); } catch {}
 process.exit(0);

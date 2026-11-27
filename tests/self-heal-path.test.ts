@@ -52,13 +52,14 @@ function makeInstall(segment: string): { root: string; copy: string; binDir: str
   return install;
 }
 
-function run(install: { copy: string; binDir: string }): Promise<Run> {
+function run(install: { copy: string; binDir: string }, extra: string[] = []): Promise<Run> {
   return new Promise((resolve, reject) => {
     const args = [
       path.join(install.copy, 'scripts', 'self-heal.mjs'),
       '--resources', path.join(install.copy, 'resources'),
       '--out', path.join(install.copy, 'out', 'generated-rules.json'),
       '--json',
+      ...extra,
     ];
     const child = spawn(process.execPath, args, {
       cwd: repo,
@@ -97,5 +98,19 @@ describe('self-heal install paths', () => {
 
   it.each(['with space', 'with%20literal', 'with"quote'])('heals from an install path containing %s', async (segment) => {
     await expectHealthy(makeInstall(segment));
+  });
+
+  it('cleans .heal-tmp when a control route aborts the heal', async () => {
+    const install = makeInstall('failure');
+    const seed = path.join(install.copy, 'out', 'seed.json');
+    fs.writeFileSync(seed, JSON.stringify({
+      addEndpoints: ['/api/ad/refresh-probe'], addSelectors: {}, source: 'test:seed',
+    }));
+    const result = await run(install, [
+      '--existing', seed, '--control-routes', '/api/ad/refresh-probe',
+    ]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('control route in delta');
+    expect(fs.existsSync(path.join(install.copy, '.heal-tmp'))).toBe(false);
   });
 });
