@@ -221,7 +221,7 @@ which refuses older Node); Node.js >= 20 still works for the launcher patch step
 ```bash
 npm install
 npm run build
-npm test            # vitest, 875 tests
+npm test            # vitest, 878 tests
 npm run lint
 npm run typecheck
 npm run test:coverage  # 85/85/85 threshold enforced
