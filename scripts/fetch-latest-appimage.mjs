@@ -10,6 +10,7 @@ import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 
 const args = process.argv.slice(2);
 function getFlag(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : null; }
@@ -37,6 +38,10 @@ export function compareVersions(a, b) {
     if (x !== y) return x - y;
   }
   return 0;
+}
+
+export function isMain(metaUrl, argv1) {
+  return Boolean(argv1) && metaUrl === pathToFileURL(resolve(argv1)).href;
 }
 
 function authHeaders() {
@@ -160,7 +165,7 @@ async function main() {
   process.exit(0);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMain(import.meta.url, process.argv[1])) {
   main().catch((e) => {
     console.error(e.message || e);
     process.exit(1);

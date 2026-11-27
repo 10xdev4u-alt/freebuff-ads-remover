@@ -13,6 +13,9 @@ on:
 permissions:
   contents: write
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
