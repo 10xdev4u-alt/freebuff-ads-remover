@@ -263,6 +263,9 @@ export class AdInterceptor {
 
   isAdUrl(url: string): boolean {
     if (!this.config.enabled) return false;
+    // Dry-run shadow capture deliberately allows every request; the shared
+    // predicate must agree, including redirect chains and 3xx redirects.
+    if (this.shadow?.isDryRun()) return false;
     if (!this.config.blockTracking && this.isTracking(url)) return false;
     return this.blockUpdates(url) || this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
   }
