@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const args = process.argv.slice(2);
 function get(flag) { const i = args.indexOf(flag); return i >= 0 ? args[i+1] : null; }
@@ -41,7 +42,7 @@ if (candidatesPath) {
   }
 }
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const corpusDir = path.join(repoRoot, 'corpus');
 
 // 1. Run the audit (shared heuristics).
@@ -93,12 +94,12 @@ if (genRulesExisting && fs.existsSync(genRulesExisting)) {
 }
 
 // 3. Synthesize + gate via autopilot (load existing into registry first).
-const { runAutopilot } = await import(path.join(repoRoot, 'dist', 'autopilot.js'));
+const { runAutopilot } = await import(pathToFileURL(path.join(repoRoot, 'dist', 'autopilot.js')).href);
 const configDir = path.join(repoRoot, '.heal-tmp');
 fs.mkdirSync(configDir, { recursive: true });
 // seed registry with existing artifact
 if (existing) {
-  const { RuleRegistry } = await import(path.join(repoRoot, 'dist', 'rule-registry.js'));
+  const { RuleRegistry } = await import(pathToFileURL(path.join(repoRoot, 'dist', 'rule-registry.js')).href);
   const r = new RuleRegistry();
   r.apply(existing);
   fs.writeFileSync(path.join(configDir, 'rules.json'), JSON.stringify(r.current(), null, 2));
@@ -124,7 +125,7 @@ for (const r of merged.addEndpoints) {
 }
 // 4c. host rules must never target Freebuff itself.
 try {
-  const { isFirstPartyHost } = await import(path.join(repoRoot, 'dist', 'candidates.js'));
+  const { isFirstPartyHost } = await import(pathToFileURL(path.join(repoRoot, 'dist', 'candidates.js')).href);
   for (const h of mergedHosts) {
     if (isFirstPartyHost(h)) { console.error('first-party host in delta:', h); process.exit(1); }
   }
