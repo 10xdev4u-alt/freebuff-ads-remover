@@ -2,6 +2,18 @@ import fs from 'node:fs';
 
 export interface OutcomeLogEntry { v: number; at: number; healHash: string; route: string; suppressed: boolean }
 
+/** All JSONL lines in oldest-first order, including the rotated segment. */
+export function readOutcomeLogLines(filePath: string): string[] {
+  let lines: string[] = [];
+  for (const segment of [filePath + '.1', filePath]) {
+    if (!fs.existsSync(segment)) continue;
+    try {
+      lines = lines.concat(fs.readFileSync(segment, 'utf8').trim().split('\n').filter(Boolean));
+    } catch { /* skip an unreadable segment */ }
+  }
+  return lines;
+}
+
 export class OutcomeLog {
   private filePath: string;
   private maxBytes: number;
@@ -24,10 +36,9 @@ export class OutcomeLog {
   }
 
   read(opts?: { since?: number; limit?: number }): OutcomeLogEntry[] {
-    if (!fs.existsSync(this.filePath)) return [];
     let entries: OutcomeLogEntry[] = [];
     try {
-      entries = fs.readFileSync(this.filePath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l) as OutcomeLogEntry);
+      entries = readOutcomeLogLines(this.filePath).map((l) => JSON.parse(l) as OutcomeLogEntry);
     } catch { return []; }
     if (opts?.since) entries = entries.filter((e) => e.at >= (opts.since as number));
     if (opts?.limit) entries = entries.slice(-opts.limit);
