@@ -72,7 +72,7 @@
     "jsdom": "^31.0.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.72.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.2"
   },
   "bin": {
     "farbuff": "./bin/farbuff.mjs"
