@@ -50,8 +50,26 @@ describe('CssInjector', () => {
     expect(surfaces.length).toBeGreaterThan(0);
   });
 
+  it('re-scopes injected CSS when surfaces change at runtime', async () => {
+    await injector.activate(mockTarget);
+    expect(injector.getInjectedSurfaces()).toEqual(['all']);
+    vi.mocked(mockTarget.insertCSS).mockClear();
+
+    await injector.updateConfig({
+      ...DEFAULT_CONFIG,
+      surfaces: { ...DEFAULT_CONFIG.surfaces, billboard: false },
+    });
+
+    expect(mockTarget.removeCSS).toHaveBeenCalled();
+    expect(injector.getInjectedSurfaces()).not.toContain('all');
+    expect(injector.getInjectedSurfaces()).toHaveLength(9);
+    const css = (mockTarget.insertCSS as ReturnType<typeof vi.fn>).mock.calls
+      .map((call) => String(call[0])).join('\n');
+    expect(css).not.toContain('[class*="billboard"]');
+  });
+
   it('updates config dynamically', async () => {
-    injector.updateConfig({ ...DEFAULT_CONFIG, cssFallback: false });
+    await injector.updateConfig({ ...DEFAULT_CONFIG, cssFallback: false });
     await injector.activate(mockTarget);
     expect(mockTarget.insertCSS).not.toHaveBeenCalled();
   });

@@ -190,7 +190,7 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     unwatchConfig = watchConfig((newConfig) => {
       logger?.info('Config changed, reloading...');
       interceptor?.updateConfig(newConfig);
-      cssInjector?.updateConfig(newConfig);
+      void cssInjector?.updateConfig(newConfig);
       electronHook?.updateConfig(newConfig);
       ghostRuntime?.updateConfig(newConfig.ghost);
       dashboard?.setEnabled(newConfig.dashboard);

@@ -62,9 +62,9 @@ describe('Performance Benchmarks', () => {
     const { CssInjector } = await import('../src/css-injector.js');
     const injector = new CssInjector(DEFAULT_CONFIG, logger);
 
-    for (let i = 0; i < 100; i++) injector.updateConfig(DEFAULT_CONFIG);
+    for (let i = 0; i < 100; i++) void injector.updateConfig(DEFAULT_CONFIG);
     const perCall = bestAverage(100, 5, () => {
-      injector.updateConfig(DEFAULT_CONFIG);
+      void injector.updateConfig(DEFAULT_CONFIG);
     });
     expect(perCall).toBeLessThan(1);
   });
