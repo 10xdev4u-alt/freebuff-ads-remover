@@ -48,7 +48,7 @@ jobs:
           fi
       - name: Cache AppImage
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: freebuff-*.AppImage
           key: freebuff-${{ steps.ver.outputs.version }}
