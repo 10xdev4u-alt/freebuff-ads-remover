@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 98; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 99; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -887,6 +887,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `--max-age-ms`, closing two ways a stale receipt could certify a live
       load. `tests/boot-load-receipt.test.ts` pins both cases. No `AD_ENDPOINTS`
       or page-API change.
+
+### Wave 99 — Rotated block-log reads
+- [x] `fix(logs): read rotated block log segments` — `BlockLog.read()` now
+      merges the rotated `<file>.1` segment with the active file before applying
+      `since`/`limit`, so dashboard exports, the verify service and
+      `farbuff export` no longer report zero blocks after the 1 MB rotation.
+      `tests/log-stores.test.ts` pins the rotated and merged cases. The four-key
+      page API and `AD_ENDPOINTS` are unchanged.
 
 ---
 
