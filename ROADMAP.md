@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 113; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 114; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -1012,6 +1012,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       gate now fails closed for any non-completed run it cannot order.
       `tests/auto-merge-gate.test.ts` pins both statuses alongside the queued
       case. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 114 — Feed kill switch wiring
+- [x] `fix(feed): honour configured kill switch` — `feed.killSwitch: true` was
+      inert: neither the launcher nor `farbuff feed-sync` passed
+      `FREEBUFF_FEED_KILL_SWITCH`, so a signed feed was still fetched and
+      materialized. Both callers now read the config value and export it to
+      `feed-sync.mjs`. `tests/cli.test.ts` pins the two-way behavior with a
+      locally signed manifest; `tests/launcher-env.test.ts` pins the launcher
+      wiring. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
