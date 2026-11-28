@@ -1,5 +1,5 @@
 {
-  "version": 32,
+  "version": 35,
   "generatedAt": "2026-11-23T16:57:11.153Z",
   "entries": [
     {
@@ -13,5 +13,5 @@
     }
   ],
   "rollbackTo": null,
-  "sig": "WajKzvRXQLzdSi8TSn8LsbqsagEe5/cnLSmuYj9Ci049heXibNVS4WkKA6vEpKrEOlGQ4LNYzMq/rSqVevVcDw=="
+  "sig": "/7t6MzxIvuk8YllVnHPDYQp77l4U3zs1MEBiLmsUcaXVI77inyipnuVsEjYYLDWyA/DLBFdv9rI6RCiGcL5cDw=="
 }
