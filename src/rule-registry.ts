@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { AD_ENDPOINTS, AD_CSS_SELECTORS } from './types.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import { loadGeneratedRules } from './generated-rules.js';
 
 export interface RuleSet {
   version: number;
@@ -105,4 +106,24 @@ export class RuleRegistry {
       return new RuleRegistry(rs);
     } catch { return null; }
   }
+}
+
+/**
+ * The rule set production actually uses: saved rules plus shipped, user and
+ * feed deltas. Both bootstrap and the replay gate must see the same set.
+ */
+export function loadEffectiveRegistry(configDir: string, shippedPath?: string): RuleRegistry {
+  const registry = RuleRegistry.load(configDir) ?? new RuleRegistry();
+  const shipped = shippedPath ?? path.join(__dirname, '..', 'config', 'generated-rules.json');
+  for (const file of [
+    shipped,
+    path.join(configDir, 'generated-rules.json'),
+    path.join(configDir, 'feed-rules.json'),
+  ]) {
+    try {
+      const delta = loadGeneratedRules(file);
+      if (delta) registry.apply(delta);
+    } catch { /* fail open on an unreadable delta */ }
+  }
+  return registry;
 }

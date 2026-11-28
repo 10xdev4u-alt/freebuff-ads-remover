@@ -18,9 +18,8 @@ import { ShadowCapture } from './shadow-capture.js';
 import { BlockLog } from './block-log.js';
 import { MissLog } from './miss-log.js';
 import { OutcomeLog } from './outcome-log.js';
-import { RuleRegistry } from './rule-registry.js';
+import { loadEffectiveRegistry } from './rule-registry.js';
 import { PromotionEngine } from './promotion.js';
-import { loadGeneratedRules } from './generated-rules.js';
 import { GhostRuntime } from './ghost/runtime.js';
 
 export { AD_SURFACES, AD_ENDPOINTS, AD_STAGES, PLACEMENT_IDS, DEFAULT_CONFIG, PIPELINE_STAGES, STAGE_LABELS, stageForEndpoint } from './types.js';
@@ -117,25 +116,9 @@ export function activate(session?: unknown, electronApi?: ElectronApi): boolean 
     const blockLog = new BlockLog(getConfigDir() + '/block-log.jsonl');
     const missLog = new MissLog(getConfigDir() + '/miss-log.jsonl');
     const outcomeLog = new OutcomeLog(getConfigDir() + '/outcomes.jsonl');
-    const registry = RuleRegistry.load(getConfigDir()) ?? new RuleRegistry();
+    const registry = loadEffectiveRegistry(getConfigDir());
     const promotionEngine = new PromotionEngine({ promoteAfter: config.shield.promoteAfter, enabled: config.shield.autoHeal, registry, statePath: getConfigDir() + '/shield-state.json', maxPromotedRules: config.shield.maxPromotedRules, rollbackOnFailure: config.shield.rollbackOnFailure, corpusDir: path.join(__dirname, '..', 'corpus'), configDir: getConfigDir() });
     promotionEngine.beginLaunch();
-    // Shipped (CI-healed) artifact: <pkgroot>/config/generated-rules.json
-    try {
-      const shippedPath = path.join(__dirname, '..', 'config', 'generated-rules.json');
-      const shipped = loadGeneratedRules(shippedPath);
-      if (shipped) registry.apply(shipped);
-    } catch { /* fail open */ }
-    // User override (runtime-promoted): config/generated-rules.json
-    try {
-      const userGen = loadGeneratedRules(getConfigDir() + '/generated-rules.json');
-      if (userGen) registry.apply(userGen);
-    } catch { /* fail open */ }
-    // Feed-synced heals (launcher-fetched, signed): config/feed-rules.json
-    try {
-      const feedGen = loadGeneratedRules(getConfigDir() + '/feed-rules.json');
-      if (feedGen) registry.apply(feedGen);
-    } catch { /* fail open */ }
     // Promotion engine (opt-in via shield.autoHeal).
     interceptor = new AdInterceptor(config, logger, statsStore, shadowCapture, registry, blockLog, missLog, (route) => { promotionEngine.observe('route:' + route); void promotionEngine.tick(); }, outcomeLog);
     promotionEngine.setInterceptor(interceptor);

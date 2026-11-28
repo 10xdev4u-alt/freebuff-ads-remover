@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 104; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 105; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -937,6 +937,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       a node that `querySelectorAll` never visits. `tests/dom-marker-neutralizer.test.ts`
       pins the root case alongside the descendant cases. No `AD_ENDPOINTS` or
       page-API change.
+
+### Wave 105 — Gate verifies effective rules
+- [x] `fix(gate): verify the effective production rules` — the replay gate now
+      builds its interceptor from the same effective rule set bootstrap applies
+      (saved rules + shipped + user + feed deltas) via a shared
+      `loadEffectiveRegistry` helper, instead of the static baseline alone.
+      This removes both false failures and false passes when a healed rule
+      exists. `tests/gate-registry.test.ts` pins saved endpoints and hosts plus
+      the no/corrupt-registry fallback. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
