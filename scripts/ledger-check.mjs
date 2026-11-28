@@ -112,7 +112,9 @@ export async function checkLedger(root, deps = {}) {
   }
   // Landing receipt hash must match the real receipt
   const landingHashMatch = landing.match(/hash:'(sha256:[0-9a-f]+)'/);
-  if (landingHashMatch) {
+  if (!landingHashMatch) {
+    fail('landing receipt hash not found');
+  } else {
     const hashes = receiptList(root, receiptsDir).filter((r) => r.ok).map((r) => r.value.artifactHash);
     if (!hashes.includes(landingHashMatch[1])) fail('landing receipt hash does not match any receipt');
   }

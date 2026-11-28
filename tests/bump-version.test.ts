@@ -96,6 +96,14 @@ describe('applyVersionBump', () => {
     expect(fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8')).toContain('Wave 54 notes.');
   });
 
+  it('aborts the bump when the embedded receipt hash is missing', () => {
+    const root = fixture();
+    const p = path.join(root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace(/hash:'sha256:[0-9a-f]+'/g, ''));
+    expect(() => applyVersionBump(root, base)).toThrow(/receipt hash/);
+    expect(fs.existsSync(path.join(root, 'release', 'last-cut.json'))).toBe(false);
+  });
+
   it('leaves every file untouched when any expected token is missing', () => {
     const root = fixture();
     fs.writeFileSync(path.join(root, 'README.md'), '# no badge here\n');

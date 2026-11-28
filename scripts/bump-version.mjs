@@ -177,12 +177,11 @@ export function applyVersionBump(root, options) {
       `extensionVersion:'${version}'`,
     );
   }
-  if (/hash:'sha256:[0-9a-f]{64}'/.test(htmlOut)) {
-    htmlOut = htmlOut.replace(
-      /hash:'sha256:[0-9a-f]{64}'/g,
-      `hash:'${artifactHash}'`,
-    );
-  }
+  assert(/hash:'sha256:[0-9a-f]{64}'/.test(htmlOut), 'index.html is missing the embedded receipt hash');
+  htmlOut = htmlOut.replace(
+    /hash:'sha256:[0-9a-f]{64}'/g,
+    `hash:'${artifactHash}'`,
+  );
 
   const marker = {
     version,
