@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 114; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 115; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -1021,6 +1021,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `feed-sync.mjs`. `tests/cli.test.ts` pins the two-way behavior with a
       locally signed manifest; `tests/launcher-env.test.ts` pins the launcher
       wiring. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 115 — Landing hash fail-closed
+- [x] `fix(ledger): fail closed on missing landing hash` — `ledger-check.mjs`
+      now reports a finding when the embedded receipt hash is absent instead of
+      silently skipping the claim; `bump-version.mjs` likewise aborts the cut
+      when the token is missing instead of writing a hashless page.
+      `tests/check-ledger.test.ts` and `tests/bump-version.test.ts` pin the
+      missing-token and mismatch paths. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

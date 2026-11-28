@@ -71,6 +71,22 @@ describe('ledger gate', () => {
     expect(r.ok).toBe(true);
   });
 
+  it('fails when the landing receipt hash is missing', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace(/hash:'sha256:[0-9a-f]+'/, ''));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing receipt hash not found');
+  });
+
+  it('fails when the landing receipt hash matches no receipt', async () => {
+    const f = fixture();
+    const p = path.join(f.root, 'index.html');
+    fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace(/sha256:[0-9a-f]+/, 'sha256:' + '0'.repeat(64)));
+    const r = await checkLedger(f.root, deps);
+    expect(r.findings).toContain('landing receipt hash does not match any receipt');
+  });
+
   it('fails when the live receipt records a failure', async () => {
     const f = fixture();
     const p = path.join(f.root, 'receipts', 'live-0.0.204.json');
