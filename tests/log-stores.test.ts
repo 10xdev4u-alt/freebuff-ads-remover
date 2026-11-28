@@ -130,6 +130,28 @@ describe('block-log json/csv', () => {
     expect(fs.existsSync(f + '.1')).toBe(true);
   });
 
+  it('reads rotated entries as well as the active file', () => {
+    const f = tmpFile('block-rot-read-');
+    const log = new BlockLog(f, 80);
+    for (let at = 1; at <= 3; at++) {
+      log.append({ v: 1, at, stage: 'a', surface: 's', endpoint: '/x', session: 'd' });
+    }
+    expect(log.read().map((e) => e.at)).toEqual([1, 2, 3]);
+    expect(JSON.parse(log.toJson())).toHaveLength(3);
+    expect(log.toCsv().split('\n')).toHaveLength(4);
+  });
+
+  it('merges a pre-existing rotated segment before the active file', () => {
+    const f = tmpFile('block-merge-');
+    const entry = (at: number) => ({ v: 1, at, stage: 'a', surface: 's', endpoint: '/x', session: 'd' });
+    fs.writeFileSync(f + '.1', [entry(1), entry(2)].map((e) => JSON.stringify(e)).join('\n') + '\n');
+    fs.writeFileSync(f, JSON.stringify(entry(3)) + '\n');
+    const log = new BlockLog(f);
+    expect(log.read().map((e) => e.at)).toEqual([1, 2, 3]);
+    expect(log.read({ limit: 2 }).map((e) => e.at)).toEqual([2, 3]);
+    expect(log.read({ since: 2 }).map((e) => e.at)).toEqual([2, 3]);
+  });
+
   it('fails open when the path is unwritable', () => {
     const log = new BlockLog(path.join(os.tmpdir(), 'far-block-absent', 'log.jsonl'));
     expect(() => { log.append({ v: 1, at: 1, stage: 'a', surface: 's', endpoint: '/1', session: 'd' }); }).not.toThrow();

@@ -24,11 +24,17 @@ export class BlockLog {
   }
 
   read(opts?: { since?: number; limit?: number }): BlockLogEntry[] {
-    if (!fs.existsSync(this.filePath)) return [];
+    // Rotation renames the active file to <file>.1, so the newest entries can
+    // live in either segment. Read oldest first, then apply filters once.
     let entries: BlockLogEntry[] = [];
-    try {
-      entries = fs.readFileSync(this.filePath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l) as BlockLogEntry);
-    } catch { return []; }
+    for (const segment of [this.filePath + '.1', this.filePath]) {
+      if (!fs.existsSync(segment)) continue;
+      try {
+        const part = fs.readFileSync(segment, 'utf8').trim().split('\n').filter(Boolean)
+          .map((l) => JSON.parse(l) as BlockLogEntry);
+        entries = entries.concat(part);
+      } catch { /* a corrupt segment contributes nothing; keep the others */ }
+    }
     if (opts?.since) entries = entries.filter((e) => e.at >= (opts.since as number));
     if (opts?.limit) entries = entries.slice(-opts.limit);
     return entries;
