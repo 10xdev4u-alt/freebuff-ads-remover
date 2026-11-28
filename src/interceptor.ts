@@ -245,14 +245,17 @@ export class AdInterceptor {
   }
 
   private recordBlock(url: string, method: string, surface: AdSurface, stage: AdStage, endpoint: string, captureStart: number, dryRun: boolean): void {
-    this.blockCount++;
-    this.stats?.record({ stage, surface, endpoint });
-    this.logger.debug(`Blocked ad request: ${url}`, { surface, endpoint, stage });
     const shadow = this.shadow;
     if (shadow && shadow.isEnabled() && shadow.shouldCapture()) {
       const { path: p, origin } = ShadowCapture.scrubPath(url, this.config.shadow.scrubQuery);
       shadow.record({ at: Date.now(), method, path: p, originHash: ShadowCapture.hashOrigin(origin), session: 'default', decision: { blocked: !dryRun, surface, stage, endpoint }, ms: Date.now() - captureStart });
     }
+    // Dry run observes only: no counters, block log or outcome receipts for a
+    // request that was deliberately allowed through.
+    if (dryRun) return;
+    this.blockCount++;
+    this.stats?.record({ stage, surface, endpoint });
+    this.logger.debug(`Blocked ad request: ${url}`, { surface, endpoint, stage });
     if (this.blockLog) {
       this.blockLog.append({ v: 1, at: Date.now(), stage, surface, endpoint, session: 'default' });
     }

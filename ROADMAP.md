@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 106; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 107; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -955,6 +955,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       pins the disabled-capture case and a live toggle back to blocking.
       Coverage pins refreshed to 91.2 branches. No `AD_ENDPOINTS` or page-API
       change.
+
+### Wave 107 — Dry-run proof pollution
+- [x] `fix(interceptor): dry-run blocks stay observational` — `recordBlock()`
+      now writes the shadow capture decision and returns before incrementing
+      counters, writing `block-log.jsonl` or emitting `suppressed: true`
+      outcomes. Dry-run no longer claims real blocks in exported proofs or
+      upstream heal metrics. `tests/interceptor-extra.test.ts` pins all four
+      side effects. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

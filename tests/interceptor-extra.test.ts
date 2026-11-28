@@ -77,6 +77,25 @@ describe('AdInterceptor extra', () => {
     expect(record.mock.calls[0]?.[0]).toMatchObject({ decision: { blocked: false } });
   });
 
+  it('dry-run blocks do not count as real blocks or pollute proof logs', () => {
+    const shadow = new ShadowCapture({ enabled: true, dryRun: true, captureDir: fs.mkdtempSync(path.join(os.tmpdir(), 'cap-')) });
+    const record = vi.spyOn(shadow, 'record').mockImplementation(() => {});
+    const stats = new StatsStore();
+    const blockLog = new BlockLog(tmp('dry-block-'));
+    const outcomeLog = new OutcomeLog(tmp('dry-outcome-'));
+    const registry = new RuleRegistry();
+    registry.apply({ addEndpoints: [], addHosts: [], addSelectors: {}, source: 'feed:test' });
+    const ic = new AdInterceptor(config({ adHosts: ['ads.example.com'] }), logger, stats, shadow, registry, blockLog, undefined, undefined, outcomeLog);
+
+    expect(ic.intercept('https://ads.example.com/asset.js', 'GET').blocked).toBe(false);
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record.mock.calls[0]?.[0]).toMatchObject({ decision: { blocked: false } });
+    expect(ic.getStats().blockCount).toBe(0);
+    expect(stats.snapshot().total).toBe(0);
+    expect(blockLog.read()).toEqual([]);
+    expect(outcomeLog.read()).toEqual([]);
+  });
+
   it('logs misses for ad-shaped routes that slip through', () => {
     const missLog = new MissLog(tmp('miss-'));
     const onMiss = vi.fn();
