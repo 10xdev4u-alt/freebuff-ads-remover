@@ -93,8 +93,12 @@ export class RuleRegistry {
     if (!fs.existsSync(prevPath)) return null;
     try {
       const rs = JSON.parse(fs.readFileSync(prevPath, 'utf8')) as RuleSet;
-      this.currentSet = { ...rs, hosts: Array.isArray(rs.hosts) ? rs.hosts : [] };
-      return rs;
+      const normalized: RuleSet = { ...rs, hosts: Array.isArray(rs.hosts) ? [...rs.hosts] : [] };
+      this.currentSet = normalized;
+      // Persist the recovered set: otherwise the bad rules.json returns on the
+      // next boot. Do not call save() here — it would overwrite rules.prev.json.
+      fs.writeFileSync(path.join(dir, 'rules.json'), JSON.stringify(normalized, null, 2));
+      return normalized;
     } catch { return null; }
   }
 
