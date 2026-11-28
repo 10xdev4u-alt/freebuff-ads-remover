@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-23T16:57:11.153Z",
+  "at": "2026-11-28T14:56:26.599Z",
   "payloadVersion": "0.0.205",
   "corpusHash": "sha256:8d09e5535405f993a723cd39dc690fb65e02baec1b0ef212adefc5436ab46bb6",
   "probes": 42,
@@ -8,5 +8,6 @@
   "artifactHash": "sha256:c07556dbe8312d90d348f0884779ff28a661528065d3d6d0ef414405833729aa",
   "gate": {
     "pass": true
-  }
+  },
+  "loadConfirmed": true
 }
