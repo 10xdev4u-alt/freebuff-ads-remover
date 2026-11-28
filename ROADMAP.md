@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 105; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 106; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.3/95.7.
+      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.2/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
@@ -946,6 +946,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       This removes both false failures and false passes when a healed rule
       exists. `tests/gate-registry.test.ts` pins saved endpoints and hosts plus
       the no/corrupt-registry fallback. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 106 — Dry-run fail-open
+- [x] `fix(interceptor): gate dryRun on capture` — dry-run now counts only when
+      shadow capture is enabled, so a config with `shadow.dryRun: true` but
+      `shadow.enabled: false` no longer allows every ad while recording
+      nothing. Both `intercept()` and `isAdUrl()` agree. `tests/is-ad-url-dry-run.test.ts`
+      pins the disabled-capture case and a live toggle back to blocking.
+      Coverage pins refreshed to 91.2 branches. No `AD_ENDPOINTS` or page-API
+      change.
 
 ---
 

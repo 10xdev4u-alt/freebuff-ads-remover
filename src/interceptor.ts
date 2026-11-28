@@ -99,7 +99,7 @@ export class AdInterceptor {
     const shadow = this.shadow;
     const captureEnabled = shadow?.isEnabled() ?? false;
     const captureStart = captureEnabled ? Date.now() : 0;
-    const dryRun = shadow?.isDryRun() ?? false;
+    const dryRun = captureEnabled && (shadow?.isDryRun() ?? false);
 
     if (!this.config.enabled) {
       if (captureEnabled && (shadow as ShadowCapture).shouldCapture()) {
@@ -265,7 +265,7 @@ export class AdInterceptor {
     if (!this.config.enabled) return false;
     // Dry-run shadow capture deliberately allows every request; the shared
     // predicate must agree, including redirect chains and 3xx redirects.
-    if (this.shadow?.isDryRun()) return false;
+    if (this.shadow && this.shadow.isEnabled() && this.shadow.isDryRun()) return false;
     if (!this.config.blockTracking && !this.hostMatch(url) && this.isTracking(url)) return false;
     return this.blockUpdates(url) || this.hostMatch(url) !== null || this.patterns.some((p) => this.matches(url, p.pattern));
   }
