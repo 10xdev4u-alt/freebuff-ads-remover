@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 110; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 111; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -986,6 +986,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       and template text cannot impersonate the loader. `acorn` is a runtime
       dependency (`package.json`, lockfile). `tests/check-injection.test.ts`
       pins all false-positive shapes. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 111 — Launcher SIGPIPE guard
+- [x] `fix(launcher): redirect own output before echo` — the launcher now calls
+      `redirect_own_output` at the start of `main()`, sending its own stdout
+      and stderr to the writable launch log before any informational `echo`.
+      The previous `say()`/`|| true` guard could not catch SIGPIPE from a
+      builtin echo on a closed pipe, killing the launcher before `exec`.
+      `tests/launcher-env.test.ts` pins survival with a readerless stdout pipe.
+      No `AD_ENDPOINTS` or page-API change.
 
 ---
 
