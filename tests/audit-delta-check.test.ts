@@ -70,7 +70,7 @@ describe('checkAuditDeltas', () => {
       JSON.stringify({ addEndpoints: ['/api'], addSelectors: {}, source: 'test' }),
     );
     const findings = checkAuditDeltas(root, deps).findings.join('\n');
-    expect(findings).toContain('control-false-positive');
+    expect(findings).toContain('protected-route-collision');
   });
 
   it('rejects a host rule aimed at Freebuff itself', () => {

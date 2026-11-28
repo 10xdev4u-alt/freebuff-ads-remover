@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 116; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 117; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/94.3/91.3/95.8.
+      lines/functions/branches/statements, and the suite holds 97.5/94.3/91.2/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
@@ -1038,6 +1038,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `tests/log-stores.test.ts` and `tests/outcome-report-extra.test.ts` pin
       merged reads and submissions. Coverage claim refreshed to 94.3/95.8.
       No `AD_ENDPOINTS` or page-API change.
+
+### Wave 117 — Protected route parity
+- [x] `fix(delta): match protected routes like runtime` — `verifyDelta` used
+      exact string equality for core routes while the interceptor matches
+      normalized substrings, so `/api/conf`, `/API/CONFIG` and `/api//config`
+      passed the gate and then blocked the app's own `/api/config`. The guard
+      now reuses `matchRoute`. `tests/delta-gate-extra.test.ts` and
+      `tests/audit-delta-check.test.ts` pin the variants. Coverage claim
+      refreshed to 91.2 branches. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

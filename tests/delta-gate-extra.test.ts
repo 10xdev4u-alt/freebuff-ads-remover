@@ -39,6 +39,18 @@ describe('verifyDelta branches', () => {
     expect(gate.reason).toBe('protected-route-collision');
   });
 
+  it('rejects prefix, case and slash variants of a protected route', () => {
+    for (const ep of ['/api/conf', '/API/CONFIG', '/api//config']) {
+      const gate = verifyDelta(
+        { addEndpoints: [ep], addSelectors: {}, source: 'test' },
+        new RuleRegistry(),
+        realCorpus,
+      );
+      expect(gate.pass, ep).toBe(false);
+      expect(gate.reason, ep).toBe('protected-route-collision');
+    }
+  });
+
   it('rejects a host rule containing a path or query', () => {
     const registry = new RuleRegistry();
     for (const host of ['ads.example.com/asset', 'ads.example.com?x=1']) {
@@ -48,15 +60,14 @@ describe('verifyDelta branches', () => {
     }
   });
 
-  it('reports a control false positive when a broad endpoint swallows a control route', () => {
+  it('rejects a broad endpoint that swallows a protected route', () => {
     const gate = verifyDelta(
       { addEndpoints: ['/api'], addSelectors: {}, source: 'test' },
       new RuleRegistry(),
       realCorpus,
     );
     expect(gate.pass).toBe(false);
-    expect(gate.reason).toBe('control-false-positive');
-    expect(gate.fps.length).toBeGreaterThan(0);
+    expect(gate.reason).toBe('protected-route-collision');
   });
 
   it('reports missed golden ads and fails recall', () => {
