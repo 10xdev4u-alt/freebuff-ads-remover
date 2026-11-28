@@ -23,6 +23,10 @@ function check(configDir: string, extra: string[] = []) {
   return spawnSync(process.execPath, [script, `--dir=${configDir}`, '--max-age-ms=300000', ...extra], { encoding: 'utf8' });
 }
 
+function checkRaw(configDir: string, args: string[]) {
+  return spawnSync(process.execPath, [script, `--dir=${configDir}`, ...args], { encoding: 'utf8' });
+}
+
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'far-boot-receipt-'));
   originalConfigDir = process.env.FREEBUFF_CONFIG_DIR;
@@ -121,6 +125,22 @@ describe('check-runtime-load', () => {
     const r = check(dir, ['--version=0.0.0']);
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('old');
+  });
+
+  it('fails on a future-dated receipt', () => {
+    const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    writeFileSync(join(dir, 'load-receipt.json'), JSON.stringify({ status: 'loaded', at: future, pid: process.pid, version: '0.0.0' }));
+    const r = check(dir, ['--version=0.0.0']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('future');
+  });
+
+  it('fails closed on a malformed max age', () => {
+    const old = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    writeFileSync(join(dir, 'load-receipt.json'), JSON.stringify({ status: 'loaded', at: old, pid: process.pid, version: '0.0.0' }));
+    const r = checkRaw(dir, ['--version=0.0.0', '--max-age-ms=oops']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('max-age-ms');
   });
 
   it('rejects a receipt whose status is not loaded', () => {

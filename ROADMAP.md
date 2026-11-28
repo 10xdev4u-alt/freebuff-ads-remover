@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 97; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 98; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -879,6 +879,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       behind `package.json`; it is now 1.27.0. `tests/bump-version.test.ts` pins
       the lockfile surfaces and the written-file list. No `AD_ENDPOINTS` or
       page-API change.
+
+### Wave 98 — Load receipt freshness
+- [x] `fix(proof): harden load receipt freshness` — `check-runtime-load.mjs` now
+      rejects future-dated receipts (5-minute clock skew, matching
+      `release-gate.mjs`) and fails closed on a non-finite or negative
+      `--max-age-ms`, closing two ways a stale receipt could certify a live
+      load. `tests/boot-load-receipt.test.ts` pins both cases. No `AD_ENDPOINTS`
+      or page-API change.
 
 ---
 
