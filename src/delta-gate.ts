@@ -1,5 +1,6 @@
 import { loadCorpus } from './corpus.js';
 import { CORE_ROUTES, NOT_AD_SEGMENTS, isFirstPartyHost } from './candidates.js';
+import { matchRoute } from './url-match.js';
 import type { RuleDelta } from './rule-registry.js';
 import { RuleRegistry } from './rule-registry.js';
 import { AdInterceptor } from './interceptor.js';
@@ -16,11 +17,13 @@ export function verifyDelta(
 ): { pass: boolean; reason: string | undefined; recall: number; precision: number; missed: string[]; fps: string[] } {
   const { entries } = loadCorpus(corpusDir);
 
-  const protectedRoutes = new Set<string>([...CORE_ROUTES]);
-  // Block any endpoint whose path segment is a known non-ad segment.
+  // Use the same normalized substring predicate as the runtime matcher: an
+  // exact-match check would let prefixes/case/slash variants block core routes
+  // that have no corpus sentinel.
   const protectedCollision = (delta.addEndpoints).some((ep) => {
     const segs = ep.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
-    return segs.some((seg) => NOT_AD_SEGMENTS.has(seg)) || protectedRoutes.has(ep);
+    return segs.some((seg) => NOT_AD_SEGMENTS.has(seg))
+      || [...CORE_ROUTES].some((route) => matchRoute('https://freebuff.com' + route, ep));
   });
   if (protectedCollision) {
     return { pass: false, reason: 'protected-route-collision', recall: 0, precision: 0, missed: [], fps: [] };
