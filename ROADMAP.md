@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 99; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 100; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -895,6 +895,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `farbuff export` no longer report zero blocks after the 1 MB rotation.
       `tests/log-stores.test.ts` pins the rotated and merged cases. The four-key
       page API and `AD_ENDPOINTS` are unchanged.
+
+### Wave 100 — Docs gate fail-closed
+- [x] `fix(docs): fail closed on missing payload` — `docs-check.mjs` now reports
+      a finding when the payload version cannot be resolved, instead of letting
+      `''.includes(...)` silently satisfy the ROADMAP header check. This makes
+      the existing fail-closed comment true and matches the sibling defaults
+      guards. `tests/docs-consistency.test.ts` pins the empty-version case. No
+      `AD_ENDPOINTS` or page-API change.
 
 ---
 

@@ -103,6 +103,7 @@ export async function checkDocs(root, deps = defaultDeps(root)) {
     }
   }
 
+  if (!payloadVersion) fail('code payloadVersion could not be resolved');
   if (!Number.isFinite(promoteAfter) || !Number.isFinite(maxPromotedRules)) {
     fail('code shield defaults could not be resolved');
   }

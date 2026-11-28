@@ -82,6 +82,13 @@ describe('docs truth gate', () => {
     );
   });
 
+  it('fails closed when the payload version cannot be resolved', async () => {
+    const f = fixture();
+    const result = await checkDocs(f.root, { ...f.deps, payloadVersion: '' });
+    expect(result.findings).toContain('code payloadVersion could not be resolved');
+    expect(result.ok).toBe(false);
+  });
+
   it('fails when the PR template has no audit checkbox', async () => {
     const f = fixture();
     rewrite(f, '.github/pull_request_template.md', '- [ ] Audit deltas clean (`npm run audit:deltas`)\n', '');
