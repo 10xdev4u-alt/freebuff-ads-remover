@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 109; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 110; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -978,6 +978,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       pre-existing world-readable file no longer publishes a fresh bearer
       token to local readers. `tests/verify-service-extra.test.ts` pins the
       mode on a pre-created 0644 file. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 110 — Injection proof check
+- [x] `fix(inject): verify live loader block` — `check-injection.mjs` now
+      parses `main.cjs` with acorn and accepts only a real `require("<entry>")`
+      call node inside the marker block, so comments, strings, regex literals
+      and template text cannot impersonate the loader. `acorn` is a runtime
+      dependency (`package.json`, lockfile). `tests/check-injection.test.ts`
+      pins all false-positive shapes. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

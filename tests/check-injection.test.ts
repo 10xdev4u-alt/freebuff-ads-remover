@@ -6,6 +6,12 @@ import { join } from 'node:path';
 import { createPackageWithOptions } from '@electron/asar';
 
 const script = join(process.cwd(), 'scripts', 'check-injection.mjs');
+
+// Exactly what scripts/patch-freebuff-app.mjs writes.
+function loaderLine(entry: string): string {
+  return `try{require(${JSON.stringify(entry)});}catch(e){console.error('[freebuff-ads-remover] failed to load:',e&&e.message?e.message:e);}`;
+}
+
 let root: string;
 let resources: string;
 
@@ -39,7 +45,7 @@ describe('check-injection', () => {
   it('accepts a complete loader block', async () => {
     await buildAsar(
       '// freebuff-ads-remover:begin-abcd1234\n' +
-        'try{require("/tmp/extension-entry.js");}catch(e){console.error(e);}\n' +
+        loaderLine('/tmp/extension-entry.js') + '\n' +
         '// freebuff-ads-remover:end\n' +
         'console.log("boot");\n',
     );
@@ -48,6 +54,75 @@ describe('check-injection', () => {
 
   it('rejects a begin marker without the matching end marker', async () => {
     await buildAsar('// freebuff-ads-remover:begin-abcd1234\nconsole.log("boot");\n');
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects an entry require placed outside the loader block', async () => {
+    await buildAsar(
+      '// freebuff-ads-remover:begin-abcd1234\n' +
+        'console.log("boot");\n' +
+        '// freebuff-ads-remover:end\n' +
+        'try{require("/tmp/extension-entry.js");}catch(e){}\n',
+    );
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects an entry mentioned only in a comment', async () => {
+    await buildAsar(
+      '// freebuff-ads-remover:begin-abcd1234\n' +
+        '// require("/tmp/extension-entry.js")\n' +
+        '// freebuff-ads-remover:end\n',
+    );
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects an entry require inside a block comment', async () => {
+    await buildAsar(
+      '// freebuff-ads-remover:begin-abcd1234\n' +
+        '/* require("/tmp/extension-entry.js") */\n' +
+        '// freebuff-ads-remover:end\n',
+    );
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects an entry require in a trailing line comment', async () => {
+    await buildAsar(
+      '// freebuff-ads-remover:begin-abcd1234\n' +
+        'console.log("boot"); // require("/tmp/extension-entry.js")\n' +
+        '// freebuff-ads-remover:end\n',
+    );
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects a crafted comment pair that hides the require', async () => {
+    await buildAsar(
+      '// freebuff-ads-remover:begin-abcd1234\n' +
+        'console.log("/*"); // */ require("/tmp/extension-entry.js")\n' +
+        '// freebuff-ads-remover:end\n',
+    );
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects a writer-format block enclosed in a block comment', async () => {
+    await buildAsar(
+      '/*\n' +
+        '// freebuff-ads-remover:begin-abcd1234\n' +
+        loaderLine('/tmp/extension-entry.js') + '\n' +
+        '// freebuff-ads-remover:end\n' +
+        '*/\n',
+    );
+    expect(run('/tmp/extension-entry.js')).toBe(1);
+  });
+
+  it('rejects a writer-format block after a regex literal containing a quote', async () => {
+    await buildAsar(
+      'const re = /\'/;\n' +
+        '/* \'\n' +
+        '// freebuff-ads-remover:begin-abcd1234\n' +
+        loaderLine('/tmp/extension-entry.js') + '\n' +
+        '// freebuff-ads-remover:end\n' +
+        '*/\n',
+    );
     expect(run('/tmp/extension-entry.js')).toBe(1);
   });
 
