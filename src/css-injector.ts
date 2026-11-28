@@ -15,6 +15,7 @@ export class CssInjector {
   private injectedKeys: Map<string, string>;
   private active: boolean;
   private registry: RuleRegistry | null;
+  private activeTarget: CssInjectionTarget | null;
 
   constructor(config: Config, logger: Logger, registry: RuleRegistry | null = null) {
     this.config = config;
@@ -22,15 +23,30 @@ export class CssInjector {
     this.injectedKeys = new Map();
     this.active = false;
     this.registry = registry;
+    this.activeTarget = null;
   }
 
-  updateConfig(config: Config): void {
+  async updateConfig(config: Config): Promise<void> {
     this.config = config;
+    // Live config edits must refresh the CSS layer just like the DOM layer.
+    if (!this.active || !this.activeTarget) return;
+    const target = this.activeTarget;
+    for (const [surface, key] of this.injectedKeys) {
+      try {
+        await target.removeCSS(key);
+        this.logger.debug(`Removed CSS for ${surface}`);
+      } catch (err) {
+        this.logger.warn(`Failed to remove CSS for ${surface}`, err);
+      }
+    }
+    this.injectedKeys.clear();
+    await this.injectAll(target);
     this.logger.debug('CSS injector config updated');
   }
 
   async activate(target: CssInjectionTarget): Promise<void> {
     this.active = true;
+    this.activeTarget = target;
 
     if (this.config.cssFallback) {
       await this.injectAll(target);
@@ -41,6 +57,7 @@ export class CssInjector {
 
   async deactivate(target: CssInjectionTarget): Promise<void> {
     this.active = false;
+    this.activeTarget = null;
 
     for (const [surface, key] of this.injectedKeys) {
       try {

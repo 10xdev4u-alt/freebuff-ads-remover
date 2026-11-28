@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 111; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 112; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -995,6 +995,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       builtin echo on a closed pipe, killing the launcher before `exec`.
       `tests/launcher-env.test.ts` pins survival with a readerless stdout pipe.
       No `AD_ENDPOINTS` or page-API change.
+
+### Wave 112 — Live CSS re-scoping
+- [x] `fix(css): re-scope CSS on config change` — `CssInjector.updateConfig()`
+      now removes the current CSS keys and re-injects against the active target
+      when the injector is running, so live toggles of `surfaces` or
+      `cssFallback` take effect. The config watcher awaits via `void`.
+      `tests/css-injector.test.ts` pins the surface-toggle refresh; benchmark
+      callers were adapted to the async API. No `AD_ENDPOINTS` or page-API
+      change.
 
 ---
 
