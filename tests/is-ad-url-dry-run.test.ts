@@ -57,6 +57,25 @@ describe('isAdUrl respects shadow dryRun', () => {
     expect(i.isAdUrl('https://freebuff.com/api/desktop/updates')).toBe(false);
   });
 
+  it('does not allow ads when dryRun is set but capture is disabled', () => {
+    const inactive = new ShadowCapture({ enabled: false, dryRun: true, sampleRate: 1, captureDir: '' });
+    const record = vi.spyOn(inactive, 'record');
+    const config = { ...DEFAULT_CONFIG, shadow: { ...DEFAULT_CONFIG.shadow, enabled: false, dryRun: true } };
+    const i = new AdInterceptor(config, new Logger('error', false), undefined, inactive);
+    expect(i.intercept(AD_URL, 'POST').blocked).toBe(true);
+    expect(i.isAdUrl(AD_URL)).toBe(true);
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it('resumes blocking when capture is disabled while dryRun stays set', () => {
+    const config = { ...DEFAULT_CONFIG, shadow: { ...DEFAULT_CONFIG.shadow, enabled: true, dryRun: true } };
+    const i = new AdInterceptor(config, new Logger('error', false), undefined, shadow(true));
+    expect(i.isAdUrl(AD_URL)).toBe(false);
+    i.updateConfig({ ...DEFAULT_CONFIG, shadow: { ...DEFAULT_CONFIG.shadow, enabled: false, dryRun: true } });
+    expect(i.isAdUrl(AD_URL)).toBe(true);
+    expect(i.intercept(AD_URL).blocked).toBe(true);
+  });
+
   it('agrees with intercept across the dryRun gate matrix', () => {
     for (const dryRun of [true, false]) {
       for (const patch of [
