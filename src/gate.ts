@@ -5,8 +5,9 @@
  */
 import { loadCorpus } from './corpus.js';
 import { AdInterceptor } from './interceptor.js';
-import { loadConfig } from './config.js';
+import { loadConfig, getConfigDir } from './config.js';
 import { Logger } from './logger.js';
+import { loadEffectiveRegistry, type RuleRegistry } from './rule-registry.js';
 
 export interface GateReport {
   corpus: { entries: number; ads: number; controls: number; version: string };
@@ -19,11 +20,14 @@ export interface GateReport {
   reason?: string;
 }
 
-export function runGate(corpusDir: string): GateReport {
+export function runGate(corpusDir: string, registry?: RuleRegistry): GateReport {
   const { entries, manifest } = loadCorpus(corpusDir);
   const config = loadConfig();
   const logger = new Logger('error', false);
-  const interceptor = new AdInterceptor(config, logger);
+  // Use the same effective rule set production applies, not just AD_ENDPOINTS.
+  const interceptor = new AdInterceptor(
+    config, logger, undefined, undefined, registry ?? loadEffectiveRegistry(getConfigDir()),
+  );
 
   const goldenAds = entries.filter((e) => e.label === 'ad');
   const goldenControls = entries.filter((e) => e.label === 'control');
