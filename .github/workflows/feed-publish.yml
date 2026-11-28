@@ -46,7 +46,7 @@ jobs:
             -----END PUBLIC KEY-----
         run: node -e "const fs=require('fs');const{verifyManifest}=require('./dist/feed.js');const m=JSON.parse(fs.readFileSync('feed/manifest.json','utf8'));const pk=process.env.FEED_PUBLIC_KEY; if(!verifyManifest(m,pk)){console.error('verify failed');process.exit(1);} console.log('verified');"
       - name: Open feed PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: ci/feed-publish
           author: "10xdev4u-alt <10xdev4u@gmail.com>"
