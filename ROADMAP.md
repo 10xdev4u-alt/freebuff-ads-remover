@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 107; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 108; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.2/95.7.
+      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.3/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
@@ -963,6 +963,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       outcomes. Dry-run no longer claims real blocks in exported proofs or
       upstream heal metrics. `tests/interceptor-extra.test.ts` pins all four
       side effects. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 108 — Durable Electron deactivation
+- [x] `fix(electron): deactivate stays durable across reloads` — the
+      `did-finish-load` listener now checks `hookActive` before re-arming, so a
+      navigation after `deactivate()` cannot silently reinstall the webRequest
+      hook while `isActive()` reports false. `tests/electron-hook-extra.test.ts`
+      pins the post-deactivation page load. Coverage pins refreshed to 91.3
+      branches. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

@@ -228,6 +228,8 @@ export class ElectronHook {
     const wc = raw as { on?: (e: string, l: (...a: unknown[]) => void) => unknown };
     if (typeof wc.on === 'function') {
       wc.on('did-finish-load', () => {
+        // A listener installed before deactivation must not re-arm the hook.
+        if (!this.hookActive) return;
         if (contents.session) this.hookSession(contents.session);
       });
     }

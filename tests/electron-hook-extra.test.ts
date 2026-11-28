@@ -135,6 +135,27 @@ describe('ElectronHook extra', () => {
     expect(webRequest.onBeforeRequest.mock.calls.length).toBeGreaterThan(before);
   });
 
+  it('does not re-hook a contents session after deactivation', () => {
+    const webRequest = makeWebRequest();
+    const session = makeSession(webRequest);
+    const finishListeners: Listener[] = [];
+    const contents = {
+      session,
+      on: vi.fn((event: string, l: Listener) => { if (event === 'did-finish-load') finishListeners.push(l); }),
+    };
+    const hook = new ElectronHook(interceptor, cssInjector, logger);
+    const app = makeApp();
+    hook.activate({ defaultSession: makeSession() }, { app, webContents: { getAllWebContents: () => [contents] } });
+    hook.deactivate();
+    expect(hook.isActive()).toBe(false);
+    expect(hook.getSessionCount()).toBe(0);
+
+    const before = webRequest.onBeforeRequest.mock.calls.length;
+    finishListeners[0]?.();
+    expect(webRequest.onBeforeRequest.mock.calls.length).toBe(before);
+    expect(hook.getSessionCount()).toBe(0);
+  });
+
   it('cancels a request whose redirect chain was already flagged as ad', () => {
     const webRequest = makeWebRequest();
     const hook = new ElectronHook(interceptor, cssInjector, logger);
