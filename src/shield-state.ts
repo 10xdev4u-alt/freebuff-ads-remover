@@ -126,6 +126,10 @@ export class ShieldStateStore {
 
   promotedCount(): number { return this.state.promoted.length; }
 
+  isPromoted(id: string): boolean {
+    return this.state.promoted.some((entry) => entry.route === id);
+  }
+
   eligible(promoteAfter: number): string[] {
     return Object.entries(this.state.observations)
       .filter(([, o]) => o.launches >= promoteAfter)

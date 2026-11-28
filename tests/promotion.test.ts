@@ -253,6 +253,30 @@ describe('runtime promotion branches', () => {
     expect(results[0]?.status).toBe('promoted');
   });
 
+  it('does not re-promote an already-promoted route on a later tick', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-dedupe-'));
+    const engine = new PromotionEngine({
+      promoteAfter: 1,
+      enabled: true,
+      registry: new RuleRegistry(),
+      statePath: path.join(tmp, 'shield-state.json'),
+      corpusDir,
+      configDir: tmp,
+      maxPromotedRules: 2,
+    });
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/alpha');
+    const first = await engine.tick();
+    expect(first.map((r) => r.id)).toEqual(['route:/api/ad/alpha']);
+
+    engine.beginLaunch();
+    engine.observe('route:/api/ad/beta');
+    const second = await engine.tick();
+    expect(second.map((r) => r.id)).toEqual(['route:/api/ad/beta']);
+    expect(second[0]?.status).toBe('promoted');
+    expect(engine.stateStore().promotedCount()).toBe(2);
+  });
+
   it('loads corrupted state as empty', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'far-promo-'));
     const statePath = path.join(tmp, 'shield-state.json');

@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 101; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 102; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/94.0/91.3/95.7.
+      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.4/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
@@ -911,6 +911,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       re-downloading on every scheduled run. `tests/workflow-cache.test.ts`
       applies the workflow's cleanup commands to a temp workspace and asserts
       the cached file survives. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 102 — Promotion dedupe
+- [x] `fix(promo): skip already-promoted routes on ticks` — `PromotionEngine`
+      now skips ids already in `ShieldStateStore.promoted`, so repeated miss
+      observations no longer re-apply the same rule and fill the
+      `maxPromotedRules` quota with duplicate receipts. Genuinely new ad routes
+      get promoted again. `tests/promotion.test.ts` pins the two-tick sequence.
+      Coverage pins refreshed to 94.2 functions / 91.4 branches. No
+      `AD_ENDPOINTS` or page-API change.
 
 ---
 
