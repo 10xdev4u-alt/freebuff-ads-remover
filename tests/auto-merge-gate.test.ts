@@ -179,6 +179,22 @@ describe('evaluateBotPr', () => {
     expect(blockers(f).join(' ')).toMatch(/check test is queued/);
   });
 
+  it.each(['in_progress', 'waiting'])('lets an untimed %s run block an older success', (status) => {
+    const f = fixture();
+    f.checks = f.checks.map((c) => c.name === 'test'
+      ? { ...c, started_at: new Date(now - 5000).toISOString(), completed_at: new Date(now - 4000).toISOString() }
+      : c);
+    f.checks.push({
+      name: 'test',
+      status,
+      conclusion: null as unknown as string,
+      head_sha: headSha,
+      started_at: undefined,
+      completed_at: undefined,
+    });
+    expect(blockers(f).join(' ')).toMatch(new RegExp(`check test is ${status}`));
+  });
+
   it('fails closed when a required check is missing, pending or action_required', () => {
     const missing = fixture();
     missing.checks = missing.checks.filter((c) => c.name !== 'test');

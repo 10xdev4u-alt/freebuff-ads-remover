@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 112; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 113; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -1004,6 +1004,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `tests/css-injector.test.ts` pins the surface-toggle refresh; benchmark
       callers were adapted to the async API. No `AD_ENDPOINTS` or page-API
       change.
+
+### Wave 113 — Untimed merge checks
+- [x] `fix(auto-merge): block all untimed non-terminal runs` — Wave 88's guard
+      only covered `queued`; `in_progress`/`waiting` runs without timestamps
+      were still ignored while an older success on the same head existed. The
+      gate now fails closed for any non-completed run it cannot order.
+      `tests/auto-merge-gate.test.ts` pins both statuses alongside the queued
+      case. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
