@@ -131,7 +131,7 @@ jobs:
             /tmp/heal.json
             /tmp/heal.md
       - name: Clean extracted artifacts
-        run: rm -rf squashfs-root freebuff-*.AppImage .heal-tmp
+        run: rm -rf squashfs-root .heal-tmp
       - name: Large-file guard
         run: |
           bad=$(git status --porcelain | awk '{print $2}' | while read f; do [ -f "$f" ] && [ "$(stat -c%s "$f")" -gt 10485760 ] && echo "$f"; done)

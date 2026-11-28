@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 100; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 101; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -903,6 +903,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       the existing fail-closed comment true and matches the sibling defaults
       guards. `tests/docs-consistency.test.ts` pins the empty-version case. No
       `AD_ENDPOINTS` or page-API change.
+
+### Wave 101 — AppImage cache cleanup
+- [x] `fix(ci): keep cached AppImage through cleanup` — `upstream-proof.yml` no
+      longer deletes `freebuff-*.AppImage` before `actions/cache` performs its
+      post-job save, so a cache miss can finally populate the entry instead of
+      re-downloading on every scheduled run. `tests/workflow-cache.test.ts`
+      applies the workflow's cleanup commands to a temp workspace and asserts
+      the cached file survives. No `AD_ENDPOINTS` or page-API change.
 
 ---
 
