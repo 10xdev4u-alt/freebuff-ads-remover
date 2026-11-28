@@ -11,7 +11,9 @@ export function neutralizeMarkers(root: Element, markers: string[]): number {
     });
   }
   // also scan attribute names containing markers
-  const all = root.querySelectorAll('*');
+  // querySelectorAll searches descendants only; include the container itself
+  // so markers on the removed ad element are cleaned too.
+  const all = [root, ...root.querySelectorAll('*')];
   all.forEach((el) => {
     for (const attr of [...el.attributes]) {
       if (markers.some((m) => attr.name.includes(m.replace('data-', '')))) {
