@@ -158,8 +158,13 @@ function cmdFeedSync(flags: Record<string, string | boolean>): number {
   if (!url) { console.error('Usage: farbuff feed-sync --url <manifest-url>'); return 2; }
   const dir = (flags['dir'] as string) || getConfigDir();
   const key = (flags['key'] as string) || process.env.FEED_PUBLIC_KEY || '';
+  const killSwitch = loadConfig().feed.killSwitch;
   const r = spawnSync(process.execPath, [path.join(process.cwd(), 'scripts', 'feed-sync.mjs'), '--manifest', url, '--config-dir', dir], {
-    env: { ...process.env, FEED_PUBLIC_KEY: key },
+    env: {
+      ...process.env,
+      FEED_PUBLIC_KEY: key,
+      FREEBUFF_FEED_KILL_SWITCH: killSwitch ? 'true' : 'false',
+    },
     encoding: 'utf8',
     stdio: 'inherit',
   });

@@ -368,8 +368,9 @@ main() {
     FEED_URL="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.url 2>/dev/null || echo "")"
     FEED_KEY="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.publicKey 2>/dev/null || echo "")"
     FEED_PREV_KEY="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.previousPublicKey 2>/dev/null || echo "")"
+    FEED_KILL="$("$NODE_BIN" "$EXTENSION_DIR/bin/farbuff.mjs" config-get --dir "$USER_CONFIG" feed.killSwitch 2>/dev/null || echo false)"
     if [[ "$FEED_ENABLED" == "true" ]]; then
-      FEED_PUBLIC_KEY="$FEED_KEY" FEED_PREVIOUS_PUBLIC_KEY="$FEED_PREV_KEY" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "${FREEBUFF_FEED_URL:-$FEED_URL}" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
+      FEED_PUBLIC_KEY="$FEED_KEY" FEED_PREVIOUS_PUBLIC_KEY="$FEED_PREV_KEY" FREEBUFF_FEED_KILL_SWITCH="$FEED_KILL" "$NODE_BIN" "$EXTENSION_DIR/scripts/feed-sync.mjs" --manifest "${FREEBUFF_FEED_URL:-$FEED_URL}" --config-dir "${FREEBUFF_CONFIG_DIR:-$HOME/.config/freebuff-ads-remover}" || echo "Feed sync failed; continuing with existing rules." >&2
     fi
 
     # Inbound relay (opt-in): submit redacted miss envelopes. Fail-open.

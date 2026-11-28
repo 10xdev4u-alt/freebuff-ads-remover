@@ -92,6 +92,12 @@ describe('launch-freebuff sanitize_env', () => {
     expect(text).toContain('SURVIVED');
   });
 
+  it('wires the configured feed kill switch into feed-sync', () => {
+    const src = readFileSync(launcherPath, 'utf8');
+    expect(src).toContain('config-get --dir "$USER_CONFIG" feed.killSwitch');
+    expect(src).toContain('FREEBUFF_FEED_KILL_SWITCH="$FEED_KILL"');
+  });
+
   it('keeps the same deny list as the headless E2E launcher', () => {
     const bashList = (readFileSync(launcherPath, 'utf8').match(/SANITIZED_ENV_VARS=\(([\s\S]*?)\n\)/) ?? [])[1] ?? '';
     const jsList = (readFileSync(e2ePath, 'utf8').match(/const SANITIZED_ENV_VARS = \[([\s\S]*?)\];/) ?? [])[1] ?? '';
