@@ -218,6 +218,17 @@ release_launcher_lock() {
 # failing informational echo must not abort the launcher before exec.
 say() { echo "$@" || true; }
 
+# A builtin echo cannot be rescued by `|| true` when its pipe reader closes:
+# SIGPIPE kills the shell itself. Redirect our own diagnostics to a regular,
+# writable log before any informational output happens. Keep it a function so
+# sourcing the launcher for tests stays inert.
+redirect_own_output() {
+  FREEBUFF_LOG="${FREEBUFF_LOG:-$HOME/.config/freebuff-desktop/launch.log}"
+  mkdir -p "$(dirname "$FREEBUFF_LOG")"
+  : >>"$FREEBUFF_LOG"
+  exec >>"$FREEBUFF_LOG" 2>&1
+}
+
 # Environment variables that can change, break, or hijack the patched app and
 # the node/bun children it spawns. The .desktop entry launches us from the GUI
 # session, so anything exported there reaches Electron and its orchestrator
@@ -257,6 +268,8 @@ sanitize_env() {
 }
 
 main() {
+  # Keep our own output off a potentially closed stdout pipe before any echo.
+  redirect_own_output
   # Drop hostile vars before any helper runs, so they cannot reach the node
   # scripts below or the final exec of the Electron binary.
   sanitize_env
@@ -271,14 +284,8 @@ main() {
   fi
 
   # Freebuff's Electron main process (and its bun orchestrator child) write to
-  # stdout/stderr. When launched from a .desktop entry (Terminal=false) those
-  # descriptors can end up on a pipe whose read end closes, producing an
-  # uncaught "write EPIPE" that Electron surfaces as a "JS Uncaught Exception"
-  # dialog. Keep a writable sink so writes never fail.
-  FREEBUFF_LOG="${FREEBUFF_LOG:-$HOME/.config/freebuff-desktop/launch.log}"
-  mkdir -p "$(dirname "$FREEBUFF_LOG")"
-  : >>"$FREEBUFF_LOG"
-
+  # stdout/stderr. The launcher's own descriptors were redirected to the log at
+  # startup; the final exec repeats that sink for the app process explicitly.
   # --repair: force a clean re-extract + re-patch (use after a bad update).
   local repair=0
   if [[ "${1:-}" == "--repair" ]]; then

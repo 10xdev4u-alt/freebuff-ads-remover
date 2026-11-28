@@ -70,7 +70,29 @@ describe('launch-freebuff sanitize_env', () => {
     }
   });
 
-  it('uses the same deny list as the headless E2E launcher', () => {
+  it('survives a closed stdout pipe before exec', () => {
+    const log = join(root, 'launch.log');
+    const script = [
+      'set -euo pipefail',
+      'exec 1> >(exit 0)',
+      'sleep 0.05',
+      `FREEBUFF_LOG=${JSON.stringify(log)}`,
+      `source ${JSON.stringify(harness)}`,
+      'redirect_own_output',
+      'say marker',
+      'echo SURVIVED',
+    ].join('\n');
+    const r = spawnSync('bash', ['-c', script], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: root },
+    });
+    expect(r.status).toBe(0);
+    const text = readFileSync(log, 'utf8');
+    expect(text).toContain('marker');
+    expect(text).toContain('SURVIVED');
+  });
+
+  it('keeps the same deny list as the headless E2E launcher', () => {
     const bashList = (readFileSync(launcherPath, 'utf8').match(/SANITIZED_ENV_VARS=\(([\s\S]*?)\n\)/) ?? [])[1] ?? '';
     const jsList = (readFileSync(e2ePath, 'utf8').match(/const SANITIZED_ENV_VARS = \[([\s\S]*?)\];/) ?? [])[1] ?? '';
     const bashNames = [...bashList.matchAll(/^\s*([A-Z0-9_]+)\s*$/gm)].map((m) => m[1]);
