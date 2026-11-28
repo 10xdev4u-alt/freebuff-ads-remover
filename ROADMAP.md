@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 108; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 109; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -971,6 +971,13 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       hook while `isActive()` reports false. `tests/electron-hook-extra.test.ts`
       pins the post-deactivation page load. Coverage pins refreshed to 91.3
       branches. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 109 — Verify token permissions
+- [x] `fix(verify): enforce 0600 on token rewrite` — `verify-service.ts` now
+      chmods `verify.json` to 0600 after every token write, so a restart over a
+      pre-existing world-readable file no longer publishes a fresh bearer
+      token to local readers. `tests/verify-service-extra.test.ts` pins the
+      mode on a pre-created 0644 file. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

@@ -129,6 +129,18 @@ describe('verify-service endpoints', () => {
     await h?.close();
   });
 
+  it('enforces 0600 on a pre-existing token file', async () => {
+    const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any;
+    const verifier = { run: vi.fn(), getLastReport: vi.fn() } as any;
+    const dir = tmp('vs-mode-');
+    const tokenPath = path.join(dir, 'verify.json');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(tokenPath, '{}', { mode: 0o644 });
+    const h = await startVerifyService({ enabled: true, port: 0, tokenPath }, verifier, logger, '1.0.0');
+    expect(fs.statSync(tokenPath).mode & 0o777).toBe(0o600);
+    await h?.close();
+  });
+
   it('resolves null when the port cannot be bound', async () => {
     const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any;
     const verifier = { run: vi.fn(), getLastReport: vi.fn() } as any;
