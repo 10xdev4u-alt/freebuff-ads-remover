@@ -138,7 +138,7 @@ jobs:
           if [ -n "$bad" ]; then echo "large files: $bad"; exit 1; fi
       - name: Open heal PR
         if: steps.heal.outputs.has_delta == 'true' || steps.drift.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: ci/upstream-heal-${{ steps.ver.outputs.version }}
           author: "10xdev4u-alt <10xdev4u@gmail.com>"

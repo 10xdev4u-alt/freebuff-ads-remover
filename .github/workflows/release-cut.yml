@@ -55,7 +55,7 @@ jobs:
 
       - name: Open release PR
         if: steps.gate.outputs.status == 'cut'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           base: main
           branch: ci/release-v${{ steps.gate.outputs.version }}
