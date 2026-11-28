@@ -37,7 +37,7 @@ jobs:
       - run: npm ci
       - run: npm run test:coverage
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
@@ -82,7 +82,7 @@ jobs:
           # The dist fidelity tests skip when dist/ is absent; here it must exist.
           FAR_REQUIRE_DIST: '1'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
