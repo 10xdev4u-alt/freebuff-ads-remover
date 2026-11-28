@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 117; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 118; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -1047,6 +1047,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       now reuses `matchRoute`. `tests/delta-gate-extra.test.ts` and
       `tests/audit-delta-check.test.ts` pin the variants. Coverage claim
       refreshed to 91.2 branches. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 118 — Durable disk rollback
+- [x] `fix(registry): persist recovered rules on rollback` — `rollbackFromDisk()`
+      now writes the normalized recovered ruleset back to `rules.json`, so a
+      boot-time safety rollback survives the next launch instead of restoring
+      the bad rule. It deliberately avoids `save()` to keep `rules.prev.json`
+      intact. `tests/rule-registry.test.ts` pins persistence across a fresh
+      load. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

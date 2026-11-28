@@ -101,6 +101,21 @@ describe('RuleRegistry', () => {
     expect(restored.current().endpoints).not.toContain('/api/ad/y');
   });
 
+  it('persists a disk rollback so the next load sees the recovered ruleset', () => {
+    const dir = tmpDir('rr-persist-');
+    const reg = new RuleRegistry();
+    reg.apply({ addEndpoints: ['/api/ad/x'], addSelectors: {}, source: 'x' });
+    reg.save(dir);
+    reg.apply({ addEndpoints: ['/api/ad/y'], addSelectors: {}, source: 'y' });
+    reg.save(dir);
+
+    const boot = RuleRegistry.load(dir)!;
+    const rolled = boot.rollbackFromDisk(dir);
+    expect(rolled?.endpoints).toContain('/api/ad/x');
+    expect(RuleRegistry.load(dir)!.current().endpoints).toContain('/api/ad/x');
+    expect(RuleRegistry.load(dir)!.current().endpoints).not.toContain('/api/ad/y');
+  });
+
   it('returns null from rollbackFromDisk when the previous file is absent or invalid', () => {
     const dir = tmpDir('rr-empty-');
     expect(new RuleRegistry().rollbackFromDisk(dir)).toBeNull();
