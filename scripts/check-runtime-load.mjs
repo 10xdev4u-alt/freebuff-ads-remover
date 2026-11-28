@@ -81,8 +81,14 @@ if (receipt?.version !== version) {
 
 const at = Date.parse(receipt?.at);
 if (Number.isNaN(at)) fail(`load receipt has no usable timestamp: ${JSON.stringify(receipt?.at)}`);
-const maxAge = Number(arg('max-age-ms', '300000'));
+const maxAgeArg = arg('max-age-ms', '300000');
+const maxAge = Number(maxAgeArg);
+if (!Number.isFinite(maxAge) || maxAge < 0) fail(`invalid --max-age-ms: ${JSON.stringify(maxAgeArg)}`);
 const age = Date.now() - at;
+// Match release-gate's clock-skew allowance: future-dated receipts must not
+// certify as fresh while the host clock catches up.
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+if (age < -CLOCK_SKEW_MS) fail(`load receipt timestamp is in the future (age ${age}ms)`);
 if (age > maxAge) fail(`load receipt is ${age}ms old (max ${maxAge}ms)`);
 
 console.log(`LOAD CONFIRMED pid=${pid} version=${receipt.version} age=${age}ms`);
