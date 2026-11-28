@@ -138,11 +138,12 @@ export function evaluateBotPr(input) {
       reasons.push(`check ${name} missing for head ${sha}`);
       continue;
     }
-    // Check-run objects have no top-level created_at and queued runs have
-    // neither started_at nor completed_at, so a queued re-run cannot be
-    // timestamp-ordered against an older success. Fail closed instead.
-    if (hits.some((c) => c?.status === 'queued' && !Number.isFinite(checkOrder(c)))) {
-      reasons.push(`check ${name} is queued`);
+    // Check-run objects have no top-level created_at, and non-completed runs
+    // may have neither started_at nor completed_at. Any untimed, non-terminal
+    // run cannot be ordered against an older success, so fail closed.
+    const untimed = hits.find((c) => c?.status !== 'completed' && !Number.isFinite(checkOrder(c)));
+    if (untimed) {
+      reasons.push(`check ${name} is ${untimed.status} (untimed)`);
       continue;
     }
     const latest = hits.slice().sort((a, b) => checkOrder(b) - checkOrder(a))[0];
