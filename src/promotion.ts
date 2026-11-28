@@ -79,6 +79,7 @@ export class PromotionEngine {
     this.tickPromise = (async () => {
       const results: PromotionResult[] = [];
       for (const id of this.eligible()) {
+      if (this.state.isPromoted(id)) continue; // already promoted: never re-apply or spend quota twice
       if (!this.canPromote()) break;
       const route = id.replace(/^route:/, '');
       const cls = classifyRoute(route);
