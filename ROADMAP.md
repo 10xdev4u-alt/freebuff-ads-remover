@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 102; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 103; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.4/95.7.
+      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.3/95.7.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
@@ -920,6 +920,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       get promoted again. `tests/promotion.test.ts` pins the two-tick sequence.
       Coverage pins refreshed to 94.2 functions / 91.4 branches. No
       `AD_ENDPOINTS` or page-API change.
+
+### Wave 103 — Query-safe route classification
+- [x] `fix(candidates): ignore query tokens in classifyRoute` — `classifyRoute`
+      now strips query/hash before scoring, so ordinary URLs like
+      `/healthz?x=ad` and `?utm_campaign=promo` are no longer classified as
+      high-confidence ad candidates. This aligns the classifier with
+      `matchRoute`'s existing query stripping. `tests/candidates-extra.test.ts`
+      pins five control routes with ad-shaped query values. Coverage pins
+      refreshed to 91.3 branches. No `AD_ENDPOINTS` or page-API change.
 
 ---
 

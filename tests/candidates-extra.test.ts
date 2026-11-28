@@ -41,6 +41,16 @@ describe('classifyRoute', () => {
     expect(classifyRoute('/healthz')).toEqual({ candidate: false, confidence: 0, signals: ['control-list'] });
   });
 
+  it.each([
+    '/healthz?x=ad',
+    '/api/account/usage?utm_campaign=promo',
+    '/api/user/me?ref=sponsor',
+    '/api/config?debug=advertising',
+    '/api/auth/session?x=ads',
+  ])('ignores ad tokens that appear only in the query string of %s', (route) => {
+    expect(classifyRoute(route)).toEqual({ candidate: false, confidence: 0, signals: ['control-list'] });
+  });
+
   it('scores path tokens', () => {
     const result = classifyRoute('/api/ad/break');
     expect(result.candidate).toBe(true);

@@ -107,6 +107,9 @@ function hostOf(context: RouteContext | undefined, route: string): string | unde
 }
 
 export function classifyRoute(route: string, context: RouteContext = {}): CandidateResult {
+  // Query/hash values are ordinary user data (utm_campaign=promo, ref=sponsor).
+  // Strip them so ad tokens there cannot turn a control route into an ad.
+  route = route.split(/[?#]/)[0] ?? route;
   const signals: string[] = [];
   let score = 0;
 
