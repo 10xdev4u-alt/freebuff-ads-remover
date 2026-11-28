@@ -32,6 +32,13 @@ export interface VerifyServiceHandle {
   close(): Promise<void>;
 }
 
+// writeFileSync's mode only applies when creating the file; chmod enforces the
+// 0600 contract on restart when verify.json already exists with looser modes.
+function writeTokenFile(filePath: string, token: string, port: number): void {
+  fs.writeFileSync(filePath, JSON.stringify({ token, port }), { mode: 0o600 });
+  fs.chmodSync(filePath, 0o600);
+}
+
 export async function startVerifyService(
   config: VerifyServiceConfig,
   verifier: RuntimeVerifier,
@@ -45,7 +52,7 @@ export async function startVerifyService(
   // Persist token for clients (verify-remover.mjs reads it).
   try {
     fs.mkdirSync(path.dirname(config.tokenPath), { recursive: true });
-    fs.writeFileSync(config.tokenPath, JSON.stringify({ token, port: 0 }), { mode: 0o600 });
+    writeTokenFile(config.tokenPath, token, 0);
   } catch (err) {
     logger.warn('VerifyService: could not persist token', err);
   }
@@ -116,7 +123,7 @@ export async function startVerifyService(
       const port = typeof addr === 'object' && addr ? addr.port : config.port;
       // Update token file with actual port.
       try {
-        fs.writeFileSync(config.tokenPath, JSON.stringify({ token, port }), { mode: 0o600 });
+        writeTokenFile(config.tokenPath, token, port);
       } catch {
         /* ignore */
       }
