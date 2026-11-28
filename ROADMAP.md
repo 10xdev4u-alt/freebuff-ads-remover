@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-28 (Wave 103; Freebuff 0.0.205).
+Last updated: 2026-11-28 (Wave 104; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -929,6 +929,14 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       `matchRoute`'s existing query stripping. `tests/candidates-extra.test.ts`
       pins five control routes with ad-shaped query values. Coverage pins
       refreshed to 91.3 branches. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 104 — Root marker neutralization
+- [x] `fix(ghost): neutralize markers on root container` — the stem/attribute
+      pass in `neutralizeMarkers` now includes the context element itself, so
+      ad markers on the removed container are stripped instead of surviving on
+      a node that `querySelectorAll` never visits. `tests/dom-marker-neutralizer.test.ts`
+      pins the root case alongside the descendant cases. No `AD_ENDPOINTS` or
+      page-API change.
 
 ---
 

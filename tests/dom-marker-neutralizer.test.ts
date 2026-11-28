@@ -16,6 +16,20 @@ describe('neutralizeMarkers', () => {
     expect(b.hasAttribute('data-ad-client')).toBe(false);
   });
 
+  it('strips markers from the root container itself', () => {
+    const root = document.createElement('div');
+    root.setAttribute('data-ad-slot', '1');
+    root.setAttribute('data-google-query-id', 'g');
+    const child = document.createElement('span');
+    child.setAttribute('data-ad-client', '2');
+    root.appendChild(child);
+
+    expect(neutralizeMarkers(root, DEFAULT_MARKERS)).toBe(3);
+    expect(root.hasAttribute('data-ad-slot')).toBe(false);
+    expect(root.hasAttribute('data-google-query-id')).toBe(false);
+    expect(child.hasAttribute('data-ad-client')).toBe(false);
+  });
+
   it('strips attributes whose names contain a marker stem', () => {
     const root = document.createElement('div');
     const el = document.createElement('span');
