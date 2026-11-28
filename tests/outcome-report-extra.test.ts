@@ -31,6 +31,21 @@ describe('submitOutcomes', () => {
     expect(result).toEqual({ submitted: 0, status: 204 });
   });
 
+  it('submits rotated and active segments together', async () => {
+    const rotated = path.join(dir, 'outcomes.jsonl.1');
+    fs.writeFileSync(rotated, `${envelope('/api/ad/a')}\n${envelope('/api/ad/b')}\n`);
+    fs.writeFileSync(logPath(), `${envelope('/api/ad/c')}\n`);
+    const fetchMock = vi.fn((_url: string, _init?: { body?: string }) => Promise.resolve({ ok: true, status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await submitOutcomes('https://example.com/outcomes', 10);
+    expect(result.submitted).toBe(3);
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { envelopes: { route: string }[] };
+    expect(body.envelopes.map((e) => e.route)).toEqual(['/api/ad/a', '/api/ad/b', '/api/ad/c']);
+    expect(fs.existsSync(rotated)).toBe(false);
+    expect(fs.readFileSync(logPath(), 'utf8')).toBe('');
+  });
+
   it('returns 204 when the log has no entries', async () => {
     fs.writeFileSync(logPath(), '\n\n');
     const result = await submitOutcomes('https://example.com/outcomes', 10);

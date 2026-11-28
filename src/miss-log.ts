@@ -1,6 +1,18 @@
 import fs from 'node:fs';
 
-export interface MissLogEntry { v: number; at: number; route: string; surface?: string }
+export type MissLogEntry = { v: number; at: number; route: string; surface?: string };
+
+/** All JSONL lines in oldest-first order, including the rotated segment. */
+export function readMissLogLines(filePath: string): string[] {
+  let lines: string[] = [];
+  for (const segment of [filePath + '.1', filePath]) {
+    if (!fs.existsSync(segment)) continue;
+    try {
+      lines = lines.concat(fs.readFileSync(segment, 'utf8').trim().split('\n').filter(Boolean));
+    } catch { /* skip an unreadable segment */ }
+  }
+  return lines;
+}
 
 export interface MissEnvelope {
   v: number;
@@ -37,10 +49,9 @@ export class MissLog {
   }
 
   read(opts?: { since?: number; limit?: number }): MissLogEntry[] {
-    if (!fs.existsSync(this.filePath)) return [];
     let entries: MissLogEntry[] = [];
     try {
-      entries = fs.readFileSync(this.filePath, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l) as MissLogEntry);
+      entries = readMissLogLines(this.filePath).map((l) => JSON.parse(l) as MissLogEntry);
     } catch { return []; }
     if (opts?.since) entries = entries.filter((e) => e.at >= (opts.since as number));
     if (opts?.limit) entries = entries.slice(-opts.limit);

@@ -34,6 +34,13 @@ describe('miss-log', () => {
     expect(new MissLog(f).read()).toEqual([]);
   });
 
+  it('reads entries from both rotated and active segments', () => {
+    const f = tmpFile('miss-merge-');
+    const log = new MissLog(f, 80);
+    for (let at = 1; at <= 3; at++) log.append({ v: 1, at, route: `/api/ad/${String(at)}` });
+    expect(log.read().map((e) => e.at)).toEqual([1, 2, 3]);
+  });
+
   it('fails open when the path is unwritable', () => {
     const log = new MissLog(path.join(os.tmpdir(), 'far-miss-absent', 'log.jsonl'));
     expect(() => { log.append({ v: 1, at: 1, route: '/x' }); }).not.toThrow();
@@ -85,6 +92,15 @@ describe('outcome-log', () => {
     log.append({ v: 1, at: 1, healHash: 'h1', route: '/api/ad/a', suppressed: true });
     log.append({ v: 1, at: 2, healHash: 'h2', route: '/api/ad/b', suppressed: true });
     expect(fs.existsSync(f + '.1')).toBe(true);
+  });
+
+  it('reads entries from both rotated and active segments', () => {
+    const f = tmpFile('out-merge-');
+    const log = new OutcomeLog(f, 120);
+    for (let at = 1; at <= 3; at++) {
+      log.append({ v: 1, at, healHash: `h${String(at)}`, route: `/api/ad/${String(at)}`, suppressed: true });
+    }
+    expect(log.read().map((e) => e.at)).toEqual([1, 2, 3]);
   });
 });
 

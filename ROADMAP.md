@@ -4,7 +4,7 @@ Vision: a self-healing, auditable, multi-surface ad blocker for Freebuff Desktop
 survives near-daily upstream releases, never breaks the host app, and stays honest via
 automated verification. Scaled for 100+ issues, 1000+ commits, 1000s of PRs.
 
-Last updated: 2026-11-29 (Wave 115; Freebuff 0.0.205).
+Last updated: 2026-11-29 (Wave 116; Freebuff 0.0.205).
 
 ## Guiding principles
 
@@ -248,7 +248,7 @@ the Deprecated section.
       `heal-proof.yml`, `release.yml`.
 - [ ] Mutation testing (stryker) for interceptor.
 - [x] Coverage ratchet: never drop below 85% — thresholds are pinned at 85 for
-      lines/functions/branches/statements, and the suite holds 97.5/94.2/91.3/95.7.
+      lines/functions/branches/statements, and the suite holds 97.5/94.3/91.3/95.8.
       → Wave 59
 - [ ] Contract tests for config schema migrations.
 - [x] Golden-file tests for audit output — `tests/audit-golden.test.ts` pins the
@@ -1029,6 +1029,15 @@ integrity, testing/ledger honesty, and loop automation. Each bullet is one atomi
       when the token is missing instead of writing a hashless page.
       `tests/check-ledger.test.ts` and `tests/bump-version.test.ts` pin the
       missing-token and mismatch paths. No `AD_ENDPOINTS` or page-API change.
+
+### Wave 116 — Rotated relay logs
+- [x] `fix(relays): read rotated log segments` — `MissLog`/`OutcomeLog` and
+      their submit paths now merge the `.1` rotation segment with the active
+      file, so a long session no longer reports zero submissions and leaves
+      envelopes undrained. After a successful post the rotation is removed.
+      `tests/log-stores.test.ts` and `tests/outcome-report-extra.test.ts` pin
+      merged reads and submissions. Coverage claim refreshed to 94.3/95.8.
+      No `AD_ENDPOINTS` or page-API change.
 
 ---
 
